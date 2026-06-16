@@ -1,0 +1,23 @@
+---
+description: NestJS backend conventions
+globs: apps/api/**/*.ts, server/**/*.ts
+alwaysApply: false
+---
+
+# NestJS Backend Rules
+
+- **Folder Structure**:
+  - `core/`: Use this folder for basic core providers, such as database configuration, global interceptors, filters, and shared core logic.
+  - `modules/`: Use this folder for the feature modules of the application (e.g., `user`, `products`). Each module should encapsulate its own logic with a standard inner folder structure:
+    - `constants/`: Constant values.
+    - `controllers/`: Route handlers and HTTP endpoint definitions.
+    - `dto/`: Data Transfer Objects for request validation.
+    - `entities/`: Database entities (and their enums).
+    - `models/`: Interfaces and types.
+    - `services/`: Business logic and providers.
+    - The module definition file (e.g., `user.module.ts`) should reside at the root of the module folder.
+- **Architecture**: Follow the standard NestJS architecture (Controllers -> Services -> Repositories/Data Access).
+- **Controllers**: Keep controllers thin. They should only handle HTTP requests/responses and delegate business logic to services.
+- **DTOs**: Always use Data Transfer Objects (DTOs) for request payloads and validate them using `class-validator` and `class-transformer`.
+- **Dependency Injection**: Rely heavily on NestJS dependency injection. Avoid instantiating classes manually with `new` if they can be injected.
+- **Error Handling**: Use NestJS built-in exceptions (e.g., `NotFoundException`, `BadRequestException`) for consistent error responses.
