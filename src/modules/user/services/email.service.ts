@@ -5,8 +5,8 @@ import { Queue } from 'bullmq';
 import {
   EMAIL_QUEUE,
   SEND_OTP_EMAIL_JOB,
-} from '../../queue/constants/queue.constants';
-import { isEmailQueueEnabled } from '../../queue/helpers/queue.helpers';
+} from '../../../core/queue/constants/queue.constants';
+import { isEmailQueueEnabled } from '../../../core/queue/helpers/queue.helpers';
 import {
   DEFAULT_OTP_EXPIRE_MS,
   MS_PER_MINUTE,

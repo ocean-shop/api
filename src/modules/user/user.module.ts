@@ -12,7 +12,7 @@ import { AuthController } from './controllers/auth.controller';
 import { AuthService } from './services/auth.service';
 import { EmailService } from './services/email.service';
 import { EmailProcessor } from './processors/email.processor';
-import { isEmailQueueEnabled } from '../queue/helpers/queue.helpers';
+import { isEmailQueueEnabled } from '../../core/queue/helpers/queue.helpers';
 
 @Module({
   imports: [

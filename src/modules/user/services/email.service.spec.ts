@@ -6,7 +6,7 @@ import { EmailService } from './email.service';
 import {
   EMAIL_QUEUE,
   SEND_OTP_EMAIL_JOB,
-} from '../../queue/constants/queue.constants';
+} from '../../../core/queue/constants/queue.constants';
 
 describe('EmailService', () => {
   let mailerService: any;

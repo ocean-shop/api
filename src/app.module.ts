@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { MailModule } from './modules/mail/mail.module';
-import { QueueModule } from './modules/queue/queue.module';
+import { MailModule } from './core/mail/mail.module';
+import { QueueModule } from './core/queue/queue.module';
 import { UserModule } from './modules/user/user.module';
 
 @Module({

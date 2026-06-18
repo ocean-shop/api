@@ -4,7 +4,7 @@ import { Job } from 'bullmq';
 import {
   EMAIL_QUEUE,
   SEND_OTP_EMAIL_JOB,
-} from '../../queue/constants/queue.constants';
+} from '../../../core/queue/constants/queue.constants';
 import { EmailService, SendOtpEmailJobData } from '../services/email.service';
 
 // The decorator call carries an implicit transpilation branch that tests
