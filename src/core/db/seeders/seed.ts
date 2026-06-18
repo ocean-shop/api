@@ -30,7 +30,7 @@ async function bootstrap() {
   const adminEmail = 'kukulyak.taras@gmail.com';
   let adminUser = await userRepository.findOne({
     where: { email: adminEmail },
-    relations: { roles: true },
+    relations: { role: true },
   });
 
   if (!adminUser) {
@@ -38,7 +38,7 @@ async function bootstrap() {
       email: adminEmail,
       isEmailVerified: true,
       isActive: true,
-      roles: [adminRole],
+      role: adminRole,
     });
     await userRepository.save(adminUser);
     console.log(`Created admin user: ${adminEmail}`);
@@ -46,9 +46,9 @@ async function bootstrap() {
     console.log(`Admin user ${adminEmail} already exists.`);
 
     // Ensure the admin role is assigned if the user existed but didn't have it
-    const hasAdminRole = adminUser.roles?.some((role) => role.name === 'admin');
+    const hasAdminRole = adminUser.role?.name === 'admin';
     if (!hasAdminRole) {
-      adminUser.roles = [...(adminUser.roles || []), adminRole];
+      adminUser.role = adminRole;
       await userRepository.save(adminUser);
       console.log(`Assigned admin role to existing user: ${adminEmail}`);
     }

@@ -60,7 +60,12 @@ describe('AuthController', () => {
       const expectedResult = {
         accessToken: 'access-token',
         refreshToken: 'refresh-token',
-        user: { id: 'uuid', email: 'test@example.com', mobileNumber: null },
+        user: {
+          id: 'uuid',
+          email: 'test@example.com',
+          mobileNumber: null,
+          role: null,
+        },
       };
 
       jest.mocked(authService.verifyOtp).mockResolvedValue(expectedResult);

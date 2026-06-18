@@ -368,7 +368,12 @@ describe('AuthService', () => {
       expect(result).toEqual({
         accessToken: 'mocked-token',
         refreshToken: 'mocked-token',
-        user: { id: 'uuid', email: 'test@example.com', mobileNumber: null },
+        user: {
+          id: 'uuid',
+          email: 'test@example.com',
+          mobileNumber: null,
+          role: null,
+        },
       });
     });
 

@@ -17,21 +17,6 @@ export class InitialSchema1780663250146 implements MigrationInterface {
             CREATE TYPE otp_purpose AS ENUM ('login', 'register');
 
             -- 3. Create Tables
-            CREATE TABLE users (
-                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                email VARCHAR(255) UNIQUE,
-                mobile_number VARCHAR(20) UNIQUE,
-                is_email_verified BOOLEAN NOT NULL DEFAULT FALSE,
-                is_mobile_verified BOOLEAN NOT NULL DEFAULT FALSE,
-                is_active BOOLEAN NOT NULL DEFAULT TRUE,
-                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                CONSTRAINT users_email_or_mobile_check
-                    CHECK (
-                        email IS NOT NULL OR mobile_number IS NOT NULL
-                    )
-            );
-
             CREATE TABLE roles (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 name VARCHAR(100) UNIQUE NOT NULL,
@@ -50,10 +35,20 @@ export class InitialSchema1780663250146 implements MigrationInterface {
                 PRIMARY KEY (role_id, permission_id)
             );
 
-            CREATE TABLE user_roles (
-                user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-                role_id UUID REFERENCES roles(id) ON DELETE CASCADE,
-                PRIMARY KEY (user_id, role_id)
+            CREATE TABLE users (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                role_id UUID REFERENCES roles(id) ON DELETE SET NULL,
+                email VARCHAR(255) UNIQUE,
+                mobile_number VARCHAR(20) UNIQUE,
+                is_email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+                is_mobile_verified BOOLEAN NOT NULL DEFAULT FALSE,
+                is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                CONSTRAINT users_email_or_mobile_check
+                    CHECK (
+                        email IS NOT NULL OR mobile_number IS NOT NULL
+                    )
             );
 
             CREATE TABLE user_sessions (
@@ -116,11 +111,10 @@ export class InitialSchema1780663250146 implements MigrationInterface {
             DROP TABLE IF EXISTS auth_otps;
             DROP TABLE IF EXISTS oauth_accounts;
             DROP TABLE IF EXISTS user_sessions;
-            DROP TABLE IF EXISTS user_roles;
             DROP TABLE IF EXISTS role_permissions;
             DROP TABLE IF EXISTS permissions;
-            DROP TABLE IF EXISTS roles;
             DROP TABLE IF EXISTS users;
+            DROP TABLE IF EXISTS roles;
 
             DROP TYPE IF EXISTS otp_purpose;
             DROP TYPE IF EXISTS otp_channel;

@@ -63,6 +63,9 @@ export class AuthService {
 
     const user = await this.userRepository.findOne({
       where: email ? { email } : { mobileNumber: phone },
+      relations: {
+        role: true,
+      },
     });
 
     if (!user) {
@@ -93,6 +96,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         mobileNumber: user.mobileNumber,
+        role: user.role?.name || null,
       },
     };
   }
