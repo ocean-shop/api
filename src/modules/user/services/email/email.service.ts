@@ -5,14 +5,13 @@ import { Queue } from 'bullmq';
 import {
   EMAIL_QUEUE,
   SEND_OTP_EMAIL_JOB,
-} from '../../../core/queue/constants/queue.constants';
-import { isEmailQueueEnabled } from '../../../core/queue/helpers/queue.helpers';
+} from '../../../../core/queue/constants/queue.constants';
+import { isEmailQueueEnabled } from '../../../../core/queue/helpers/queue.helpers';
 import {
   DEFAULT_OTP_EXPIRE_MS,
   MS_PER_MINUTE,
-} from '../constants/email.constants';
-import { SendOtpEmailJobData } from '../models/email.models';
-export type { SendOtpEmailJobData };
+} from '../../constants/email.constants';
+import { SendOtpEmailJobData } from '../../models/email.models';
 
 @Injectable()
 export class EmailService {

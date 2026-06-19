@@ -9,8 +9,12 @@ import { UserSession } from './entities/user-session.entity';
 import { OauthAccount } from './entities/oauth-account.entity';
 import { AuthOtp } from './entities/auth-otp.entity';
 import { AuthController } from './controllers/auth.controller';
-import { AuthService } from './services/auth.service';
-import { EmailService } from './services/email.service';
+import { AuthService } from './services/auth/auth.service';
+import { RequestOtpService } from './services/request-otp/request-otp.service';
+import { VerifyOtpService } from './services/verify-otp/verify-otp.service';
+import { RefreshTokenService } from './services/refresh-token/refresh-token.service';
+import { LogoutService } from './services/logout/logout.service';
+import { EmailService } from './services/email/email.service';
 import { EmailProcessor } from './processors/email.processor';
 import { isEmailQueueEnabled } from '../../core/queue/helpers/queue.helpers';
 
@@ -35,10 +39,21 @@ import { isEmailQueueEnabled } from '../../core/queue/helpers/queue.helpers';
   controllers: [AuthController],
   providers: [
     AuthService,
+    RequestOtpService,
+    VerifyOtpService,
+    RefreshTokenService,
+    LogoutService,
     EmailService,
     // The processor only runs when the BullMQ queue is enabled.
     ...(isEmailQueueEnabled() ? [EmailProcessor] : []),
   ],
-  exports: [TypeOrmModule, AuthService],
+  exports: [
+    TypeOrmModule,
+    AuthService,
+    RequestOtpService,
+    VerifyOtpService,
+    RefreshTokenService,
+    LogoutService,
+  ],
 })
 export class UserModule {}

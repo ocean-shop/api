@@ -26,6 +26,19 @@ async function bootstrap() {
     console.log('Admin role already exists.');
   }
 
+  console.log('Seeding user role...');
+  let userRole = await roleRepository.findOneBy({ name: 'user' });
+  if (!userRole) {
+    userRole = roleRepository.create({
+      name: 'user',
+      description: 'Regular user role',
+    });
+    await roleRepository.save(userRole);
+    console.log('Created user role.');
+  } else {
+    console.log('User role already exists.');
+  }
+
   console.log('Seeding admin user...');
   const adminEmail = 'kukulyak.taras@gmail.com';
   let adminUser = await userRepository.findOne({
@@ -51,6 +64,34 @@ async function bootstrap() {
       adminUser.role = adminRole;
       await userRepository.save(adminUser);
       console.log(`Assigned admin role to existing user: ${adminEmail}`);
+    }
+  }
+
+  console.log('Seeding regular user...');
+  const regularEmail = 'user@example.com';
+  let regularUser = await userRepository.findOne({
+    where: { email: regularEmail },
+    relations: { role: true },
+  });
+
+  if (!regularUser) {
+    regularUser = userRepository.create({
+      email: regularEmail,
+      isEmailVerified: true,
+      isActive: true,
+      role: userRole,
+    });
+    await userRepository.save(regularUser);
+    console.log(`Created regular user: ${regularEmail}`);
+  } else {
+    console.log(`Regular user ${regularEmail} already exists.`);
+
+    // Ensure the user role is assigned if the user existed but didn't have it
+    const hasUserRole = regularUser.role?.name === 'user';
+    if (!hasUserRole) {
+      regularUser.role = userRole;
+      await userRepository.save(regularUser);
+      console.log(`Assigned user role to existing user: ${regularEmail}`);
     }
   }
 
