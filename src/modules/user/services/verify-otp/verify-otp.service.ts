@@ -1,32 +1,27 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { JwtService } from '@nestjs/jwt';
+import { Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { User } from '../../entities/user.entity';
-import { UserSession } from '../../entities/user-session.entity';
 import { VerifyOtpDto } from '../../dto/verify-otp.dto';
 import { AuthService } from '../auth/auth.service';
+import { UserRepository } from '../../repositories/user/user.repository';
+import { UserSessionRepository } from '../../repositories/user-session/user-session.repository';
 
 @Injectable()
 export class VerifyOtpService {
   constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-    @InjectRepository(UserSession)
-    private readonly userSessionRepository: Repository<UserSession>,
-    private readonly jwtService: JwtService,
+    private readonly userRepository: UserRepository,
+    private readonly userSessionRepository: UserSessionRepository,
     private readonly authService: AuthService,
   ) {}
 
   async verifyOtp(dto: VerifyOtpDto, userAgent?: string, ipAddress?: string) {
-    const user = await this.findUser(dto.email, dto.phone);
+    const user = await this.userRepository.findByEmailOrPhone(
+      dto.email,
+      dto.phone,
+    );
     await this.processOtp(user, dto.code, dto.email, dto.phone);
-
-    const { accessToken, refreshToken } = this.generateTokens(user);
-
+    const { accessToken, refreshToken } = this.authService.generateTokens(user);
     await this.saveUserSession(user.id, refreshToken, userAgent, ipAddress);
-
     return {
       accessToken,
       refreshToken,
@@ -37,21 +32,6 @@ export class VerifyOtpService {
         role: user.role?.name || null,
       },
     };
-  }
-
-  private async findUser(email?: string, phone?: string): Promise<User> {
-    const user = await this.userRepository.findOne({
-      where: email ? { email } : { mobileNumber: phone },
-      relations: {
-        role: true,
-      },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    return user;
   }
 
   private async processOtp(
@@ -71,21 +51,6 @@ export class VerifyOtpService {
       email,
       phone,
     );
-  }
-
-  private generateTokens(user: User): {
-    accessToken: string;
-    refreshToken: string;
-  } {
-    const payload = {
-      sub: user.id,
-      email: user.email,
-      mobileNumber: user.mobileNumber,
-    };
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
-    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
-
-    return { accessToken, refreshToken };
   }
 
   private async saveUserSession(

@@ -1,31 +1,29 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { User } from '../../entities/user.entity';
 import { RequestOtpDto } from '../../dto/request-otp.dto';
 import { OtpPurpose } from '../../entities/enums/auth-otp.enum';
 import { AuthService } from '../auth/auth.service';
 import { EmailService } from '../email/email.service';
+import { UserRepository } from '../../repositories/user/user.repository';
 
 @Injectable()
 export class RequestOtpService {
   private readonly logger = new Logger(RequestOtpService.name);
 
   constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+    private readonly userRepository: UserRepository,
     private readonly authService: AuthService,
     private readonly emailService: EmailService,
   ) {}
 
-  async requestOtp(dto: RequestOtpDto) {
+  async requestAdminOtp(dto: RequestOtpDto) {
     this.validateContactInfo(dto.email, dto.phone);
-
-    const user = await this.findUser(dto.email, dto.phone);
-    await this.validateUserAccess(user, dto.email, dto.phone);
-
+    const user = await this.userRepository.findByEmailOrPhone(
+      dto.email,
+      dto.phone,
+    );
+    await this.validateAdminAccess(user, dto.email, dto.phone);
     await this.handleExistingUserOtp(user, dto.email, dto.phone);
-
     return { message: 'OTP sent successfully' };
   }
 
@@ -35,22 +33,7 @@ export class RequestOtpService {
     }
   }
 
-  private async findUser(email?: string, phone?: string): Promise<User> {
-    const user = await this.userRepository.findOne({
-      where: email ? { email } : { mobileNumber: phone },
-      relations: {
-        role: true,
-      },
-    });
-
-    if (!user) {
-      throw new BadRequestException('User not found');
-    }
-
-    return user;
-  }
-
-  private async validateUserAccess(
+  private async validateAdminAccess(
     user: User,
     email?: string,
     phone?: string,

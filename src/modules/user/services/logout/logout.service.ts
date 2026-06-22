@@ -1,15 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
-import { UserSession } from '../../entities/user-session.entity';
+import { UserSessionRepository } from '../../repositories/user-session/user-session.repository';
 
 @Injectable()
 export class LogoutService {
   constructor(
-    @InjectRepository(UserSession)
-    private readonly userSessionRepository: Repository<UserSession>,
+    private readonly userSessionRepository: UserSessionRepository,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -37,9 +34,8 @@ export class LogoutService {
     userId: string,
     refreshToken: string,
   ): Promise<void> {
-    const sessions = await this.userSessionRepository.find({
-      where: { userId, revokedAt: IsNull() },
-    });
+    const sessions =
+      await this.userSessionRepository.findActiveSessionsByUserId(userId);
 
     for (const session of sessions) {
       const isValid = await bcrypt.compare(

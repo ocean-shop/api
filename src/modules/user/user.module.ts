@@ -9,6 +9,9 @@ import { UserSession } from './entities/user-session.entity';
 import { OauthAccount } from './entities/oauth-account.entity';
 import { AuthOtp } from './entities/auth-otp.entity';
 import { AuthController } from './controllers/auth.controller';
+import { UserRepository } from './repositories/user/user.repository';
+import { AuthOtpRepository } from './repositories/auth-otp/auth-otp.repository';
+import { UserSessionRepository } from './repositories/user-session/user-session.repository';
 import { AuthService } from './services/auth/auth.service';
 import { RequestOtpService } from './services/request-otp/request-otp.service';
 import { VerifyOtpService } from './services/verify-otp/verify-otp.service';
@@ -38,6 +41,9 @@ import { isEmailQueueEnabled } from '../../core/queue/helpers/queue.helpers';
   ],
   controllers: [AuthController],
   providers: [
+    UserRepository,
+    AuthOtpRepository,
+    UserSessionRepository,
     AuthService,
     RequestOtpService,
     VerifyOtpService,
@@ -49,6 +55,9 @@ import { isEmailQueueEnabled } from '../../core/queue/helpers/queue.helpers';
   ],
   exports: [
     TypeOrmModule,
+    UserRepository,
+    AuthOtpRepository,
+    UserSessionRepository,
     AuthService,
     RequestOtpService,
     VerifyOtpService,

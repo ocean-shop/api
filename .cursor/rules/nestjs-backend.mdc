@@ -15,6 +15,7 @@ alwaysApply: false
     - `entities/`: Database entities (and their enums).
     - `models/`: Interfaces and types.
     - `services/`: Business logic and providers.
+    - `repositories`: Direct work with db methods.
     - The module definition file (e.g., `user.module.ts`) should reside at the root of the module folder.
 - **Architecture**: Follow the standard NestJS architecture (Controllers -> Services -> Repositories/Data Access).
 - **Controllers**: Keep controllers thin. They should only handle HTTP requests/responses and delegate business logic to services.

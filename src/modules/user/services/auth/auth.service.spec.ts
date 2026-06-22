@@ -1,11 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { BadRequestException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { AuthService } from './auth.service';
 import { User } from '../../entities/user.entity';
 import { AuthOtp } from '../../entities/auth-otp.entity';
 import { OtpChannel, OtpPurpose } from '../../entities/enums/auth-otp.enum';
+import { UserRepository } from '../../repositories/user/user.repository';
+import { AuthOtpRepository } from '../../repositories/auth-otp/auth-otp.repository';
 
 jest.mock('bcryptjs');
 
@@ -13,6 +15,7 @@ describe('AuthService', () => {
   let service: AuthService;
   let userRepository: any;
   let authOtpRepository: any;
+  let jwtService: any;
 
   beforeEach(async () => {
     userRepository = {
@@ -22,14 +25,20 @@ describe('AuthService', () => {
     authOtpRepository = {
       create: jest.fn().mockImplementation((dto) => dto),
       save: jest.fn(),
-      createQueryBuilder: jest.fn(),
+      findActiveOtpRequest: jest.fn(),
+      findLatestOtp: jest.fn(),
+    };
+
+    jwtService = {
+      sign: jest.fn().mockReturnValue('mocked-token'),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
-        { provide: getRepositoryToken(User), useValue: userRepository },
-        { provide: getRepositoryToken(AuthOtp), useValue: authOtpRepository },
+        { provide: UserRepository, useValue: userRepository },
+        { provide: AuthOtpRepository, useValue: authOtpRepository },
+        { provide: JwtService, useValue: jwtService },
       ],
     }).compile();
 
@@ -120,26 +129,15 @@ describe('AuthService', () => {
   });
 
   describe('checkActiveOtpRequest', () => {
-    let queryBuilder: any;
-
-    beforeEach(() => {
-      queryBuilder = {
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        getOne: jest.fn(),
-      };
-      authOtpRepository.createQueryBuilder.mockReturnValue(queryBuilder);
-    });
-
     it('should not throw if no active OTP is found', async () => {
-      queryBuilder.getOne.mockResolvedValue(null);
+      authOtpRepository.findActiveOtpRequest.mockResolvedValue(null);
       await expect(
         service.checkActiveOtpRequest('userId1'),
       ).resolves.not.toThrow();
     });
 
     it('should throw BadRequestException if active OTP is found', async () => {
-      queryBuilder.getOne.mockResolvedValue({ id: 1 });
+      authOtpRepository.findActiveOtpRequest.mockResolvedValue({ id: 1 });
       await expect(service.checkActiveOtpRequest('userId1')).rejects.toThrow(
         BadRequestException,
       );
@@ -147,30 +145,17 @@ describe('AuthService', () => {
   });
 
   describe('findAndValidateLatestOtp', () => {
-    let queryBuilder: any;
-
-    beforeEach(() => {
-      queryBuilder = {
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        orderBy: jest.fn().mockReturnThis(),
-        take: jest.fn().mockReturnThis(),
-        getMany: jest.fn(),
-      };
-      authOtpRepository.createQueryBuilder.mockReturnValue(queryBuilder);
-    });
-
     it('should throw BadRequestException if no OTP is found', async () => {
-      queryBuilder.getMany.mockResolvedValue([]);
+      authOtpRepository.findLatestOtp.mockResolvedValue(null);
       await expect(service.findAndValidateLatestOtp('userId1')).rejects.toThrow(
         BadRequestException,
       );
     });
 
     it('should throw BadRequestException if OTP is expired', async () => {
-      queryBuilder.getMany.mockResolvedValue([
-        { expiresAt: new Date(Date.now() - 10000) },
-      ]);
+      authOtpRepository.findLatestOtp.mockResolvedValue({
+        expiresAt: new Date(Date.now() - 10000),
+      });
       await expect(service.findAndValidateLatestOtp('userId1')).rejects.toThrow(
         BadRequestException,
       );
@@ -178,7 +163,7 @@ describe('AuthService', () => {
 
     it('should return OTP if valid', async () => {
       const validOtp = { expiresAt: new Date(Date.now() + 10000) };
-      queryBuilder.getMany.mockResolvedValue([validOtp]);
+      authOtpRepository.findLatestOtp.mockResolvedValue(validOtp);
       const result = await service.findAndValidateLatestOtp('userId1');
       expect(result).toBe(validOtp);
     });
@@ -253,6 +238,43 @@ describe('AuthService', () => {
       const otp = { id: 'otp1' } as AuthOtp;
       await service.saveAuthOtp(otp);
       expect(authOtpRepository.save).toHaveBeenCalledWith(otp);
+    });
+  });
+
+  describe('generateTokens', () => {
+    it('should generate access and refresh tokens', () => {
+      const user = {
+        id: 'uuid',
+        email: 'test@example.com',
+        mobileNumber: '1234567890',
+        role: { name: 'admin' },
+      } as User;
+
+      const result = service.generateTokens(user);
+
+      expect(jwtService.sign).toHaveBeenCalledTimes(2);
+      expect(jwtService.sign).toHaveBeenCalledWith(
+        {
+          sub: user.id,
+          email: user.email,
+          role: user.role?.name,
+          mobileNumber: user.mobileNumber,
+        },
+        { expiresIn: '15m' },
+      );
+      expect(jwtService.sign).toHaveBeenCalledWith(
+        {
+          sub: user.id,
+          email: user.email,
+          role: user.role?.name,
+          mobileNumber: user.mobileNumber,
+        },
+        { expiresIn: '7d' },
+      );
+      expect(result).toEqual({
+        accessToken: 'mocked-token',
+        refreshToken: 'mocked-token',
+      });
     });
   });
 });

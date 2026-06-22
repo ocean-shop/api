@@ -18,7 +18,7 @@ export class AuthController {
 
   @Post('admin/request-otp')
   async requestOtp(@Body() requestOtpDto: RequestOtpDto) {
-    return await this.requestOtpService.requestOtp(requestOtpDto);
+    return await this.requestOtpService.requestAdminOtp(requestOtpDto);
   }
 
   @Post('verify-otp')

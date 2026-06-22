@@ -1,20 +1,20 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { User } from '../../entities/user.entity';
 import { AuthOtp } from '../../entities/auth-otp.entity';
 import { OtpChannel, OtpPurpose } from '../../entities/enums/auth-otp.enum';
+import { UserRepository } from '../../repositories/user/user.repository';
+import { AuthOtpRepository } from '../../repositories/auth-otp/auth-otp.repository';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-    @InjectRepository(AuthOtp)
-    private readonly authOtpRepository: Repository<AuthOtp>,
+    private readonly userRepository: UserRepository,
+    private readonly authOtpRepository: AuthOtpRepository,
+    private readonly jwtService: JwtService,
   ) {}
 
   async generateOtpCodeAndHash(): Promise<{
@@ -57,12 +57,7 @@ export class AuthService {
   }
 
   async checkActiveOtpRequest(userId: string) {
-    const activeOtp = await this.authOtpRepository
-      .createQueryBuilder('otp')
-      .where('otp.user_id = :userId', { userId })
-      .andWhere('otp.used_at IS NULL')
-      .andWhere('otp.expires_at > :now', { now: new Date() })
-      .getOne();
+    const activeOtp = await this.authOtpRepository.findActiveOtpRequest(userId);
 
     if (activeOtp) {
       throw new BadRequestException(
@@ -72,15 +67,7 @@ export class AuthService {
   }
 
   async findAndValidateLatestOtp(userId: string): Promise<AuthOtp> {
-    const otps = await this.authOtpRepository
-      .createQueryBuilder('otp')
-      .where('otp.user_id = :userId', { userId })
-      .andWhere('otp.used_at IS NULL')
-      .orderBy('otp.created_at', 'DESC')
-      .take(1)
-      .getMany();
-
-    const latestOtp = otps[0];
+    const latestOtp = await this.authOtpRepository.findLatestOtp(userId);
 
     if (!latestOtp) {
       throw new BadRequestException('No active OTP found');
@@ -117,5 +104,21 @@ export class AuthService {
 
   async saveAuthOtp(otp: AuthOtp) {
     await this.authOtpRepository.save(otp);
+  }
+
+  generateTokens(user: User): {
+    accessToken: string;
+    refreshToken: string;
+  } {
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role?.name,
+      mobileNumber: user.mobileNumber,
+    };
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
+    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+
+    return { accessToken, refreshToken };
   }
 }

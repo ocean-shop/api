@@ -1,11 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { RefreshTokenService } from './refresh-token.service';
-import { User } from '../../entities/user.entity';
-import { UserSession } from '../../entities/user-session.entity';
+import { UserRepository } from '../../repositories/user/user.repository';
+import { UserSessionRepository } from '../../repositories/user-session/user-session.repository';
+import { AuthService } from '../auth/auth.service';
 
 jest.mock('bcryptjs', () => ({
   genSalt: jest.fn().mockResolvedValue('mock-salt'),
@@ -18,31 +18,39 @@ describe('RefreshTokenService', () => {
   let userRepository: any;
   let userSessionRepository: any;
   let jwtService: any;
+  let authService: any;
 
   beforeEach(async () => {
     userRepository = {
-      findOne: jest.fn(),
+      findById: jest.fn(),
     };
 
     userSessionRepository = {
-      find: jest.fn(),
+      findActiveSessionsByUserId: jest.fn(),
       save: jest.fn(),
     };
 
     jwtService = {
       verify: jest.fn().mockReturnValue({ sub: 'uuid' }),
-      sign: jest.fn().mockReturnValue('new-token'),
+    };
+
+    authService = {
+      generateTokens: jest.fn().mockReturnValue({
+        accessToken: 'new-token',
+        refreshToken: 'new-refresh-token',
+      }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         RefreshTokenService,
-        { provide: getRepositoryToken(User), useValue: userRepository },
+        { provide: UserRepository, useValue: userRepository },
         {
-          provide: getRepositoryToken(UserSession),
+          provide: UserSessionRepository,
           useValue: userSessionRepository,
         },
         { provide: JwtService, useValue: jwtService },
+        { provide: AuthService, useValue: authService },
       ],
     }).compile();
 
@@ -66,15 +74,17 @@ describe('RefreshTokenService', () => {
     });
 
     it('should throw UnauthorizedException if user not found', async () => {
-      userRepository.findOne.mockResolvedValue(null);
+      userRepository.findById.mockRejectedValue(
+        new UnauthorizedException('User not found'),
+      );
       await expect(service.refreshToken('token')).rejects.toThrow(
         UnauthorizedException,
       );
     });
 
     it('should throw UnauthorizedException if session is invalid (empty)', async () => {
-      userRepository.findOne.mockResolvedValue({ id: 'uuid' });
-      userSessionRepository.find.mockResolvedValue([]);
+      userRepository.findById.mockResolvedValue({ id: 'uuid' });
+      userSessionRepository.findActiveSessionsByUserId.mockResolvedValue([]);
 
       await expect(service.refreshToken('token')).rejects.toThrow(
         UnauthorizedException,
@@ -82,12 +92,14 @@ describe('RefreshTokenService', () => {
     });
 
     it('should throw UnauthorizedException if session is expired', async () => {
-      userRepository.findOne.mockResolvedValue({ id: 'uuid' });
+      userRepository.findById.mockResolvedValue({ id: 'uuid' });
       const session = {
         expiresAt: new Date(Date.now() - 10000), // Expired
         refreshTokenHash: 'hash',
       };
-      userSessionRepository.find.mockResolvedValue([session]);
+      userSessionRepository.findActiveSessionsByUserId.mockResolvedValue([
+        session,
+      ]);
 
       await expect(service.refreshToken('token')).rejects.toThrow(
         UnauthorizedException,
@@ -95,12 +107,14 @@ describe('RefreshTokenService', () => {
     });
 
     it('should throw UnauthorizedException if hash does not match', async () => {
-      userRepository.findOne.mockResolvedValue({ id: 'uuid' });
+      userRepository.findById.mockResolvedValue({ id: 'uuid' });
       const session = {
         expiresAt: new Date(Date.now() + 10000),
         refreshTokenHash: 'hash',
       };
-      userSessionRepository.find.mockResolvedValue([session]);
+      userSessionRepository.findActiveSessionsByUserId.mockResolvedValue([
+        session,
+      ]);
       jest.mocked(bcrypt.compare).mockResolvedValue(false as never);
 
       await expect(service.refreshToken('token')).rejects.toThrow(
@@ -109,16 +123,22 @@ describe('RefreshTokenService', () => {
     });
 
     it('should successfully refresh token with default expiration and null agent/ip', async () => {
-      userRepository.findOne.mockResolvedValue({ id: 'uuid', role: null });
+      userRepository.findById.mockResolvedValue({ id: 'uuid', role: null });
       const session = {
         expiresAt: new Date(Date.now() + 10000),
         refreshTokenHash: 'hash',
       };
-      userSessionRepository.find.mockResolvedValue([session]);
+      userSessionRepository.findActiveSessionsByUserId.mockResolvedValue([
+        session,
+      ]);
       jest.mocked(bcrypt.compare).mockResolvedValue(true as never);
 
       const result = await service.refreshToken('token');
 
+      expect(authService.generateTokens).toHaveBeenCalledWith({
+        id: 'uuid',
+        role: null,
+      });
       expect(userSessionRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({
           refreshTokenHash: 'mock-hash',
@@ -126,12 +146,13 @@ describe('RefreshTokenService', () => {
       );
       expect(result).toBeDefined();
       expect(result.accessToken).toBe('new-token');
+      expect(result.refreshToken).toBe('new-refresh-token');
       expect(result.user.role).toBeNull();
     });
 
     it('should successfully refresh token with custom expiration and provided agent/ip', async () => {
       process.env.REFRESH_EXPIRE_TIME = '1000000';
-      userRepository.findOne.mockResolvedValue({
+      userRepository.findById.mockResolvedValue({
         id: 'uuid',
         role: { name: 'admin' },
       });
@@ -139,11 +160,17 @@ describe('RefreshTokenService', () => {
         expiresAt: new Date(Date.now() + 10000),
         refreshTokenHash: 'hash',
       };
-      userSessionRepository.find.mockResolvedValue([session]);
+      userSessionRepository.findActiveSessionsByUserId.mockResolvedValue([
+        session,
+      ]);
       jest.mocked(bcrypt.compare).mockResolvedValue(true as never);
 
       const result = await service.refreshToken('token', 'agent', 'ip');
 
+      expect(authService.generateTokens).toHaveBeenCalledWith({
+        id: 'uuid',
+        role: { name: 'admin' },
+      });
       expect(userSessionRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({
           refreshTokenHash: 'mock-hash',
@@ -153,6 +180,7 @@ describe('RefreshTokenService', () => {
       );
       expect(result).toBeDefined();
       expect(result.accessToken).toBe('new-token');
+      expect(result.refreshToken).toBe('new-refresh-token');
       expect(result.user.role).toBe('admin');
     });
   });

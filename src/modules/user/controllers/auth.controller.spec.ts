@@ -20,7 +20,7 @@ describe('AuthController', () => {
     originalEnv = { ...process.env };
 
     const requestOtpServiceMock = {
-      requestOtp: jest.fn(),
+      requestAdminOtp: jest.fn(),
     };
     const verifyOtpServiceMock = {
       verifyOtp: jest.fn(),
@@ -61,16 +61,16 @@ describe('AuthController', () => {
   });
 
   describe('requestOtp', () => {
-    it('should call requestOtpService.requestOtp and return the result', async () => {
+    it('should call requestOtpService.requestAdminOtp and return the result', async () => {
       const dto: RequestOtpDto = { email: 'test@example.com' };
       const expectedResult = { message: 'OTP sent successfully' };
       jest
-        .mocked(requestOtpService.requestOtp)
+        .mocked(requestOtpService.requestAdminOtp)
         .mockResolvedValue(expectedResult);
 
       const result = await controller.requestOtp(dto);
 
-      expect(requestOtpService.requestOtp).toHaveBeenCalledWith(dto);
+      expect(requestOtpService.requestAdminOtp).toHaveBeenCalledWith(dto);
       expect(result).toEqual(expectedResult);
     });
   });

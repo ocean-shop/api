@@ -1,11 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { NotFoundException } from '@nestjs/common';
 import { VerifyOtpService } from './verify-otp.service';
 import { AuthService } from '../auth/auth.service';
-import { User } from '../../entities/user.entity';
-import { UserSession } from '../../entities/user-session.entity';
+import { UserSessionRepository } from '../../repositories/user-session/user-session.repository';
+import { UserRepository } from '../../repositories/user/user.repository';
 import * as bcrypt from 'bcryptjs';
 
 jest.mock('bcryptjs');
@@ -14,12 +13,11 @@ describe('VerifyOtpService', () => {
   let service: VerifyOtpService;
   let userRepository: any;
   let userSessionRepository: any;
-  let jwtService: any;
   let authService: any;
 
   beforeEach(async () => {
     userRepository = {
-      findOne: jest.fn(),
+      findByEmailOrPhone: jest.fn(),
     };
 
     userSessionRepository = {
@@ -27,15 +25,15 @@ describe('VerifyOtpService', () => {
       save: jest.fn(),
     };
 
-    jwtService = {
-      sign: jest.fn().mockReturnValue('mocked-token'),
-    };
-
     authService = {
       findAndValidateLatestOtp: jest.fn().mockResolvedValue({ id: 'otp-id' }),
       validateOtpCode: jest.fn(),
       saveAuthOtp: jest.fn(),
       verifyUserIfRegistered: jest.fn(),
+      generateTokens: jest.fn().mockReturnValue({
+        accessToken: 'mocked-access-token',
+        refreshToken: 'mocked-refresh-token',
+      }),
     };
 
     (bcrypt.genSalt as jest.Mock).mockResolvedValue('mockSalt');
@@ -44,12 +42,11 @@ describe('VerifyOtpService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         VerifyOtpService,
-        { provide: getRepositoryToken(User), useValue: userRepository },
+        { provide: UserRepository, useValue: userRepository },
         {
-          provide: getRepositoryToken(UserSession),
+          provide: UserSessionRepository,
           useValue: userSessionRepository,
         },
-        { provide: JwtService, useValue: jwtService },
         { provide: AuthService, useValue: authService },
       ],
     }).compile();
@@ -68,25 +65,29 @@ describe('VerifyOtpService', () => {
 
   describe('verifyOtp', () => {
     it('should throw NotFoundException if user is not found by email', async () => {
-      userRepository.findOne.mockResolvedValue(null);
+      userRepository.findByEmailOrPhone.mockRejectedValue(
+        new NotFoundException('User not found'),
+      );
       await expect(
         service.verifyOtp({ email: 'test@example.com', code: '1234' }),
       ).rejects.toThrow(NotFoundException);
-      expect(userRepository.findOne).toHaveBeenCalledWith({
-        where: { email: 'test@example.com' },
-        relations: { role: true },
-      });
+      expect(userRepository.findByEmailOrPhone).toHaveBeenCalledWith(
+        'test@example.com',
+        undefined,
+      );
     });
 
     it('should throw NotFoundException if user is not found by phone', async () => {
-      userRepository.findOne.mockResolvedValue(null);
+      userRepository.findByEmailOrPhone.mockRejectedValue(
+        new NotFoundException('User not found'),
+      );
       await expect(
         service.verifyOtp({ phone: '1234567890', code: '1234' }),
       ).rejects.toThrow(NotFoundException);
-      expect(userRepository.findOne).toHaveBeenCalledWith({
-        where: { mobileNumber: '1234567890' },
-        relations: { role: true },
-      });
+      expect(userRepository.findByEmailOrPhone).toHaveBeenCalledWith(
+        undefined,
+        '1234567890',
+      );
     });
 
     it('should successfully verify, create tokens and save session with default expiration and null agent/ip', async () => {
@@ -95,7 +96,7 @@ describe('VerifyOtpService', () => {
         email: 'test@example.com',
         mobileNumber: null,
       };
-      userRepository.findOne.mockResolvedValue(user);
+      userRepository.findByEmailOrPhone.mockResolvedValue(user);
 
       const result = await service.verifyOtp({
         email: 'test@example.com',
@@ -104,7 +105,7 @@ describe('VerifyOtpService', () => {
 
       expect(authService.findAndValidateLatestOtp).toHaveBeenCalledWith('uuid');
       expect(authService.validateOtpCode).toHaveBeenCalled();
-      expect(jwtService.sign).toHaveBeenCalledTimes(2);
+      expect(authService.generateTokens).toHaveBeenCalledWith(user);
       expect(userSessionRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           userId: 'uuid',
@@ -125,7 +126,7 @@ describe('VerifyOtpService', () => {
         mobileNumber: null,
         role: { name: 'admin' },
       };
-      userRepository.findOne.mockResolvedValue(user);
+      userRepository.findByEmailOrPhone.mockResolvedValue(user);
 
       const result = await service.verifyOtp(
         { email: 'test@example.com', code: '1234' },
@@ -135,7 +136,7 @@ describe('VerifyOtpService', () => {
 
       expect(authService.findAndValidateLatestOtp).toHaveBeenCalledWith('uuid');
       expect(authService.validateOtpCode).toHaveBeenCalled();
-      expect(jwtService.sign).toHaveBeenCalledTimes(2);
+      expect(authService.generateTokens).toHaveBeenCalledWith(user);
       expect(userSessionRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           userId: 'uuid',

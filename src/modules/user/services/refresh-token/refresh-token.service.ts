@@ -1,19 +1,18 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
-import { User } from '../../entities/user.entity';
 import { UserSession } from '../../entities/user-session.entity';
+import { UserRepository } from '../../repositories/user/user.repository';
+import { UserSessionRepository } from '../../repositories/user-session/user-session.repository';
+import { AuthService } from '../auth/auth.service';
 
 @Injectable()
 export class RefreshTokenService {
   constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-    @InjectRepository(UserSession)
-    private readonly userSessionRepository: Repository<UserSession>,
+    private readonly userRepository: UserRepository,
+    private readonly userSessionRepository: UserSessionRepository,
     private readonly jwtService: JwtService,
+    private readonly authService: AuthService,
   ) {}
 
   async refreshToken(
@@ -27,10 +26,11 @@ export class RefreshTokenService {
 
     try {
       const userId = this.extractUserIdFromToken(refreshToken);
-      const user = await this.getUser(userId);
+      const user = await this.userRepository.findById(userId);
       const currentSession = await this.findValidSession(userId, refreshToken);
 
-      const { newAccessToken, newRefreshToken } = this.generateTokens(user);
+      const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
+        this.authService.generateTokens(user);
 
       await this.updateSession(
         currentSession,
@@ -59,26 +59,12 @@ export class RefreshTokenService {
     return String(payload.sub);
   }
 
-  private async getUser(userId: string): Promise<User> {
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-      relations: { role: true },
-    });
-
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    return user;
-  }
-
   private async findValidSession(
     userId: string,
     refreshToken: string,
   ): Promise<UserSession> {
-    const sessions = await this.userSessionRepository.find({
-      where: { userId, revokedAt: IsNull() },
-    });
+    const sessions =
+      await this.userSessionRepository.findActiveSessionsByUserId(userId);
 
     for (const session of sessions) {
       if (session.expiresAt < new Date()) {
@@ -94,25 +80,6 @@ export class RefreshTokenService {
     }
 
     throw new UnauthorizedException('Invalid refresh token');
-  }
-
-  private generateTokens(user: User): {
-    newAccessToken: string;
-    newRefreshToken: string;
-  } {
-    const newPayload = {
-      sub: user.id,
-      email: user.email,
-      mobileNumber: user.mobileNumber,
-    };
-    const newAccessToken = this.jwtService.sign(newPayload, {
-      expiresIn: '15m',
-    });
-    const newRefreshToken = this.jwtService.sign(newPayload, {
-      expiresIn: '7d',
-    });
-
-    return { newAccessToken, newRefreshToken };
   }
 
   private async updateSession(

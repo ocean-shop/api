@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { LogoutService } from './logout.service';
 import { UserSession } from '../../entities/user-session.entity';
+import { UserSessionRepository } from '../../repositories/user-session/user-session.repository';
 
 jest.mock('bcryptjs', () => ({
   compare: jest.fn(),
@@ -16,7 +16,7 @@ describe('LogoutService', () => {
 
   beforeEach(async () => {
     userSessionRepository = {
-      find: jest.fn(),
+      findActiveSessionsByUserId: jest.fn(),
       save: jest.fn(),
     };
 
@@ -28,7 +28,7 @@ describe('LogoutService', () => {
       providers: [
         LogoutService,
         {
-          provide: getRepositoryToken(UserSession),
+          provide: UserSessionRepository,
           useValue: userSessionRepository,
         },
         { provide: JwtService, useValue: jwtService },
@@ -53,7 +53,9 @@ describe('LogoutService', () => {
         refreshTokenHash: 'hash',
         revokedAt: null,
       };
-      userSessionRepository.find.mockResolvedValue([session]);
+      userSessionRepository.findActiveSessionsByUserId.mockResolvedValue([
+        session,
+      ]);
       jest.mocked(bcrypt.compare).mockResolvedValue(true as never);
 
       await service.logout('token');
@@ -68,7 +70,9 @@ describe('LogoutService', () => {
       });
 
       await expect(service.logout('invalid-token')).resolves.not.toThrow();
-      expect(userSessionRepository.find).not.toHaveBeenCalled();
+      expect(
+        userSessionRepository.findActiveSessionsByUserId,
+      ).not.toHaveBeenCalled();
     });
   });
 });
