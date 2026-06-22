@@ -8,5 +8,3 @@ export const AppDataSource = new DataSource({
   migrations: ['src/core/db/migrations/*.ts'],
   synchronize: false,
 });
-
-export default AppDataSource;

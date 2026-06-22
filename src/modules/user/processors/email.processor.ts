@@ -4,8 +4,9 @@ import { Job } from 'bullmq';
 import {
   EMAIL_QUEUE,
   SEND_OTP_EMAIL_JOB,
-} from '../../queue/constants/queue.constants';
-import { EmailService, SendOtpEmailJobData } from '../services/email.service';
+} from '../../../core/queue/constants/queue.constants';
+import { EmailService } from '../services/email/email.service';
+import { SendOtpEmailJobData } from '../models/email.models';
 
 // The decorator call carries an implicit transpilation branch that tests
 // cannot exercise, so it is excluded from coverage.

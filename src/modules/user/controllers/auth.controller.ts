@@ -1,18 +1,24 @@
-import { Controller, Post, Body, Res, Headers, Ip } from '@nestjs/common';
-import type { Response } from 'express';
-import { AuthService } from '../services/auth.service';
+import { Controller, Post, Body, Res, Req, Headers, Ip } from '@nestjs/common';
+import type { Response, Request } from 'express';
+import { RequestOtpService } from '../services/request-otp/request-otp.service';
+import { VerifyOtpService } from '../services/verify-otp/verify-otp.service';
+import { RefreshTokenService } from '../services/refresh-token/refresh-token.service';
+import { LogoutService } from '../services/logout/logout.service';
 import { RequestOtpDto } from '../dto/request-otp.dto';
 import { VerifyOtpDto } from '../dto/verify-otp.dto';
 
-/* v8 ignore start */
 @Controller('user/auth')
-/* v8 ignore stop */
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly requestOtpService: RequestOtpService,
+    private readonly verifyOtpService: VerifyOtpService,
+    private readonly refreshTokenService: RefreshTokenService,
+    private readonly logoutService: LogoutService,
+  ) {}
 
-  @Post('request-otp')
+  @Post('admin/request-otp')
   async requestOtp(@Body() requestOtpDto: RequestOtpDto) {
-    return await this.authService.requestOtp(requestOtpDto);
+    return await this.requestOtpService.requestAdminOtp(requestOtpDto);
   }
 
   @Post('verify-otp')
@@ -22,19 +28,59 @@ export class AuthController {
     @Ip() ipAddress: string,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const result = await this.authService.verifyOtp(
+    const result = await this.verifyOtpService.verifyOtp(
       verifyOtpDto,
       userAgent,
       ipAddress,
     );
 
-    response.cookie('refresh_token', result.refreshToken, {
+    this.setRefreshTokenCookie(response, result.refreshToken);
+
+    return result;
+  }
+
+  @Post('refresh')
+  async refresh(
+    @Req() request: Request,
+    @Headers('user-agent') userAgent: string,
+    @Ip() ipAddress: string,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const refreshToken = request.cookies['refresh_token'] as string;
+    const result = await this.refreshTokenService.refreshToken(
+      refreshToken,
+      userAgent,
+      ipAddress,
+    );
+
+    this.setRefreshTokenCookie(response, result.refreshToken);
+
+    return result;
+  }
+
+  @Post('logout')
+  async logout(
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const refreshToken = request.cookies['refresh_token'] as string;
+    await this.logoutService.logout(refreshToken);
+
+    response.clearCookie('refresh_token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+    });
+
+    return { message: 'Logged out successfully' };
+  }
+
+  private setRefreshTokenCookie(response: Response, refreshToken: string) {
+    response.cookie('refresh_token', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       maxAge: parseInt(process.env.REFRESH_EXPIRE_TIME ?? '0', 10),
     });
-
-    return result;
   }
 }

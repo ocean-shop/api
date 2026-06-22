@@ -2,8 +2,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Job } from 'bullmq';
 
 import { EmailProcessor } from './email.processor';
-import { EmailService, SendOtpEmailJobData } from '../services/email.service';
-import { SEND_OTP_EMAIL_JOB } from '../../queue/constants/queue.constants';
+import {
+  EmailService,
+  SendOtpEmailJobData,
+} from '../services/email/email.service';
+import { SEND_OTP_EMAIL_JOB } from '../../../core/queue/constants/queue.constants';
 
 describe('EmailProcessor', () => {
   let processor: EmailProcessor;
