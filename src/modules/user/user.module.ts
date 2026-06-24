@@ -8,16 +8,20 @@ import { Permission } from './entities/permission.entity';
 import { UserSession } from './entities/user-session.entity';
 import { OauthAccount } from './entities/oauth-account.entity';
 import { AuthOtp } from './entities/auth-otp.entity';
-import { AuthController } from './controllers/auth.controller';
+import { UserSettings } from './entities/user-settings.entity';
+import { AuthController } from './controllers/auth/auth.controller';
+import { SettingsController } from './controllers/settings/settings.controller';
 import { UserRepository } from './repositories/user/user.repository';
 import { AuthOtpRepository } from './repositories/auth-otp/auth-otp.repository';
 import { UserSessionRepository } from './repositories/user-session/user-session.repository';
+import { SettingsRepository } from './repositories/settings/settings.repository';
 import { AuthService } from './services/auth/auth.service';
 import { RequestOtpService } from './services/request-otp/request-otp.service';
 import { VerifyOtpService } from './services/verify-otp/verify-otp.service';
 import { RefreshTokenService } from './services/refresh-token/refresh-token.service';
 import { LogoutService } from './services/logout/logout.service';
 import { EmailService } from './services/email/email.service';
+import { SettingsService } from './services/settings/settings.service';
 import { EmailProcessor } from './processors/email.processor';
 import { isEmailQueueEnabled } from '../../core/queue/helpers/queue.helpers';
 
@@ -30,6 +34,7 @@ import { isEmailQueueEnabled } from '../../core/queue/helpers/queue.helpers';
       UserSession,
       OauthAccount,
       AuthOtp,
+      UserSettings,
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -39,17 +44,19 @@ import { isEmailQueueEnabled } from '../../core/queue/helpers/queue.helpers';
       inject: [ConfigService],
     }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, SettingsController],
   providers: [
     UserRepository,
     AuthOtpRepository,
     UserSessionRepository,
+    SettingsRepository,
     AuthService,
     RequestOtpService,
     VerifyOtpService,
     RefreshTokenService,
     LogoutService,
     EmailService,
+    SettingsService,
     // The processor only runs when the BullMQ queue is enabled.
     ...(isEmailQueueEnabled() ? [EmailProcessor] : []),
   ],
@@ -58,11 +65,13 @@ import { isEmailQueueEnabled } from '../../core/queue/helpers/queue.helpers';
     UserRepository,
     AuthOtpRepository,
     UserSessionRepository,
+    SettingsRepository,
     AuthService,
     RequestOtpService,
     VerifyOtpService,
     RefreshTokenService,
     LogoutService,
+    SettingsService,
   ],
 })
 export class UserModule {}

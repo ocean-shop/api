@@ -1,11 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
-import { RequestOtpService } from '../services/request-otp/request-otp.service';
-import { VerifyOtpService } from '../services/verify-otp/verify-otp.service';
-import { RefreshTokenService } from '../services/refresh-token/refresh-token.service';
-import { LogoutService } from '../services/logout/logout.service';
-import { RequestOtpDto } from '../dto/request-otp.dto';
-import { VerifyOtpDto } from '../dto/verify-otp.dto';
+import { RequestOtpService } from '../../services/request-otp/request-otp.service';
+import { VerifyOtpService } from '../../services/verify-otp/verify-otp.service';
+import { RefreshTokenService } from '../../services/refresh-token/refresh-token.service';
+import { LogoutService } from '../../services/logout/logout.service';
+import { RequestOtpDto } from '../../dto/request-otp.dto';
+import { VerifyOtpDto } from '../../dto/verify-otp.dto';
 import { Response, Request } from 'express';
 
 describe('AuthController', () => {
