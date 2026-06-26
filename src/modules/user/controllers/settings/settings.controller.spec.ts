@@ -3,6 +3,8 @@ import { SettingsController } from './settings.controller';
 import { SettingsService } from '../../services/settings/settings.service';
 import { UserLanguage } from '../../entities/enums/user-settings.enum';
 import { UpdateSettingsDto } from '../../dto/update-settings.dto';
+import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
+import { RolesGuard } from '../../guards/roles.guard';
 
 describe('SettingsController', () => {
   let controller: SettingsController;
@@ -17,7 +19,12 @@ describe('SettingsController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [SettingsController],
       providers: [{ provide: SettingsService, useValue: settingsServiceMock }],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: jest.fn(() => true) })
+      .overrideGuard(RolesGuard)
+      .useValue({ canActivate: jest.fn(() => true) })
+      .compile();
 
     controller = module.get<SettingsController>(SettingsController);
     settingsService = module.get<SettingsService>(SettingsService);

@@ -24,6 +24,8 @@ import { EmailService } from './services/email/email.service';
 import { SettingsService } from './services/settings/settings.service';
 import { EmailProcessor } from './processors/email.processor';
 import { isEmailQueueEnabled } from '../../core/queue/helpers/queue.helpers';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
 
 @Module({
   imports: [
@@ -57,6 +59,8 @@ import { isEmailQueueEnabled } from '../../core/queue/helpers/queue.helpers';
     LogoutService,
     EmailService,
     SettingsService,
+    JwtAuthGuard,
+    RolesGuard,
     // The processor only runs when the BullMQ queue is enabled.
     ...(isEmailQueueEnabled() ? [EmailProcessor] : []),
   ],
