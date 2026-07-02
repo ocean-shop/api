@@ -11,6 +11,7 @@ import { AuthOtp } from './entities/auth-otp.entity';
 import { UserSettings } from './entities/user-settings.entity';
 import { AuthController } from './controllers/auth/auth.controller';
 import { SettingsController } from './controllers/settings/settings.controller';
+import { AdminsController } from './controllers/admins/admins.controller';
 import { UserRepository } from './repositories/user/user.repository';
 import { AuthOtpRepository } from './repositories/auth-otp/auth-otp.repository';
 import { UserSessionRepository } from './repositories/user-session/user-session.repository';
@@ -22,6 +23,7 @@ import { RefreshTokenService } from './services/refresh-token/refresh-token.serv
 import { LogoutService } from './services/logout/logout.service';
 import { EmailService } from './services/email/email.service';
 import { SettingsService } from './services/settings/settings.service';
+import { AdminsService } from './services/admins/admins.service';
 import { EmailProcessor } from './processors/email.processor';
 import { isEmailQueueEnabled } from '../../core/queue/helpers/queue.helpers';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -46,7 +48,7 @@ import { RolesGuard } from './guards/roles.guard';
       inject: [ConfigService],
     }),
   ],
-  controllers: [AuthController, SettingsController],
+  controllers: [AuthController, SettingsController, AdminsController],
   providers: [
     UserRepository,
     AuthOtpRepository,
@@ -59,6 +61,7 @@ import { RolesGuard } from './guards/roles.guard';
     LogoutService,
     EmailService,
     SettingsService,
+    AdminsService,
     JwtAuthGuard,
     RolesGuard,
     // The processor only runs when the BullMQ queue is enabled.
@@ -76,6 +79,7 @@ import { RolesGuard } from './guards/roles.guard';
     RefreshTokenService,
     LogoutService,
     SettingsService,
+    AdminsService,
   ],
 })
 export class UserModule {}
