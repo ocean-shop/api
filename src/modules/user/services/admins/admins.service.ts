@@ -56,8 +56,8 @@ export class AdminsService {
       email: dto.email ?? null,
       mobileNumber: dto.mobileNumber ?? null,
       isActive: dto.isActive ?? true,
-      isEmailVerified: false,
-      isMobileVerified: false,
+      isEmailVerified: !!dto.email,
+      isMobileVerified: !!dto.mobileNumber,
       role,
     });
 
