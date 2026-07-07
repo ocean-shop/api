@@ -1,0 +1,16 @@
+import { IsNotEmpty, IsOptional, IsString, IsUrl } from 'class-validator';
+
+export class UpdateShopDto {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  readonly name?: string;
+
+  @IsOptional()
+  @IsString()
+  readonly description?: string;
+
+  @IsOptional()
+  @IsUrl()
+  readonly url?: string;
+}

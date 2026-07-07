@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MailModule } from './core/mail/mail.module';
 import { QueueModule } from './core/queue/queue.module';
+import { CatalogModule } from './modules/catalog/catalog.module';
 import { UserModule } from './modules/user/user.module';
 
 @Module({
@@ -22,6 +23,7 @@ import { UserModule } from './modules/user/user.module';
     }),
     MailModule,
     QueueModule.register(),
+    CatalogModule,
     UserModule,
   ],
   controllers: [],
