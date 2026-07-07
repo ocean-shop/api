@@ -26,6 +26,19 @@ async function bootstrap() {
     console.log('Admin role already exists.');
   }
 
+  console.log('Seeding super role...');
+  let superRole = await roleRepository.findOneBy({ name: 'super' });
+  if (!superRole) {
+    superRole = roleRepository.create({
+      name: 'super',
+      description: 'Super administrator role',
+    });
+    await roleRepository.save(superRole);
+    console.log('Created super role.');
+  } else {
+    console.log('Super role already exists.');
+  }
+
   console.log('Seeding user role...');
   let userRole = await roleRepository.findOneBy({ name: 'user' });
   if (!userRole) {
@@ -64,6 +77,33 @@ async function bootstrap() {
       adminUser.role = adminRole;
       await userRepository.save(adminUser);
       console.log(`Assigned admin role to existing user: ${adminEmail}`);
+    }
+  }
+
+  console.log('Seeding super user...');
+  const superEmail = 'super@example.com';
+  let superUser = await userRepository.findOne({
+    where: { email: superEmail },
+    relations: { role: true },
+  });
+
+  if (!superUser) {
+    superUser = userRepository.create({
+      email: superEmail,
+      isEmailVerified: true,
+      isActive: true,
+      role: superRole,
+    });
+    await userRepository.save(superUser);
+    console.log(`Created super user: ${superEmail}`);
+  } else {
+    console.log(`Super user ${superEmail} already exists.`);
+
+    const hasSuperRole = superUser.role?.name === 'super';
+    if (!hasSuperRole) {
+      superUser.role = superRole;
+      await userRepository.save(superUser);
+      console.log(`Assigned super role to existing user: ${superEmail}`);
     }
   }
 

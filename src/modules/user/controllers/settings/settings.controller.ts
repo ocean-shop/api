@@ -19,13 +19,13 @@ export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}
 
   @Get(':userId')
-  @Roles('admin')
+  @Roles('admin', 'super')
   async getSettings(@Param('userId', ParseUUIDPipe) userId: string) {
     return this.settingsService.getSettings(userId);
   }
 
   @Post()
-  @Roles('admin')
+  @Roles('admin', 'super')
   async updateSettings(@Body() dto: UpdateSettingsDto) {
     return this.settingsService.updateSettings(dto);
   }
