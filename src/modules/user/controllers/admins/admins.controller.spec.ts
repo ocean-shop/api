@@ -60,7 +60,11 @@ describe('AdminsController', () => {
   });
 
   it('should create admin', async () => {
-    const dto: CreateAdminDto = { email: 'admin@example.com', role: 'admin' };
+    const dto: CreateAdminDto = {
+      email: 'admin@example.com',
+      role: 'admin',
+      shopIds: ['98f21967-fce6-4ceb-af61-304913f593a7'],
+    };
     const expected = { id: '1', ...dto };
     jest.mocked(adminsService.createAdmin).mockResolvedValue(expected as any);
 
@@ -72,7 +76,10 @@ describe('AdminsController', () => {
 
   it('should update admin', async () => {
     const id = '98f21967-fce6-4ceb-af61-304913f593a7';
-    const dto: UpdateAdminDto = { isActive: false };
+    const dto: UpdateAdminDto = {
+      isActive: false,
+      shopIds: ['98f21967-fce6-4ceb-af61-304913f593a7'],
+    };
     const req = {
       user: { sub: '8f222f64-fa6e-4f7f-b2f2-68d2180058a8' },
     } as any;

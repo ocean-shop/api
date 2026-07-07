@@ -41,7 +41,7 @@ describe('UserRepository', () => {
 
       expect(typeOrmRepository.findOne).toHaveBeenCalledWith({
         where: { email },
-        relations: { role: true },
+        relations: { role: true, shops: true },
       });
       expect(result).toEqual(expectedUser);
     });
@@ -55,7 +55,7 @@ describe('UserRepository', () => {
 
       expect(typeOrmRepository.findOne).toHaveBeenCalledWith({
         where: { mobileNumber: phone },
-        relations: { role: true },
+        relations: { role: true, shops: true },
       });
       expect(result).toEqual(expectedUser);
     });
@@ -79,7 +79,7 @@ describe('UserRepository', () => {
 
       expect(typeOrmRepository.findOne).toHaveBeenCalledWith({
         where: { id },
-        relations: { role: true },
+        relations: { role: true, shops: true },
       });
       expect(result).toEqual(expectedUser);
     });

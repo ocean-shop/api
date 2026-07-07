@@ -4,7 +4,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { CreateAdminDto } from '../../dto/create-admin.dto';
 import { ListAdminsQueryDto } from '../../dto/list-admins-query.dto';
 import { UpdateAdminDto } from '../../dto/update-admin.dto';
@@ -12,6 +12,7 @@ import { Role } from '../../entities/role.entity';
 import { User } from '../../entities/user.entity';
 import { UserRepository } from '../../repositories/user/user.repository';
 import { AdminListResponse } from '../../models/admin.models';
+import { Shop } from '../../../catalog/entities/shop.entity';
 
 @Injectable()
 export class AdminsService {
@@ -21,6 +22,8 @@ export class AdminsService {
     private readonly userRepository: UserRepository,
     @InjectRepository(Role)
     private readonly roleRepository: Repository<Role>,
+    @InjectRepository(Shop)
+    private readonly shopRepository: Repository<Shop>,
   ) {}
 
   async listAdmins(query: ListAdminsQueryDto): Promise<AdminListResponse> {
@@ -51,6 +54,7 @@ export class AdminsService {
 
     const roleName = dto.role ?? 'admin';
     const role = await this.findRoleByName(roleName);
+    const shops = await this.resolveShopsByIds(dto.shopIds ?? []);
 
     const admin = this.userRepository.create({
       email: dto.email ?? null,
@@ -59,9 +63,11 @@ export class AdminsService {
       isEmailVerified: !!dto.email,
       isMobileVerified: !!dto.mobileNumber,
       role,
+      shops,
     });
 
-    return this.userRepository.save(admin);
+    const savedAdmin = await this.userRepository.save(admin);
+    return this.getAdminById(savedAdmin.id);
   }
 
   async updateAdmin(
@@ -78,8 +84,10 @@ export class AdminsService {
     await this.applyMobileNumberUpdate(id, dto.mobileNumber, admin);
     this.applyIsActiveUpdate(dto.isActive, admin);
     await this.applyRoleUpdate(id, dto.role, admin, actorId);
+    await this.applyShopsUpdate(dto.shopIds, admin);
 
-    return this.userRepository.save(admin);
+    const savedAdmin = await this.userRepository.save(admin);
+    return this.getAdminById(savedAdmin.id);
   }
 
   async removeAdmin(
@@ -187,6 +195,40 @@ export class AdminsService {
     }
 
     admin.role = await this.findRoleByName(nextRole);
+  }
+
+  private async applyShopsUpdate(
+    shopIds: string[] | undefined,
+    admin: User,
+  ): Promise<void> {
+    if (shopIds === undefined) {
+      return;
+    }
+
+    admin.shops = await this.resolveShopsByIds(shopIds);
+  }
+
+  private async resolveShopsByIds(shopIds: string[]): Promise<Shop[]> {
+    const uniqueShopIds = [...new Set(shopIds)];
+    if (uniqueShopIds.length === 0) {
+      return [];
+    }
+
+    const shops = await this.shopRepository.find({
+      where: { id: In(uniqueShopIds) },
+    });
+
+    if (shops.length !== uniqueShopIds.length) {
+      const existingShopIds = new Set(shops.map((shop) => shop.id));
+      const missingShopIds = uniqueShopIds.filter(
+        (id) => !existingShopIds.has(id),
+      );
+      throw new BadRequestException(
+        `Some shops do not exist: ${missingShopIds.join(', ')}`,
+      );
+    }
+
+    return shops;
   }
 
   private async findRoleByName(roleName: 'admin' | 'super'): Promise<Role> {

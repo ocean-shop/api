@@ -1,9 +1,11 @@
 import {
+  IsArray,
   IsBoolean,
   IsEmail,
   IsIn,
   IsOptional,
   IsString,
+  IsUUID,
 } from 'class-validator';
 
 export class UpdateAdminDto {
@@ -22,4 +24,9 @@ export class UpdateAdminDto {
   @IsOptional()
   @IsIn(['admin', 'super'])
   readonly role?: 'admin' | 'super';
+
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  readonly shopIds?: string[];
 }
