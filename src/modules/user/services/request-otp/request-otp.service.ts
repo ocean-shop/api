@@ -38,7 +38,7 @@ export class RequestOtpService {
     email?: string,
     phone?: string,
   ): Promise<void> {
-    if (user.role?.name !== 'admin') {
+    if (user.role?.name !== 'admin' && user.role?.name !== 'super') {
       throw new BadRequestException('Access denied');
     }
     await this.authService.checkActiveOtpRequest(user.id);
