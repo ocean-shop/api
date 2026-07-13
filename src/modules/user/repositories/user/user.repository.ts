@@ -15,6 +15,7 @@ export class UserRepository {
       where: email ? { email } : { mobileNumber: phone },
       relations: {
         role: true,
+        shops: true,
       },
     });
 
@@ -28,7 +29,7 @@ export class UserRepository {
   async findById(id: string): Promise<User> {
     const user = await this.repository.findOne({
       where: { id },
-      relations: { role: true },
+      relations: { role: true, shops: true },
     });
 
     if (!user) {
@@ -45,14 +46,14 @@ export class UserRepository {
   async findByEmail(email: string): Promise<User | null> {
     return this.repository.findOne({
       where: { email },
-      relations: { role: true },
+      relations: { role: true, shops: true },
     });
   }
 
   async findByMobileNumber(mobileNumber: string): Promise<User | null> {
     return this.repository.findOne({
       where: { mobileNumber },
-      relations: { role: true },
+      relations: { role: true, shops: true },
     });
   }
 
@@ -64,6 +65,7 @@ export class UserRepository {
     const [items, total] = await this.repository
       .createQueryBuilder('user')
       .leftJoinAndSelect('user.role', 'role')
+      .leftJoinAndSelect('user.shops', 'shop')
       .where('role.name IN (:...roles)', { roles })
       .orderBy('user.createdAt', 'DESC')
       .skip(skip)
@@ -77,6 +79,7 @@ export class UserRepository {
     const user = await this.repository
       .createQueryBuilder('user')
       .leftJoinAndSelect('user.role', 'role')
+      .leftJoinAndSelect('user.shops', 'shop')
       .where('user.id = :id', { id })
       .andWhere('role.name IN (:...roles)', { roles })
       .getOne();

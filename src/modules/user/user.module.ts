@@ -9,6 +9,7 @@ import { UserSession } from './entities/user-session.entity';
 import { OauthAccount } from './entities/oauth-account.entity';
 import { AuthOtp } from './entities/auth-otp.entity';
 import { UserSettings } from './entities/user-settings.entity';
+import { Shop } from '../catalog/entities/shop.entity';
 import { AuthController } from './controllers/auth/auth.controller';
 import { SettingsController } from './controllers/settings/settings.controller';
 import { AdminsController } from './controllers/admins/admins.controller';
@@ -39,6 +40,7 @@ import { RolesGuard } from './guards/roles.guard';
       OauthAccount,
       AuthOtp,
       UserSettings,
+      Shop,
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],

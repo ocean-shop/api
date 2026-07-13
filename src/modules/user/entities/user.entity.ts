@@ -7,11 +7,14 @@ import {
   ManyToOne,
   JoinColumn,
   OneToMany,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm';
 import { Role } from './role.entity';
 import { UserSession } from './user-session.entity';
 import { OauthAccount } from './oauth-account.entity';
 import { AuthOtp } from './auth-otp.entity';
+import { Shop } from '../../catalog/entities/shop.entity';
 
 @Entity('users')
 export class User {
@@ -57,4 +60,12 @@ export class User {
 
   @OneToMany(() => AuthOtp, (otp) => otp.user)
   otps: AuthOtp[];
+
+  @ManyToMany(() => Shop, (shop) => shop.users)
+  @JoinTable({
+    name: 'users_shops',
+    joinColumn: { name: 'user_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'shop_id', referencedColumnName: 'id' },
+  })
+  shops: Shop[];
 }
