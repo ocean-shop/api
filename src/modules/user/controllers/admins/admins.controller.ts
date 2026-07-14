@@ -32,7 +32,7 @@ export class AdminsController {
   }
 
   @Get(':id')
-  @Roles('super')
+  @Roles('admin', 'super')
   async getAdminById(@Param('id', ParseUUIDPipe) id: string) {
     return this.adminsService.getAdminById(id);
   }
