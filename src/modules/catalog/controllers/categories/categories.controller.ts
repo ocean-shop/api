@@ -13,6 +13,7 @@ import {
 import { Roles } from '../../../user/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../../user/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../user/guards/roles.guard';
+import { ChangeCategorySortDto } from '../../dto/change-category-sort.dto';
 import { CreateCategoryDto } from '../../dto/create-category.dto';
 import { ListCategoriesQueryDto } from '../../dto/list-categories-query.dto';
 import { UpdateCategoryDto } from '../../dto/update-category.dto';
@@ -39,6 +40,15 @@ export class CategoriesController {
   @Roles('admin', 'super')
   async createCategory(@Body() dto: CreateCategoryDto) {
     return this.categoriesService.createCategory(dto);
+  }
+
+  @Patch(':id/sort')
+  @Roles('admin', 'super')
+  async changeCategorySort(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ChangeCategorySortDto,
+  ) {
+    return this.categoriesService.changeCategorySort(id, dto);
   }
 
   @Patch(':id')

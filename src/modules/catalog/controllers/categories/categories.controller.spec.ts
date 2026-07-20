@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtAuthGuard } from '../../../user/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../user/guards/roles.guard';
+import { ChangeCategorySortDto } from '../../dto/change-category-sort.dto';
 import { CreateCategoryDto } from '../../dto/create-category.dto';
 import { UpdateCategoryDto } from '../../dto/update-category.dto';
 import { CategoriesService } from '../../services/categories/categories.service';
@@ -15,6 +16,7 @@ describe('CategoriesController', () => {
       listCategories: jest.fn(),
       getCategoryById: jest.fn(),
       createCategory: jest.fn(),
+      changeCategorySort: jest.fn(),
       updateCategory: jest.fn(),
       removeCategory: jest.fn(),
     };
@@ -77,6 +79,20 @@ describe('CategoriesController', () => {
     const result = await controller.createCategory(dto);
 
     expect(categoriesService.createCategory).toHaveBeenCalledWith(dto);
+    expect(result).toEqual(expected);
+  });
+
+  it('should change category sort', async () => {
+    const id = '98f21967-fce6-4ceb-af61-304913f593a7';
+    const dto: ChangeCategorySortDto = { direction: 'up' };
+    const expected = { id, sort: 0, name: 'Accessories' };
+    jest
+      .mocked(categoriesService.changeCategorySort)
+      .mockResolvedValue(expected as any);
+
+    const result = await controller.changeCategorySort(id, dto);
+
+    expect(categoriesService.changeCategorySort).toHaveBeenCalledWith(id, dto);
     expect(result).toEqual(expected);
   });
 

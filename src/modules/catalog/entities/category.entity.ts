@@ -27,6 +27,9 @@ export class Category {
   @Column({ type: 'varchar', length: 255 })
   slug: string;
 
+  @Column({ type: 'int', default: 0 })
+  sort: number;
+
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 

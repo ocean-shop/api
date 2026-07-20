@@ -7,6 +7,7 @@ import { QueryFailedError } from 'typeorm';
 import { Category } from '../../entities/category.entity';
 import { CategoryListResponse } from '../../models/category.models';
 import { CategoryRepository } from '../../repositories/category/category.repository';
+import { ChangeCategorySortDto } from '../../dto/change-category-sort.dto';
 import { CreateCategoryDto } from '../../dto/create-category.dto';
 import { UpdateCategoryDto } from '../../dto/update-category.dto';
 import { ListCategoriesQueryDto } from '../../dto/list-categories-query.dto';
@@ -49,8 +50,10 @@ export class CategoriesService {
   async createCategory(dto: CreateCategoryDto): Promise<Category> {
     await this.ensureSlugUniqueInShop(dto.shopId, dto.slug);
 
-    if (dto.parentId) {
-      const parent = await this.categoryRepository.findOneById(dto.parentId);
+    const parentId = dto.parentId ?? null;
+
+    if (parentId) {
+      const parent = await this.categoryRepository.findOneById(parentId);
       if (!parent) {
         throw new NotFoundException('Parent category not found');
       }
@@ -61,11 +64,14 @@ export class CategoriesService {
       }
     }
 
+    const sort = await this.getNextSort(dto.shopId, parentId);
+
     const category = this.categoryRepository.create({
       shopId: dto.shopId,
-      parentId: dto.parentId ?? null,
+      parentId,
       name: dto.name,
       slug: dto.slug,
+      sort,
     });
 
     return this.saveCategory(category);
@@ -93,7 +99,10 @@ export class CategoriesService {
         );
       }
 
-      category.parentId = dto.parentId;
+      if (category.parentId !== dto.parentId) {
+        category.parentId = dto.parentId;
+        category.sort = await this.getNextSort(category.shopId, dto.parentId);
+      }
     }
 
     if (dto.name !== undefined) {
@@ -106,10 +115,39 @@ export class CategoriesService {
     return this.saveCategory(category);
   }
 
+  async changeCategorySort(
+    id: string,
+    dto: ChangeCategorySortDto,
+  ): Promise<Category> {
+    const category = await this.categoryRepository.findById(id);
+    const sibling = await this.categoryRepository.findAdjacentSibling(
+      category,
+      dto.direction,
+    );
+
+    if (!sibling) {
+      throw new BadRequestException(
+        dto.direction === 'up'
+          ? 'Category is already at the top'
+          : 'Category is already at the bottom',
+      );
+    }
+
+    return this.categoryRepository.swapSort(category, sibling);
+  }
+
   async removeCategory(id: string): Promise<{ message: string }> {
     const category = await this.categoryRepository.findById(id);
     await this.categoryRepository.remove(category);
     return { message: 'Category removed successfully' };
+  }
+
+  private async getNextSort(
+    shopId: string,
+    parentId: string | null,
+  ): Promise<number> {
+    const maxSort = await this.categoryRepository.getMaxSort(shopId, parentId);
+    return maxSort + 1;
   }
 
   private async saveCategory(category: Category): Promise<Category> {

@@ -14,6 +14,9 @@ describe('CategoriesService', () => {
       findById: jest.fn(),
       findOneById: jest.fn(),
       findByShopIdAndSlug: jest.fn(),
+      getMaxSort: jest.fn().mockResolvedValue(-1),
+      findAdjacentSibling: jest.fn(),
+      swapSort: jest.fn(),
       create: jest.fn(),
       save: jest.fn((category) => Promise.resolve(category)),
       remove: jest.fn(),
@@ -63,7 +66,9 @@ describe('CategoriesService', () => {
       parentId: null,
       name: 'Accessories',
       slug: 'accessories',
+      sort: 0,
     } as any;
+    jest.mocked(categoryRepository.getMaxSort).mockResolvedValue(-1);
     jest.mocked(categoryRepository.create).mockReturnValue(payload);
     jest.mocked(categoryRepository.save).mockResolvedValue(payload);
 
@@ -73,13 +78,42 @@ describe('CategoriesService', () => {
       slug: 'accessories',
     });
 
+    expect(categoryRepository.getMaxSort).toHaveBeenCalledWith('shop-id', null);
     expect(categoryRepository.create).toHaveBeenCalledWith({
       shopId: 'shop-id',
       parentId: null,
       name: 'Accessories',
       slug: 'accessories',
+      sort: 0,
     });
     expect(result).toEqual(payload);
+  });
+
+  it('should assign next sort when creating among existing siblings', async () => {
+    const payload = {
+      id: '2',
+      shopId: 'shop-id',
+      parentId: null,
+      name: 'Bags',
+      slug: 'bags',
+      sort: 2,
+    } as any;
+    jest.mocked(categoryRepository.getMaxSort).mockResolvedValue(1);
+    jest.mocked(categoryRepository.create).mockReturnValue(payload);
+
+    await service.createCategory({
+      shopId: 'shop-id',
+      name: 'Bags',
+      slug: 'bags',
+    });
+
+    expect(categoryRepository.create).toHaveBeenCalledWith({
+      shopId: 'shop-id',
+      parentId: null,
+      name: 'Bags',
+      slug: 'bags',
+      sort: 2,
+    });
   });
 
   it('should throw when parent category is missing on create', async () => {
@@ -134,6 +168,7 @@ describe('CategoriesService', () => {
       parentId: null,
       name: 'Accessories',
       slug: 'accessories',
+      sort: 0,
     } as any;
 
     jest.mocked(categoryRepository.create).mockReturnValue(payload);
@@ -160,6 +195,7 @@ describe('CategoriesService', () => {
       name: 'Accessories',
       slug: 'accessories',
       parentId: null,
+      sort: 0,
     } as any;
     const saved = { ...existing, name: 'Updated', slug: 'updated' };
 
@@ -177,6 +213,36 @@ describe('CategoriesService', () => {
       slug: 'updated',
     });
     expect(result).toEqual(saved);
+  });
+
+  it('should reassign sort when reparenting a category', async () => {
+    const existing = {
+      id: '1',
+      shopId: 'shop-id',
+      name: 'Accessories',
+      slug: 'accessories',
+      parentId: null,
+      sort: 0,
+    } as any;
+
+    jest.mocked(categoryRepository.findById).mockResolvedValue(existing);
+    jest.mocked(categoryRepository.findOneById).mockResolvedValue({
+      id: 'parent-id',
+      shopId: 'shop-id',
+    } as any);
+    jest.mocked(categoryRepository.getMaxSort).mockResolvedValue(4);
+
+    await service.updateCategory('1', { parentId: 'parent-id' });
+
+    expect(categoryRepository.getMaxSort).toHaveBeenCalledWith(
+      'shop-id',
+      'parent-id',
+    );
+    expect(categoryRepository.save).toHaveBeenCalledWith({
+      ...existing,
+      parentId: 'parent-id',
+      sort: 5,
+    });
   });
 
   it('should throw when category becomes its own parent', async () => {
@@ -256,6 +322,85 @@ describe('CategoriesService', () => {
         slug: 'accessories',
       }),
     ).rejects.toThrow(BadRequestException);
+  });
+
+  it('should move category sort up', async () => {
+    const category = {
+      id: '2',
+      shopId: 'shop-id',
+      parentId: null,
+      sort: 1,
+    } as any;
+    const sibling = { id: '1', sort: 0 } as any;
+    const swapped = { ...category, sort: 0 };
+
+    jest.mocked(categoryRepository.findById).mockResolvedValue(category);
+    jest
+      .mocked(categoryRepository.findAdjacentSibling)
+      .mockResolvedValue(sibling);
+    jest.mocked(categoryRepository.swapSort).mockResolvedValue(swapped);
+
+    const result = await service.changeCategorySort('2', { direction: 'up' });
+
+    expect(categoryRepository.findAdjacentSibling).toHaveBeenCalledWith(
+      category,
+      'up',
+    );
+    expect(categoryRepository.swapSort).toHaveBeenCalledWith(category, sibling);
+    expect(result).toEqual(swapped);
+  });
+
+  it('should move category sort down', async () => {
+    const category = {
+      id: '1',
+      shopId: 'shop-id',
+      parentId: null,
+      sort: 0,
+    } as any;
+    const sibling = { id: '2', sort: 1 } as any;
+    const swapped = { ...category, sort: 1 };
+
+    jest.mocked(categoryRepository.findById).mockResolvedValue(category);
+    jest
+      .mocked(categoryRepository.findAdjacentSibling)
+      .mockResolvedValue(sibling);
+    jest.mocked(categoryRepository.swapSort).mockResolvedValue(swapped);
+
+    const result = await service.changeCategorySort('1', { direction: 'down' });
+
+    expect(categoryRepository.findAdjacentSibling).toHaveBeenCalledWith(
+      category,
+      'down',
+    );
+    expect(result).toEqual(swapped);
+  });
+
+  it('should throw when category is already at the top', async () => {
+    jest.mocked(categoryRepository.findById).mockResolvedValue({
+      id: '1',
+      sort: 0,
+    } as any);
+    jest.mocked(categoryRepository.findAdjacentSibling).mockResolvedValue(null);
+
+    await expect(
+      service.changeCategorySort('1', { direction: 'up' }),
+    ).rejects.toThrow(
+      new BadRequestException('Category is already at the top'),
+    );
+  });
+
+  it('should throw when category is already at the bottom', async () => {
+    jest.mocked(categoryRepository.findById).mockResolvedValue({
+      id: '1',
+      sort: 2,
+    } as any);
+    jest.mocked(categoryRepository.findAdjacentSibling).mockResolvedValue(null);
+
+    await expect(
+      service.changeCategorySort('1', { direction: 'down' }),
+    ).rejects.toThrow(
+      new BadRequestException('Category is already at the bottom'),
+    );
   });
 
   it('should remove a category', async () => {

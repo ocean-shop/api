@@ -1,6 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { IsNull, LessThan, MoreThan } from 'typeorm';
 import { Category } from '../../entities/category.entity';
 import { CategoryRepository } from './category.repository';
 
@@ -12,10 +13,14 @@ describe('CategoryRepository', () => {
   beforeEach(async () => {
     queryBuilder = {
       orderBy: jest.fn().mockReturnThis(),
+      addOrderBy: jest.fn().mockReturnThis(),
       skip: jest.fn().mockReturnThis(),
       take: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
       getManyAndCount: jest.fn(),
+      getRawOne: jest.fn(),
     };
 
     typeOrmRepository = {
@@ -24,6 +29,9 @@ describe('CategoryRepository', () => {
       create: jest.fn(),
       save: jest.fn(),
       remove: jest.fn(),
+      manager: {
+        transaction: jest.fn(),
+      },
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -52,9 +60,10 @@ describe('CategoryRepository', () => {
     expect(typeOrmRepository.createQueryBuilder).toHaveBeenCalledWith(
       'category',
     );
-    expect(queryBuilder.orderBy).toHaveBeenCalledWith(
+    expect(queryBuilder.orderBy).toHaveBeenCalledWith('category.sort', 'ASC');
+    expect(queryBuilder.addOrderBy).toHaveBeenCalledWith(
       'category.createdAt',
-      'DESC',
+      'ASC',
     );
     expect(queryBuilder.skip).toHaveBeenCalledWith(0);
     expect(queryBuilder.take).toHaveBeenCalledWith(20);
@@ -124,6 +133,103 @@ describe('CategoryRepository', () => {
       where: { shopId: 'shop-id', slug: 'accessories' },
     });
     expect(result).toEqual(category);
+  });
+
+  it('should get max sort for root siblings', async () => {
+    queryBuilder.getRawOne.mockResolvedValue({ max: '3' });
+
+    const result = await repository.getMaxSort('shop-id', null);
+
+    expect(queryBuilder.select).toHaveBeenCalledWith(
+      'MAX(category.sort)',
+      'max',
+    );
+    expect(queryBuilder.where).toHaveBeenCalledWith(
+      'category.shopId = :shopId',
+      { shopId: 'shop-id' },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'category.parentId IS NULL',
+    );
+    expect(result).toBe(3);
+  });
+
+  it('should return -1 when no siblings exist for max sort', async () => {
+    queryBuilder.getRawOne.mockResolvedValue({ max: null });
+
+    const result = await repository.getMaxSort('shop-id', 'parent-id');
+
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'category.parentId = :parentId',
+      { parentId: 'parent-id' },
+    );
+    expect(result).toBe(-1);
+  });
+
+  it('should find adjacent sibling for up direction', async () => {
+    const category = {
+      id: '2',
+      shopId: 'shop-id',
+      parentId: null,
+      sort: 2,
+    } as Category;
+    const sibling = { id: '1', sort: 1 } as Category;
+    typeOrmRepository.findOne.mockResolvedValue(sibling);
+
+    const result = await repository.findAdjacentSibling(category, 'up');
+
+    expect(typeOrmRepository.findOne).toHaveBeenCalledWith({
+      where: {
+        shopId: 'shop-id',
+        parentId: IsNull(),
+        sort: LessThan(2),
+      },
+      order: { sort: 'DESC' },
+    });
+    expect(result).toEqual(sibling);
+  });
+
+  it('should find adjacent sibling for down direction', async () => {
+    const category = {
+      id: '1',
+      shopId: 'shop-id',
+      parentId: 'parent-id',
+      sort: 0,
+    } as Category;
+    const sibling = { id: '2', sort: 1 } as Category;
+    typeOrmRepository.findOne.mockResolvedValue(sibling);
+
+    const result = await repository.findAdjacentSibling(category, 'down');
+
+    expect(typeOrmRepository.findOne).toHaveBeenCalledWith({
+      where: {
+        shopId: 'shop-id',
+        parentId: 'parent-id',
+        sort: MoreThan(0),
+      },
+      order: { sort: 'ASC' },
+    });
+    expect(result).toEqual(sibling);
+  });
+
+  it('should swap sort values in a transaction', async () => {
+    const category = { id: '1', sort: 0 } as Category;
+    const sibling = { id: '2', sort: 1 } as Category;
+    const managerSave = jest.fn().mockResolvedValue(undefined);
+
+    typeOrmRepository.manager.transaction.mockImplementation(
+      async (
+        callback: (manager: { save: typeof managerSave }) => Promise<Category>,
+      ) => callback({ save: managerSave }),
+    );
+
+    const result = await repository.swapSort(category, sibling);
+
+    expect(managerSave).toHaveBeenCalledWith([
+      { id: '2', sort: 0 },
+      { id: '1', sort: 1 },
+    ]);
+    expect(result).toEqual({ id: '1', sort: 1 });
   });
 
   it('should create category entity', () => {
