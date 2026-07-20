@@ -76,7 +76,12 @@ describe('AttributeRepository', () => {
     };
     typeOrmRepository.createQueryBuilder.mockReturnValue(queryBuilder);
 
-    const result = await repository.findAllPaginated(undefined, 0, 20);
+    const result = await repository.findAllPaginated(
+      undefined,
+      undefined,
+      0,
+      20,
+    );
 
     expect(typeOrmRepository.createQueryBuilder).toHaveBeenCalledWith(
       'attribute',
@@ -102,7 +107,7 @@ describe('AttributeRepository', () => {
     };
     typeOrmRepository.createQueryBuilder.mockReturnValue(queryBuilder);
 
-    const result = await repository.findAllPaginated('col', 20, 10);
+    const result = await repository.findAllPaginated('col', undefined, 20, 10);
 
     expect(queryBuilder.andWhere).toHaveBeenCalledWith(
       'attribute.name ILIKE :name',
@@ -110,6 +115,31 @@ describe('AttributeRepository', () => {
     );
     expect(queryBuilder.skip).toHaveBeenCalledWith(20);
     expect(queryBuilder.take).toHaveBeenCalledWith(10);
+    expect(result).toEqual({ items: attributes, total: 1 });
+  });
+
+  it('should find all attributes with shop filter', async () => {
+    const attributes = [{ id: '1', shopId: 'shop-id' }] as Attribute[];
+    const queryBuilder = {
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getManyAndCount: jest.fn().mockResolvedValue([attributes, 1]),
+    };
+    typeOrmRepository.createQueryBuilder.mockReturnValue(queryBuilder);
+
+    const result = await repository.findAllPaginated(
+      undefined,
+      'shop-id',
+      0,
+      20,
+    );
+
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'attribute.shopId = :shopId',
+      { shopId: 'shop-id' },
+    );
     expect(result).toEqual({ items: attributes, total: 1 });
   });
 

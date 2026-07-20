@@ -23,6 +23,7 @@ export class AttributesService {
 
     const { items, total } = await this.attributeRepository.findAllPaginated(
       query.name,
+      query.shopId,
       skip,
       limit,
     );

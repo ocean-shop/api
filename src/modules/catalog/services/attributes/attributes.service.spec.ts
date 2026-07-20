@@ -46,6 +46,7 @@ describe('AttributesService', () => {
 
     expect(attributeRepository.findAllPaginated).toHaveBeenCalledWith(
       undefined,
+      undefined,
       0,
       20,
     );
@@ -73,6 +74,7 @@ describe('AttributesService', () => {
 
     expect(attributeRepository.findAllPaginated).toHaveBeenCalledWith(
       'col',
+      undefined,
       10,
       10,
     );
@@ -81,6 +83,34 @@ describe('AttributesService', () => {
       total: 1,
       page: 2,
       limit: 10,
+      totalPages: 1,
+    });
+  });
+
+  it('should return attributes filtered by shopId', async () => {
+    const items = [{ id: '1', shopId: 'shop-id', name: 'Color' }] as any;
+    jest.mocked(attributeRepository.findAllPaginated).mockResolvedValue({
+      items,
+      total: 1,
+    });
+
+    const result = await service.getAllAttributes({
+      shopId: '98f21967-fce6-4ceb-af61-304913f593a7',
+      page: 1,
+      limit: 20,
+    });
+
+    expect(attributeRepository.findAllPaginated).toHaveBeenCalledWith(
+      undefined,
+      '98f21967-fce6-4ceb-af61-304913f593a7',
+      0,
+      20,
+    );
+    expect(result).toEqual({
+      items,
+      total: 1,
+      page: 1,
+      limit: 20,
       totalPages: 1,
     });
   });

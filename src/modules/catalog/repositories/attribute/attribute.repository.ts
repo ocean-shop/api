@@ -22,6 +22,7 @@ export class AttributeRepository {
 
   async findAllPaginated(
     name: string | undefined,
+    shopId: string | undefined,
     skip: number,
     take: number,
   ): Promise<{ items: Attribute[]; total: number }> {
@@ -33,6 +34,10 @@ export class AttributeRepository {
 
     if (name) {
       query.andWhere('attribute.name ILIKE :name', { name: `%${name}%` });
+    }
+
+    if (shopId) {
+      query.andWhere('attribute.shopId = :shopId', { shopId });
     }
 
     const [items, total] = await query.getManyAndCount();

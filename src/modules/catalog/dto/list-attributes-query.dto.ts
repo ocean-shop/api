@@ -4,6 +4,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   Max,
   Min,
 } from 'class-validator';
@@ -24,4 +25,8 @@ export class ListAttributesQueryDto {
   @IsString()
   @IsNotEmpty()
   readonly name?: string;
+
+  @IsOptional()
+  @IsUUID()
+  readonly shopId?: string;
 }
