@@ -10,7 +10,7 @@ describe('AttributesService', () => {
 
   beforeEach(async () => {
     const attributeRepositoryMock = {
-      findAll: jest.fn(),
+      findAllPaginated: jest.fn(),
       findById: jest.fn(),
       create: jest.fn(),
       save: jest.fn((attribute) => Promise.resolve(attribute)),
@@ -32,27 +32,57 @@ describe('AttributesService', () => {
     expect(service).toBeDefined();
   });
 
-  it('should return all attributes', async () => {
-    const expected = [
+  it('should return all attributes with pagination', async () => {
+    const items = [
       { id: '1', shopId: 'shop-id', name: 'Color', value: 'Red' },
       { id: '2', shopId: 'shop-id', name: 'Size', value: 'M' },
     ] as any;
-    jest.mocked(attributeRepository.findAll).mockResolvedValue(expected);
+    jest.mocked(attributeRepository.findAllPaginated).mockResolvedValue({
+      items,
+      total: 2,
+    });
 
     const result = await service.getAllAttributes({});
 
-    expect(attributeRepository.findAll).toHaveBeenCalledTimes(1);
-    expect(result).toEqual(expected);
+    expect(attributeRepository.findAllPaginated).toHaveBeenCalledWith(
+      undefined,
+      0,
+      20,
+    );
+    expect(result).toEqual({
+      items,
+      total: 2,
+      page: 1,
+      limit: 20,
+      totalPages: 1,
+    });
   });
 
-  it('should return attributes filtered by name', async () => {
-    const expected = [{ id: '1', shopId: 'shop-id', name: 'Color' }] as any;
-    jest.mocked(attributeRepository.findAll).mockResolvedValue(expected);
+  it('should return attributes filtered by name with pagination', async () => {
+    const items = [{ id: '1', shopId: 'shop-id', name: 'Color' }] as any;
+    jest.mocked(attributeRepository.findAllPaginated).mockResolvedValue({
+      items,
+      total: 1,
+    });
 
-    const result = await service.getAllAttributes({ name: 'col' });
+    const result = await service.getAllAttributes({
+      name: 'col',
+      page: 2,
+      limit: 10,
+    });
 
-    expect(attributeRepository.findAll).toHaveBeenCalledWith('col');
-    expect(result).toEqual(expected);
+    expect(attributeRepository.findAllPaginated).toHaveBeenCalledWith(
+      'col',
+      10,
+      10,
+    );
+    expect(result).toEqual({
+      items,
+      total: 1,
+      page: 2,
+      limit: 10,
+      totalPages: 1,
+    });
   });
 
   it('should create an attribute', async () => {

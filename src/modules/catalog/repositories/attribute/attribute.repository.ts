@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Attribute } from '../../entities/attribute.entity';
 
 @Injectable()
@@ -20,16 +20,24 @@ export class AttributeRepository {
     return attribute;
   }
 
-  async findAll(name?: string): Promise<Attribute[]> {
+  async findAllPaginated(
+    name: string | undefined,
+    skip: number,
+    take: number,
+  ): Promise<{ items: Attribute[]; total: number }> {
+    const query = this.repository
+      .createQueryBuilder('attribute')
+      .orderBy('attribute.createdAt', 'DESC')
+      .skip(skip)
+      .take(take);
+
     if (name) {
-      return this.repository.find({
-        where: {
-          name: ILike(`%${name}%`),
-        },
-      });
+      query.andWhere('attribute.name ILIKE :name', { name: `%${name}%` });
     }
 
-    return this.repository.find();
+    const [items, total] = await query.getManyAndCount();
+
+    return { items, total };
   }
 
   create(payload: Partial<Attribute>): Attribute {

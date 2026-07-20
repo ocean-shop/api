@@ -3,6 +3,7 @@ import { QueryFailedError } from 'typeorm';
 import { CreateAttributeDto } from '../../dto/create-attribute.dto';
 import { ListAttributesQueryDto } from '../../dto/list-attributes-query.dto';
 import { Attribute } from '../../entities/attribute.entity';
+import { AttributeListResponse } from '../../models/attribute.models';
 import { AttributeRepository } from '../../repositories/attribute/attribute.repository';
 
 @Injectable()
@@ -13,8 +14,26 @@ export class AttributesService {
 
   constructor(private readonly attributeRepository: AttributeRepository) {}
 
-  async getAllAttributes(query: ListAttributesQueryDto): Promise<Attribute[]> {
-    return this.attributeRepository.findAll(query.name);
+  async getAllAttributes(
+    query: ListAttributesQueryDto,
+  ): Promise<AttributeListResponse> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const skip = (page - 1) * limit;
+
+    const { items, total } = await this.attributeRepository.findAllPaginated(
+      query.name,
+      skip,
+      limit,
+    );
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+      totalPages: total > 0 ? Math.ceil(total / limit) : 0,
+    };
   }
 
   async createAttribute(dto: CreateAttributeDto): Promise<Attribute> {

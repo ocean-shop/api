@@ -1,7 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ILike } from 'typeorm';
 import { Attribute } from '../../entities/attribute.entity';
 import { AttributeRepository } from './attribute.repository';
 
@@ -12,7 +11,7 @@ describe('AttributeRepository', () => {
   beforeEach(async () => {
     typeOrmRepository = {
       findOne: jest.fn(),
-      find: jest.fn(),
+      createQueryBuilder: jest.fn(),
       create: jest.fn(),
       save: jest.fn(),
       remove: jest.fn(),
@@ -68,26 +67,50 @@ describe('AttributeRepository', () => {
 
   it('should find all attributes without name filter', async () => {
     const attributes = [{ id: '1' }] as Attribute[];
-    typeOrmRepository.find.mockResolvedValue(attributes);
+    const queryBuilder = {
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getManyAndCount: jest.fn().mockResolvedValue([attributes, 1]),
+    };
+    typeOrmRepository.createQueryBuilder.mockReturnValue(queryBuilder);
 
-    const result = await repository.findAll();
+    const result = await repository.findAllPaginated(undefined, 0, 20);
 
-    expect(typeOrmRepository.find).toHaveBeenCalledWith();
-    expect(result).toEqual(attributes);
+    expect(typeOrmRepository.createQueryBuilder).toHaveBeenCalledWith(
+      'attribute',
+    );
+    expect(queryBuilder.orderBy).toHaveBeenCalledWith(
+      'attribute.createdAt',
+      'DESC',
+    );
+    expect(queryBuilder.skip).toHaveBeenCalledWith(0);
+    expect(queryBuilder.take).toHaveBeenCalledWith(20);
+    expect(queryBuilder.andWhere).not.toHaveBeenCalled();
+    expect(result).toEqual({ items: attributes, total: 1 });
   });
 
   it('should find all attributes with name filter', async () => {
     const attributes = [{ id: '1', name: 'Color' }] as Attribute[];
-    typeOrmRepository.find.mockResolvedValue(attributes);
+    const queryBuilder = {
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getManyAndCount: jest.fn().mockResolvedValue([attributes, 1]),
+    };
+    typeOrmRepository.createQueryBuilder.mockReturnValue(queryBuilder);
 
-    const result = await repository.findAll('col');
+    const result = await repository.findAllPaginated('col', 20, 10);
 
-    expect(typeOrmRepository.find).toHaveBeenCalledWith({
-      where: {
-        name: ILike('%col%'),
-      },
-    });
-    expect(result).toEqual(attributes);
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'attribute.name ILIKE :name',
+      { name: '%col%' },
+    );
+    expect(queryBuilder.skip).toHaveBeenCalledWith(20);
+    expect(queryBuilder.take).toHaveBeenCalledWith(10);
+    expect(result).toEqual({ items: attributes, total: 1 });
   });
 
   it('should save attribute entity', async () => {

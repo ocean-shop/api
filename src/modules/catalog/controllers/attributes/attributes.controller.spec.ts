@@ -38,10 +38,16 @@ describe('AttributesController', () => {
 
   it('should return all attributes', async () => {
     const query = { name: 'col' };
-    const expected = [
-      { id: '1', shopId: 'shop-id', name: 'Color', value: 'Red' },
-      { id: '2', shopId: 'shop-id', name: 'Size', value: 'M' },
-    ] as any;
+    const expected = {
+      items: [
+        { id: '1', shopId: 'shop-id', name: 'Color', value: 'Red' },
+        { id: '2', shopId: 'shop-id', name: 'Size', value: 'M' },
+      ],
+      total: 2,
+      page: 1,
+      limit: 20,
+      totalPages: 1,
+    } as any;
     jest.mocked(attributesService.getAllAttributes).mockResolvedValue(expected);
 
     const result = await controller.getAllAttributes(query);
