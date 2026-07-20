@@ -2,6 +2,7 @@ import { Tag } from '../entities/tag.entity';
 
 export type TagFilters = {
   shopId?: string;
+  name?: string;
 };
 
 export type TagListResponse = {

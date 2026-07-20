@@ -67,6 +67,16 @@ describe('TagRepository', () => {
     });
   });
 
+  it('should find paginated tags with name filter', async () => {
+    queryBuilder.getManyAndCount.mockResolvedValue([[], 0]);
+
+    await repository.findAllPaginated({ name: 'summer' }, 0, 20);
+
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith('tag.name ILIKE :name', {
+      name: '%summer%',
+    });
+  });
+
   it('should find tag by id', async () => {
     const tag = { id: '1' } as Tag;
     typeOrmRepository.findOne.mockResolvedValue(tag);

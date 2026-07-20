@@ -45,6 +45,21 @@ describe('TagsService', () => {
     expect(result.totalPages).toBe(1);
   });
 
+  it('should list tags with name filter', async () => {
+    jest.mocked(tagRepository.findAllPaginated).mockResolvedValue({
+      items: [],
+      total: 0,
+    });
+
+    await service.listTags({ page: 1, limit: 20, name: 'summer' });
+
+    expect(tagRepository.findAllPaginated).toHaveBeenCalledWith(
+      { name: 'summer' },
+      0,
+      20,
+    );
+  });
+
   it('should return one tag', async () => {
     const tag = { id: '1', name: 'Summer Sale' } as any;
     jest.mocked(tagRepository.findById).mockResolvedValue(tag);

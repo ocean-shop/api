@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { QueryFailedError } from 'typeorm';
 import { CreateAttributeDto } from '../../dto/create-attribute.dto';
+import { ListAttributesQueryDto } from '../../dto/list-attributes-query.dto';
 import { Attribute } from '../../entities/attribute.entity';
 import { AttributeRepository } from '../../repositories/attribute/attribute.repository';
 
@@ -12,8 +13,8 @@ export class AttributesService {
 
   constructor(private readonly attributeRepository: AttributeRepository) {}
 
-  async getAllAttributes(): Promise<Attribute[]> {
-    return this.attributeRepository.findAll();
+  async getAllAttributes(query: ListAttributesQueryDto): Promise<Attribute[]> {
+    return this.attributeRepository.findAll(query.name);
   }
 
   async createAttribute(dto: CreateAttributeDto): Promise<Attribute> {

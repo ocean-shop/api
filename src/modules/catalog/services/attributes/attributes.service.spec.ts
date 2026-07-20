@@ -39,9 +39,19 @@ describe('AttributesService', () => {
     ] as any;
     jest.mocked(attributeRepository.findAll).mockResolvedValue(expected);
 
-    const result = await service.getAllAttributes();
+    const result = await service.getAllAttributes({});
 
     expect(attributeRepository.findAll).toHaveBeenCalledTimes(1);
+    expect(result).toEqual(expected);
+  });
+
+  it('should return attributes filtered by name', async () => {
+    const expected = [{ id: '1', shopId: 'shop-id', name: 'Color' }] as any;
+    jest.mocked(attributeRepository.findAll).mockResolvedValue(expected);
+
+    const result = await service.getAllAttributes({ name: 'col' });
+
+    expect(attributeRepository.findAll).toHaveBeenCalledWith('col');
     expect(result).toEqual(expected);
   });
 

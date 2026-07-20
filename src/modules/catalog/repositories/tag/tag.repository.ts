@@ -26,6 +26,10 @@ export class TagRepository {
       query.andWhere('tag.shopId = :shopId', { shopId: filters.shopId });
     }
 
+    if (filters.name) {
+      query.andWhere('tag.name ILIKE :name', { name: `%${filters.name}%` });
+    }
+
     const [items, total] = await query.getManyAndCount();
 
     return { items, total };

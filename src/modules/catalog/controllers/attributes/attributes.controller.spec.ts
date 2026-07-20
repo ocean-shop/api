@@ -37,15 +37,16 @@ describe('AttributesController', () => {
   });
 
   it('should return all attributes', async () => {
+    const query = { name: 'col' };
     const expected = [
       { id: '1', shopId: 'shop-id', name: 'Color', value: 'Red' },
       { id: '2', shopId: 'shop-id', name: 'Size', value: 'M' },
     ] as any;
     jest.mocked(attributesService.getAllAttributes).mockResolvedValue(expected);
 
-    const result = await controller.getAllAttributes();
+    const result = await controller.getAllAttributes(query);
 
-    expect(attributesService.getAllAttributes).toHaveBeenCalledTimes(1);
+    expect(attributesService.getAllAttributes).toHaveBeenCalledWith(query);
     expect(result).toEqual(expected);
   });
 

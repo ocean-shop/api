@@ -17,8 +17,13 @@ export class TagsService {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const skip = (page - 1) * limit;
+    const filters = {
+      ...(query.shopId ? { shopId: query.shopId } : {}),
+      ...(query.name ? { name: query.name } : {}),
+    };
+
     const { items, total } = await this.tagRepository.findAllPaginated(
-      { shopId: query.shopId },
+      filters,
       skip,
       limit,
     );

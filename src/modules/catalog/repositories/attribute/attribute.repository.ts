@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { Attribute } from '../../entities/attribute.entity';
 
 @Injectable()
@@ -20,7 +20,15 @@ export class AttributeRepository {
     return attribute;
   }
 
-  async findAll(): Promise<Attribute[]> {
+  async findAll(name?: string): Promise<Attribute[]> {
+    if (name) {
+      return this.repository.find({
+        where: {
+          name: ILike(`%${name}%`),
+        },
+      });
+    }
+
     return this.repository.find();
   }
 

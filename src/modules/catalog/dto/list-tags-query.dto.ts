@@ -1,5 +1,13 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsUUID, Max, Min } from 'class-validator';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min,
+} from 'class-validator';
 
 export class ListTagsQueryDto {
   @Type(() => Number)
@@ -16,4 +24,9 @@ export class ListTagsQueryDto {
   @IsOptional()
   @IsUUID()
   readonly shopId?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  readonly name?: string;
 }

@@ -6,12 +6,14 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { Roles } from '../../../user/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../../user/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../user/guards/roles.guard';
 import { CreateAttributeDto } from '../../dto/create-attribute.dto';
+import { ListAttributesQueryDto } from '../../dto/list-attributes-query.dto';
 import { AttributesService } from '../../services/attributes/attributes.service';
 
 @Controller('catalog/attributes')
@@ -21,8 +23,8 @@ export class AttributesController {
 
   @Get()
   @Roles('admin', 'super')
-  async getAllAttributes() {
-    return this.attributesService.getAllAttributes();
+  async getAllAttributes(@Query() query: ListAttributesQueryDto) {
+    return this.attributesService.getAllAttributes(query);
   }
 
   @Post()

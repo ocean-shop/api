@@ -1,6 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { ILike } from 'typeorm';
 import { Attribute } from '../../entities/attribute.entity';
 import { AttributeRepository } from './attribute.repository';
 
@@ -11,6 +12,7 @@ describe('AttributeRepository', () => {
   beforeEach(async () => {
     typeOrmRepository = {
       findOne: jest.fn(),
+      find: jest.fn(),
       create: jest.fn(),
       save: jest.fn(),
       remove: jest.fn(),
@@ -62,6 +64,30 @@ describe('AttributeRepository', () => {
 
     expect(typeOrmRepository.create).toHaveBeenCalledWith(payload);
     expect(result).toEqual(attribute);
+  });
+
+  it('should find all attributes without name filter', async () => {
+    const attributes = [{ id: '1' }] as Attribute[];
+    typeOrmRepository.find.mockResolvedValue(attributes);
+
+    const result = await repository.findAll();
+
+    expect(typeOrmRepository.find).toHaveBeenCalledWith();
+    expect(result).toEqual(attributes);
+  });
+
+  it('should find all attributes with name filter', async () => {
+    const attributes = [{ id: '1', name: 'Color' }] as Attribute[];
+    typeOrmRepository.find.mockResolvedValue(attributes);
+
+    const result = await repository.findAll('col');
+
+    expect(typeOrmRepository.find).toHaveBeenCalledWith({
+      where: {
+        name: ILike('%col%'),
+      },
+    });
+    expect(result).toEqual(attributes);
   });
 
   it('should save attribute entity', async () => {
