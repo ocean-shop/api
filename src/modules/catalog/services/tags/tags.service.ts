@@ -6,6 +6,7 @@ import { UpdateTagDto } from '../../dto/update-tag.dto';
 import { Tag } from '../../entities/tag.entity';
 import { TagListResponse } from '../../models/tag.models';
 import { TagRepository } from '../../repositories/tag/tag.repository';
+import { PAGINATION_MAX } from '../../constants/pagination.constants';
 
 @Injectable()
 export class TagsService {
@@ -15,7 +16,7 @@ export class TagsService {
 
   async listTags(query: ListTagsQueryDto): Promise<TagListResponse> {
     const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const limit = query.limit ?? PAGINATION_MAX;
     const skip = (page - 1) * limit;
     const filters = {
       ...(query.shopId ? { shopId: query.shopId } : {}),

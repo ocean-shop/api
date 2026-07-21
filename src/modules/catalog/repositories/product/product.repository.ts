@@ -159,8 +159,7 @@ export class ProductRepository {
 
     const orderByColumn =
       sortBy === ProductSortBy.NAME ? 'product.name' : 'product.createdAt';
-    const orderDirection =
-      sortOrder === ProductSortOrder.ASC ? 'ASC' : 'DESC';
+    const orderDirection = sortOrder === ProductSortOrder.ASC ? 'ASC' : 'DESC';
 
     const idRows = await baseQuery
       .clone()

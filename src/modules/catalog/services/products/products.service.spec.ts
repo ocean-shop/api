@@ -1,10 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { QueryFailedError } from 'typeorm';
-import {
-  ProductSortBy,
-  ProductSortOrder,
-} from '../../models/product.models';
+import { ProductSortBy, ProductSortOrder } from '../../models/product.models';
 import { ProductStatus, ProductType } from '../../entities/enums/product.enum';
 import { AttributeRepository } from '../../repositories/attribute/attribute.repository';
 import { CategoryRepository } from '../../repositories/category/category.repository';

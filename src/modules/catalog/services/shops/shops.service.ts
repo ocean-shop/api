@@ -5,6 +5,7 @@ import { UpdateShopDto } from '../../dto/update-shop.dto';
 import { Shop } from '../../entities/shop.entity';
 import { ShopListResponse } from '../../models/shop.models';
 import { ShopRepository } from '../../repositories/shop/shop.repository';
+import { PAGINATION_MAX } from '../../constants/pagination.constants';
 
 @Injectable()
 export class ShopsService {
@@ -12,7 +13,7 @@ export class ShopsService {
 
   async listShops(query: ListShopsQueryDto): Promise<ShopListResponse> {
     const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const limit = query.limit ?? PAGINATION_MAX;
     const skip = (page - 1) * limit;
     const { items, total } = await this.shopRepository.findAllPaginated(
       skip,

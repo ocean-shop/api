@@ -44,14 +44,20 @@ export class ListProductsQueryDto {
   readonly sku?: string;
 
   @IsOptional()
-  @Transform(({ value }) => {
+  @Transform(({ value }: { value: unknown }) => {
     if (value === undefined || value === null || value === '') {
       return undefined;
     }
     if (Array.isArray(value)) {
-      return value;
+      return value
+        .filter((item): item is string => typeof item === 'string')
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0);
     }
-    return String(value)
+    if (typeof value !== 'string') {
+      return undefined;
+    }
+    return value
       .split(',')
       .map((item) => item.trim())
       .filter((item) => item.length > 0);
@@ -65,7 +71,7 @@ export class ListProductsQueryDto {
   readonly sortBy?: ProductSortBy = ProductSortBy.CREATED_AT;
 
   @IsOptional()
-  @Transform(({ value }) => {
+  @Transform(({ value }: { value: unknown }) => {
     if (typeof value !== 'string') {
       return value;
     }

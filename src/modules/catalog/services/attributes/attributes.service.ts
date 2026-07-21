@@ -5,6 +5,7 @@ import { ListAttributesQueryDto } from '../../dto/list-attributes-query.dto';
 import { Attribute } from '../../entities/attribute.entity';
 import { AttributeListResponse } from '../../models/attribute.models';
 import { AttributeRepository } from '../../repositories/attribute/attribute.repository';
+import { PAGINATION_MAX } from '../../constants/pagination.constants';
 
 @Injectable()
 export class AttributesService {
@@ -18,7 +19,7 @@ export class AttributesService {
     query: ListAttributesQueryDto,
   ): Promise<AttributeListResponse> {
     const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const limit = query.limit ?? PAGINATION_MAX;
     const skip = (page - 1) * limit;
 
     const { items, total } = await this.attributeRepository.findAllPaginated(

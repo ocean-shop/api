@@ -11,6 +11,7 @@ import { ChangeCategorySortDto } from '../../dto/change-category-sort.dto';
 import { CreateCategoryDto } from '../../dto/create-category.dto';
 import { UpdateCategoryDto } from '../../dto/update-category.dto';
 import { ListCategoriesQueryDto } from '../../dto/list-categories-query.dto';
+import { PAGINATION_MAX } from '../../constants/pagination.constants';
 
 @Injectable()
 export class CategoriesService {
@@ -25,7 +26,7 @@ export class CategoriesService {
     query: ListCategoriesQueryDto,
   ): Promise<CategoryListResponse> {
     const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const limit = query.limit ?? PAGINATION_MAX;
     const skip = (page - 1) * limit;
 
     const { items, total } = await this.categoryRepository.findAllPaginated(

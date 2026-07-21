@@ -15,6 +15,7 @@ import { CategoryRepository } from '../../repositories/category/category.reposit
 import { ProductRepository } from '../../repositories/product/product.repository';
 import { ShopRepository } from '../../repositories/shop/shop.repository';
 import { TagRepository } from '../../repositories/tag/tag.repository';
+import { PAGINATION_MAX } from '../../constants/pagination.constants';
 
 @Injectable()
 export class ProductsService {
@@ -30,7 +31,7 @@ export class ProductsService {
     query: ListProductsQueryDto,
   ): Promise<ProductListResponse> {
     const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const limit = query.limit ?? PAGINATION_MAX;
     const skip = (page - 1) * limit;
 
     const { items, total } = await this.productRepository.findAllPaginated(
@@ -57,7 +58,7 @@ export class ProductsService {
     await this.categoryRepository.findById(categoryId);
 
     const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const limit = query.limit ?? PAGINATION_MAX;
     const skip = (page - 1) * limit;
 
     const { items, total } =
@@ -79,7 +80,7 @@ export class ProductsService {
     await this.tagRepository.findById(tagId);
 
     const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const limit = query.limit ?? PAGINATION_MAX;
     const skip = (page - 1) * limit;
 
     const { items, total } = await this.productRepository.findByTagIdPaginated(
@@ -100,7 +101,7 @@ export class ProductsService {
     await this.attributeRepository.findById(attributeTypeId);
 
     const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const limit = query.limit ?? PAGINATION_MAX;
     const skip = (page - 1) * limit;
 
     const { items, total } =
