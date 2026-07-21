@@ -34,7 +34,15 @@ export class ProductsService {
     const skip = (page - 1) * limit;
 
     const { items, total } = await this.productRepository.findAllPaginated(
-      { shopId: query.shopId, status: query.status },
+      {
+        shopId: query.shopId,
+        status: query.status,
+        name: query.name,
+        sku: query.sku,
+        categoryIds: query.categoryIds,
+        sortBy: query.sortBy,
+        sortOrder: query.sortOrder,
+      },
       skip,
       limit,
     );
@@ -57,6 +65,8 @@ export class ProductsService {
         categoryId,
         skip,
         limit,
+        query.sortBy,
+        query.sortOrder,
       );
 
     return this.toListResponse(items, total, page, limit);
@@ -76,6 +86,8 @@ export class ProductsService {
       tagId,
       skip,
       limit,
+      query.sortBy,
+      query.sortOrder,
     );
 
     return this.toListResponse(items, total, page, limit);
@@ -96,6 +108,8 @@ export class ProductsService {
         attributeTypeId,
         skip,
         limit,
+        query.sortBy,
+        query.sortOrder,
       );
 
     return this.toListResponse(items, total, page, limit);

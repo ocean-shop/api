@@ -1,6 +1,17 @@
-import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsUUID, Max, Min } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsArray,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min,
+} from 'class-validator';
 import { ProductStatus } from '../entities/enums/product.enum';
+import { ProductSortBy, ProductSortOrder } from '../models/product.models';
 
 export class ListProductsQueryDto {
   @Type(() => Number)
@@ -21,4 +32,45 @@ export class ListProductsQueryDto {
   @IsOptional()
   @IsEnum(ProductStatus)
   readonly status?: ProductStatus;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  readonly name?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  readonly sku?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') {
+      return undefined;
+    }
+    if (Array.isArray(value)) {
+      return value;
+    }
+    return String(value)
+      .split(',')
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0);
+  })
+  @IsArray()
+  @IsUUID('4', { each: true })
+  readonly categoryIds?: string[];
+
+  @IsOptional()
+  @IsEnum(ProductSortBy)
+  readonly sortBy?: ProductSortBy = ProductSortBy.CREATED_AT;
+
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value !== 'string') {
+      return value;
+    }
+    return value.toLowerCase();
+  })
+  @IsEnum(ProductSortOrder)
+  readonly sortOrder?: ProductSortOrder = ProductSortOrder.DESC;
 }

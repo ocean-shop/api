@@ -1,6 +1,10 @@
 import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { QueryFailedError } from 'typeorm';
+import {
+  ProductSortBy,
+  ProductSortOrder,
+} from '../../models/product.models';
 import { ProductStatus, ProductType } from '../../entities/enums/product.enum';
 import { AttributeRepository } from '../../repositories/attribute/attribute.repository';
 import { CategoryRepository } from '../../repositories/category/category.repository';
@@ -79,11 +83,24 @@ describe('ProductsService', () => {
     const result = await service.listProducts({
       page: 1,
       limit: 20,
+      name: 'ocean',
+      sku: 'SKU',
+      categoryIds: ['11111111-1111-4111-8111-111111111111'],
       status: ProductStatus.ACTIVE,
+      sortBy: ProductSortBy.CREATED_AT,
+      sortOrder: ProductSortOrder.DESC,
     });
 
     expect(productRepository.findAllPaginated).toHaveBeenCalledWith(
-      { shopId: undefined, status: ProductStatus.ACTIVE },
+      {
+        shopId: undefined,
+        status: ProductStatus.ACTIVE,
+        name: 'ocean',
+        sku: 'SKU',
+        categoryIds: ['11111111-1111-4111-8111-111111111111'],
+        sortBy: ProductSortBy.CREATED_AT,
+        sortOrder: ProductSortOrder.DESC,
+      },
       0,
       20,
     );
@@ -108,6 +125,8 @@ describe('ProductsService', () => {
       'category-id',
       0,
       20,
+      undefined,
+      undefined,
     );
     expect(result.total).toBe(0);
   });
@@ -129,6 +148,8 @@ describe('ProductsService', () => {
       'tag-id',
       10,
       10,
+      undefined,
+      undefined,
     );
     expect(result.page).toBe(2);
   });
@@ -148,7 +169,7 @@ describe('ProductsService', () => {
 
     expect(
       productRepository.findByAttributeTypeIdPaginated,
-    ).toHaveBeenCalledWith('attr-id', 0, 20);
+    ).toHaveBeenCalledWith('attr-id', 0, 20, undefined, undefined);
   });
 
   it('should return one product', async () => {

@@ -3,7 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository, SelectQueryBuilder } from 'typeorm';
 import { ProductImage } from '../../entities/product-image.entity';
 import { Product } from '../../entities/product.entity';
-import { ProductFilters } from '../../models/product.models';
+import {
+  ProductFilters,
+  ProductSortBy,
+  ProductSortOrder,
+} from '../../models/product.models';
 
 @Injectable()
 export class ProductRepository {
@@ -32,9 +36,31 @@ export class ProductRepository {
             status: filters.status,
           });
         }
+
+        if (filters.name) {
+          query.andWhere('product.name ILIKE :name', {
+            name: `%${filters.name}%`,
+          });
+        }
+
+        if (filters.sku) {
+          query.andWhere('product.sku ILIKE :sku', {
+            sku: `%${filters.sku}%`,
+          });
+        }
+
+        if (filters.categoryIds && filters.categoryIds.length > 0) {
+          query
+            .innerJoin('product.categories', 'filteredCategory')
+            .andWhere('filteredCategory.id IN (:...categoryIds)', {
+              categoryIds: filters.categoryIds,
+            });
+        }
       },
       skip,
       take,
+      filters.sortBy,
+      filters.sortOrder,
     );
   }
 
@@ -42,6 +68,8 @@ export class ProductRepository {
     categoryId: string,
     skip: number,
     take: number,
+    sortBy?: ProductSortBy,
+    sortOrder?: ProductSortOrder,
   ): Promise<{ items: Product[]; total: number }> {
     return this.findPaginatedWithRelations(
       (query) => {
@@ -51,6 +79,8 @@ export class ProductRepository {
       },
       skip,
       take,
+      sortBy,
+      sortOrder,
     );
   }
 
@@ -58,6 +88,8 @@ export class ProductRepository {
     tagId: string,
     skip: number,
     take: number,
+    sortBy?: ProductSortBy,
+    sortOrder?: ProductSortOrder,
   ): Promise<{ items: Product[]; total: number }> {
     return this.findPaginatedWithRelations(
       (query) => {
@@ -67,6 +99,8 @@ export class ProductRepository {
       },
       skip,
       take,
+      sortBy,
+      sortOrder,
     );
   }
 
@@ -74,6 +108,8 @@ export class ProductRepository {
     attributeTypeId: string,
     skip: number,
     take: number,
+    sortBy?: ProductSortBy,
+    sortOrder?: ProductSortOrder,
   ): Promise<{ items: Product[]; total: number }> {
     return this.findPaginatedWithRelations(
       (query) => {
@@ -83,6 +119,8 @@ export class ProductRepository {
       },
       skip,
       take,
+      sortBy,
+      sortOrder,
     );
   }
 
@@ -109,19 +147,29 @@ export class ProductRepository {
     applyFilters: (query: SelectQueryBuilder<Product>) => void,
     skip: number,
     take: number,
+    sortBy?: ProductSortBy,
+    sortOrder?: ProductSortOrder,
   ): Promise<{ items: Product[]; total: number }> {
-    const baseQuery = this.repository.createQueryBuilder('product');
+    const baseQuery = this.repository
+      .createQueryBuilder('product')
+      .distinct(true);
     applyFilters(baseQuery);
 
     const total = await baseQuery.clone().getCount();
 
+    const orderByColumn =
+      sortBy === ProductSortBy.NAME ? 'product.name' : 'product.createdAt';
+    const orderDirection =
+      sortOrder === ProductSortOrder.ASC ? 'ASC' : 'DESC';
+
     const idRows = await baseQuery
       .clone()
       .select('product.id', 'id')
-      .orderBy('product.createdAt', 'DESC')
+      .addSelect(orderByColumn, 'sortValue')
+      .orderBy(orderByColumn, orderDirection)
       .offset(skip)
       .limit(take)
-      .getRawMany<{ id: string }>();
+      .getRawMany<{ id: string; sortValue: string }>();
 
     const ids = idRows.map((row) => row.id);
     if (ids.length === 0) {

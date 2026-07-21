@@ -5,6 +5,7 @@ import { In } from 'typeorm';
 import { ProductStatus } from '../../entities/enums/product.enum';
 import { ProductImage } from '../../entities/product-image.entity';
 import { Product } from '../../entities/product.entity';
+import { ProductSortBy, ProductSortOrder } from '../../models/product.models';
 import { ProductRepository } from './product.repository';
 
 describe('ProductRepository', () => {
@@ -17,8 +18,10 @@ describe('ProductRepository', () => {
     queryBuilder = {
       andWhere: jest.fn().mockReturnThis(),
       innerJoin: jest.fn().mockReturnThis(),
+      distinct: jest.fn().mockReturnThis(),
       clone: jest.fn().mockReturnThis(),
       select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
       offset: jest.fn().mockReturnThis(),
       limit: jest.fn().mockReturnThis(),
@@ -73,6 +76,7 @@ describe('ProductRepository', () => {
     expect(typeOrmRepository.createQueryBuilder).toHaveBeenCalledWith(
       'product',
     );
+    expect(queryBuilder.distinct).toHaveBeenCalledWith(true);
     expect(queryBuilder.orderBy).toHaveBeenCalledWith(
       'product.createdAt',
       'DESC',
@@ -93,12 +97,34 @@ describe('ProductRepository', () => {
     expect(result).toEqual({ items: products, total: 1 });
   });
 
-  it('should find paginated products with shop and status filters', async () => {
+  it('should sort by name ascending when requested', async () => {
+    queryBuilder.getCount.mockResolvedValue(0);
+    queryBuilder.getRawMany.mockResolvedValue([]);
+
+    await repository.findAllPaginated(
+      {
+        sortBy: ProductSortBy.NAME,
+        sortOrder: ProductSortOrder.ASC,
+      },
+      0,
+      20,
+    );
+
+    expect(queryBuilder.orderBy).toHaveBeenCalledWith('product.name', 'ASC');
+  });
+
+  it('should find paginated products with all supported filters', async () => {
     queryBuilder.getCount.mockResolvedValue(0);
     queryBuilder.getRawMany.mockResolvedValue([]);
 
     const result = await repository.findAllPaginated(
-      { shopId: 'shop-id', status: ProductStatus.ACTIVE },
+      {
+        shopId: 'shop-id',
+        status: ProductStatus.ACTIVE,
+        name: 'ocean',
+        sku: 'SKU',
+        categoryIds: ['category-1', 'category-2'],
+      },
       20,
       20,
     );
@@ -112,6 +138,25 @@ describe('ProductRepository', () => {
       2,
       'product.status = :status',
       { status: ProductStatus.ACTIVE },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenNthCalledWith(
+      3,
+      'product.name ILIKE :name',
+      { name: '%ocean%' },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenNthCalledWith(
+      4,
+      'product.sku ILIKE :sku',
+      { sku: '%SKU%' },
+    );
+    expect(queryBuilder.innerJoin).toHaveBeenCalledWith(
+      'product.categories',
+      'filteredCategory',
+    );
+    expect(queryBuilder.andWhere).toHaveBeenNthCalledWith(
+      5,
+      'filteredCategory.id IN (:...categoryIds)',
+      { categoryIds: ['category-1', 'category-2'] },
     );
     expect(typeOrmRepository.find).not.toHaveBeenCalled();
     expect(result).toEqual({ items: [], total: 0 });
