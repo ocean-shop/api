@@ -228,8 +228,14 @@ export class ProductsService {
     const alreadyAssigned = product.categories.some(
       (item) => item.id === category.id,
     );
-    if (!alreadyAssigned) {
+    if (dto.assign && !alreadyAssigned) {
       product.categories = [...product.categories, category];
+      await this.productRepository.save(product);
+    }
+    if (!dto.assign && alreadyAssigned) {
+      product.categories = product.categories.filter(
+        (item) => item.id !== category.id,
+      );
       await this.productRepository.save(product);
     }
 

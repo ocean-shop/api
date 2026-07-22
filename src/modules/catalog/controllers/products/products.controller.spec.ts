@@ -176,6 +176,7 @@ describe('ProductsController', () => {
     const id = '98f21967-fce6-4ceb-af61-304913f593a7';
     const dto: AssignProductCategoryDto = {
       categoryId: '11f21967-fce6-4ceb-af61-304913f593a7',
+      assign: true,
     };
     const expected = { id, categories: [{ id: dto.categoryId }] };
     jest

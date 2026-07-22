@@ -428,6 +428,7 @@ describe('ProductsService', () => {
 
     const result = await service.assignCategory('1', {
       categoryId: 'category-id',
+      assign: true,
     });
 
     expect(productRepository.save).toHaveBeenCalledWith(
@@ -449,7 +450,58 @@ describe('ProductsService', () => {
     jest.mocked(productRepository.findById).mockResolvedValue(product);
     jest.mocked(categoryRepository.findById).mockResolvedValue(category);
 
-    await service.assignCategory('1', { categoryId: 'category-id' });
+    await service.assignCategory('1', {
+      categoryId: 'category-id',
+      assign: true,
+    });
+
+    expect(productRepository.save).not.toHaveBeenCalled();
+  });
+
+  it('should remove category when assign is false and category is assigned', async () => {
+    const category = { id: 'category-id', shopId: 'shop-id' } as any;
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      categories: [category],
+    } as any;
+    const withoutCategory = { ...product, categories: [] };
+
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(product);
+    jest.mocked(categoryRepository.findById).mockResolvedValue(category);
+    jest.mocked(productRepository.save).mockResolvedValue(withoutCategory);
+    jest
+      .mocked(productRepository.findById)
+      .mockResolvedValueOnce(withoutCategory);
+
+    const result = await service.assignCategory('1', {
+      categoryId: 'category-id',
+      assign: false,
+    });
+
+    expect(productRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        categories: [],
+      }),
+    );
+    expect(result).toEqual(withoutCategory);
+  });
+
+  it('should not save when assign is false and category is not assigned', async () => {
+    const category = { id: 'category-id', shopId: 'shop-id' } as any;
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      categories: [],
+    } as any;
+
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+    jest.mocked(categoryRepository.findById).mockResolvedValue(category);
+
+    await service.assignCategory('1', {
+      categoryId: 'category-id',
+      assign: false,
+    });
 
     expect(productRepository.save).not.toHaveBeenCalled();
   });
@@ -466,7 +518,7 @@ describe('ProductsService', () => {
     } as any);
 
     await expect(
-      service.assignCategory('1', { categoryId: 'category-id' }),
+      service.assignCategory('1', { categoryId: 'category-id', assign: true }),
     ).rejects.toThrow(BadRequestException);
   });
 
