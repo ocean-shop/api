@@ -1,4 +1,4 @@
-export interface SendOtpEmailJobData {
+export type SendOtpEmailJobData = {
   email: string;
   code: string;
-}
+};

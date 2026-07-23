@@ -1,0 +1,83 @@
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { QueryFailedError } from 'typeorm';
+import { CreateAttributeDto } from '../../dto/create-attribute.dto';
+import { ListAttributesQueryDto } from '../../dto/list-attributes-query.dto';
+import { Attribute } from '../../entities/attribute.entity';
+import { AttributeListResponse } from '../../models/attribute.models';
+import { AttributeRepository } from '../../repositories/attribute/attribute.repository';
+import { PAGINATION_MAX } from '../../constants/pagination.constants';
+
+@Injectable()
+export class AttributesService {
+  private readonly duplicateConstraintNames = [
+    'attribute_types_shop_id_name_value_key',
+  ];
+
+  constructor(private readonly attributeRepository: AttributeRepository) {}
+
+  async getAllAttributes(
+    query: ListAttributesQueryDto,
+  ): Promise<AttributeListResponse> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? PAGINATION_MAX;
+    const skip = (page - 1) * limit;
+
+    const { items, total } = await this.attributeRepository.findAllPaginated(
+      query.name,
+      query.shopId,
+      skip,
+      limit,
+    );
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+      totalPages: total > 0 ? Math.ceil(total / limit) : 0,
+    };
+  }
+
+  async createAttribute(dto: CreateAttributeDto): Promise<Attribute> {
+    const attribute = this.attributeRepository.create({
+      shopId: dto.shopId,
+      name: dto.name,
+      value: dto.value,
+    });
+
+    try {
+      return await this.attributeRepository.save(attribute);
+    } catch (error) {
+      if (this.isDuplicateAttributeError(error)) {
+        throw new BadRequestException(
+          'Attribute with this name and value already exists for this shop',
+        );
+      }
+
+      throw error;
+    }
+  }
+
+  async removeAttribute(id: string): Promise<{ message: string }> {
+    const attribute = await this.attributeRepository.findById(id);
+    await this.attributeRepository.remove(attribute);
+    return { message: 'Attribute removed successfully' };
+  }
+
+  private isDuplicateAttributeError(error: unknown): boolean {
+    if (!(error instanceof QueryFailedError)) {
+      return false;
+    }
+
+    const databaseError = error as QueryFailedError & {
+      code?: string;
+      constraint?: string;
+    };
+
+    return (
+      databaseError.code === '23505' &&
+      !!databaseError.constraint &&
+      this.duplicateConstraintNames.includes(databaseError.constraint)
+    );
+  }
+}
