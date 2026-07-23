@@ -1,0 +1,27 @@
+src/modules/catalog/services/products/products.service.spec.ts
+  s_6aaa60ac6cf632::t_ae2540830c5105 539-542,547-605,617-619,640,646-712,725-728
+src/modules/catalog/dto/assign-product-tag.dto.ts
+  s_6aaa60ac6cf632::t_a45f5135de8c1d 1,7-9
+src/modules/catalog/dto/assign-product-attribute.dto.ts
+  s_6aaa60ac6cf632::t_e064aa00501bce 1,7-9
+src/modules/catalog/services/products/products.service.ts
+  s_6aaa60ac6cf632::t_075a05af7d8923 256,260-263,286,290-295
+src/modules/catalog/controllers/products/products.controller.spec.ts
+  s_6aaa60ac6cf632::t_b1f134316fe91b 196,211
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "e99edf292be9edec6d69eef7866fccea5889bab8",
+  "prompts": {},
+  "sessions": {
+    "s_6aaa60ac6cf632": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1ba803a1-34da-4383-b4b6-9e7aff4be8b3",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  }
+}
