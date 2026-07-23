@@ -253,8 +253,12 @@ export class ProductsService {
     }
 
     const alreadyAssigned = product.tags.some((item) => item.id === tag.id);
-    if (!alreadyAssigned) {
+    if (dto.assign && !alreadyAssigned) {
       product.tags = [...product.tags, tag];
+      await this.productRepository.save(product);
+    }
+    if (!dto.assign && alreadyAssigned) {
+      product.tags = product.tags.filter((item) => item.id !== tag.id);
       await this.productRepository.save(product);
     }
 
@@ -279,8 +283,14 @@ export class ProductsService {
     const alreadyAssigned = product.attributes.some(
       (item) => item.id === attribute.id,
     );
-    if (!alreadyAssigned) {
+    if (dto.assign && !alreadyAssigned) {
       product.attributes = [...product.attributes, attribute];
+      await this.productRepository.save(product);
+    }
+    if (!dto.assign && alreadyAssigned) {
+      product.attributes = product.attributes.filter(
+        (item) => item.id !== attribute.id,
+      );
       await this.productRepository.save(product);
     }
 

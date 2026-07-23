@@ -536,9 +536,71 @@ describe('ProductsService', () => {
     jest.mocked(productRepository.save).mockResolvedValue(withTag);
     jest.mocked(productRepository.findById).mockResolvedValueOnce(withTag);
 
-    const result = await service.assignTag('1', { tagId: 'tag-id' });
+    const result = await service.assignTag('1', {
+      tagId: 'tag-id',
+      assign: true,
+    });
 
     expect(result).toEqual(withTag);
+  });
+
+  it('should not save when tag is already assigned', async () => {
+    const tag = { id: 'tag-id', shopId: 'shop-id' } as any;
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      tags: [tag],
+    } as any;
+
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+    jest.mocked(tagRepository.findById).mockResolvedValue(tag);
+
+    await service.assignTag('1', { tagId: 'tag-id', assign: true });
+
+    expect(productRepository.save).not.toHaveBeenCalled();
+  });
+
+  it('should remove tag when assign is false and tag is assigned', async () => {
+    const tag = { id: 'tag-id', shopId: 'shop-id' } as any;
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      tags: [tag],
+    } as any;
+    const withoutTag = { ...product, tags: [] };
+
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(product);
+    jest.mocked(tagRepository.findById).mockResolvedValue(tag);
+    jest.mocked(productRepository.save).mockResolvedValue(withoutTag);
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(withoutTag);
+
+    const result = await service.assignTag('1', {
+      tagId: 'tag-id',
+      assign: false,
+    });
+
+    expect(productRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tags: [],
+      }),
+    );
+    expect(result).toEqual(withoutTag);
+  });
+
+  it('should not save when assign is false and tag is not assigned', async () => {
+    const tag = { id: 'tag-id', shopId: 'shop-id' } as any;
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      tags: [],
+    } as any;
+
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+    jest.mocked(tagRepository.findById).mockResolvedValue(tag);
+
+    await service.assignTag('1', { tagId: 'tag-id', assign: false });
+
+    expect(productRepository.save).not.toHaveBeenCalled();
   });
 
   it('should throw when tag belongs to another shop', async () => {
@@ -552,9 +614,9 @@ describe('ProductsService', () => {
       shopId: 'other-shop',
     } as any);
 
-    await expect(service.assignTag('1', { tagId: 'tag-id' })).rejects.toThrow(
-      BadRequestException,
-    );
+    await expect(
+      service.assignTag('1', { tagId: 'tag-id', assign: true }),
+    ).rejects.toThrow(BadRequestException);
   });
 
   it('should assign attribute when shops match', async () => {
@@ -575,9 +637,77 @@ describe('ProductsService', () => {
 
     const result = await service.assignAttribute('1', {
       attributeTypeId: 'attr-id',
+      assign: true,
     });
 
     expect(result).toEqual(withAttribute);
+  });
+
+  it('should not save when attribute is already assigned', async () => {
+    const attribute = { id: 'attr-id', shopId: 'shop-id' } as any;
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      attributes: [attribute],
+    } as any;
+
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+    jest.mocked(attributeRepository.findById).mockResolvedValue(attribute);
+
+    await service.assignAttribute('1', {
+      attributeTypeId: 'attr-id',
+      assign: true,
+    });
+
+    expect(productRepository.save).not.toHaveBeenCalled();
+  });
+
+  it('should remove attribute when assign is false and attribute is assigned', async () => {
+    const attribute = { id: 'attr-id', shopId: 'shop-id' } as any;
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      attributes: [attribute],
+    } as any;
+    const withoutAttribute = { ...product, attributes: [] };
+
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(product);
+    jest.mocked(attributeRepository.findById).mockResolvedValue(attribute);
+    jest.mocked(productRepository.save).mockResolvedValue(withoutAttribute);
+    jest
+      .mocked(productRepository.findById)
+      .mockResolvedValueOnce(withoutAttribute);
+
+    const result = await service.assignAttribute('1', {
+      attributeTypeId: 'attr-id',
+      assign: false,
+    });
+
+    expect(productRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attributes: [],
+      }),
+    );
+    expect(result).toEqual(withoutAttribute);
+  });
+
+  it('should not save when assign is false and attribute is not assigned', async () => {
+    const attribute = { id: 'attr-id', shopId: 'shop-id' } as any;
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      attributes: [],
+    } as any;
+
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+    jest.mocked(attributeRepository.findById).mockResolvedValue(attribute);
+
+    await service.assignAttribute('1', {
+      attributeTypeId: 'attr-id',
+      assign: false,
+    });
+
+    expect(productRepository.save).not.toHaveBeenCalled();
   });
 
   it('should throw when attribute belongs to another shop', async () => {
@@ -592,7 +722,10 @@ describe('ProductsService', () => {
     } as any);
 
     await expect(
-      service.assignAttribute('1', { attributeTypeId: 'attr-id' }),
+      service.assignAttribute('1', {
+        attributeTypeId: 'attr-id',
+        assign: true,
+      }),
     ).rejects.toThrow(BadRequestException);
   });
 

@@ -193,6 +193,7 @@ describe('ProductsController', () => {
     const id = '98f21967-fce6-4ceb-af61-304913f593a7';
     const dto: AssignProductTagDto = {
       tagId: '22f21967-fce6-4ceb-af61-304913f593a7',
+      assign: true,
     };
     const expected = { id, tags: [{ id: dto.tagId }] };
     jest.mocked(productsService.assignTag).mockResolvedValue(expected as any);
@@ -207,6 +208,7 @@ describe('ProductsController', () => {
     const id = '98f21967-fce6-4ceb-af61-304913f593a7';
     const dto: AssignProductAttributeDto = {
       attributeTypeId: '33f21967-fce6-4ceb-af61-304913f593a7',
+      assign: true,
     };
     const expected = { id, attributes: [{ id: dto.attributeTypeId }] };
     jest
