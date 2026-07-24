@@ -224,7 +224,7 @@ describe('ProductsController', () => {
   it('should assign images', async () => {
     const id = '98f21967-fce6-4ceb-af61-304913f593a7';
     const dto: AssignProductImagesDto = {
-      images: [{ url: 'https://cdn.example.com/a.jpg', sort: 0 }],
+      images: [{ image: 'data:image/png;base64,ZmFrZQ==', sort: 0 }],
     };
     const expected = { id, images: dto.images };
     jest

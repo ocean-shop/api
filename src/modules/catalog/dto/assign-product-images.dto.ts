@@ -5,6 +5,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
   Min,
   ValidateNested,
@@ -13,8 +14,11 @@ import {
 export class ProductImageItemDto {
   @IsString()
   @IsNotEmpty()
-  @MaxLength(1000)
-  readonly url: string;
+  @MaxLength(10_000_000)
+  @Matches(/^data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+$/, {
+    message: 'image must be a valid base64 data URI',
+  })
+  readonly image: string;
 
   @IsOptional()
   @Type(() => Number)

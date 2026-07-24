@@ -16,6 +16,7 @@ import { ProductRepository } from '../../repositories/product/product.repository
 import { ShopRepository } from '../../repositories/shop/shop.repository';
 import { TagRepository } from '../../repositories/tag/tag.repository';
 import { PAGINATION_MAX } from '../../constants/pagination.constants';
+import { ProductImagesCloudinaryService } from '../cloudinary/product-images-cloudinary.service';
 
 @Injectable()
 export class ProductsService {
@@ -25,6 +26,7 @@ export class ProductsService {
     private readonly categoryRepository: CategoryRepository,
     private readonly tagRepository: TagRepository,
     private readonly attributeRepository: AttributeRepository,
+    private readonly productImagesCloudinaryService: ProductImagesCloudinaryService,
   ) {}
 
   async listProducts(
@@ -303,13 +305,16 @@ export class ProductsService {
   ): Promise<Product> {
     await this.productRepository.findById(id);
 
-    await this.productRepository.replaceImages(
-      id,
-      dto.images.map((image, index) => ({
-        url: image.url,
+    const uploadedImages = await Promise.all(
+      dto.images.map(async (image, index) => ({
+        url: await this.productImagesCloudinaryService.uploadBase64Image(
+          image.image,
+        ),
         sort: image.sort ?? index,
       })),
     );
+
+    await this.productRepository.replaceImages(id, uploadedImages);
 
     return this.productRepository.findById(id);
   }

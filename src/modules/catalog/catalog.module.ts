@@ -21,6 +21,7 @@ import { TagRepository } from './repositories/tag/tag.repository';
 import { JwtAuthGuard } from '../user/guards/jwt-auth.guard';
 import { RolesGuard } from '../user/guards/roles.guard';
 import { CategoriesService } from './services/categories/categories.service';
+import { ProductImagesCloudinaryService } from './services/cloudinary/product-images-cloudinary.service';
 import { ProductsService } from './services/products/products.service';
 import { ShopsService } from './services/shops/shops.service';
 import { TagsService } from './services/tags/tags.service';
@@ -57,6 +58,7 @@ import { AttributesService } from './services/attributes/attributes.service';
     TagsService,
     AttributesService,
     ProductsService,
+    ProductImagesCloudinaryService,
     ShopRepository,
     CategoryRepository,
     TagRepository,

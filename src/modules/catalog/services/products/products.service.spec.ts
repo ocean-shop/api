@@ -8,6 +8,7 @@ import { CategoryRepository } from '../../repositories/category/category.reposit
 import { ProductRepository } from '../../repositories/product/product.repository';
 import { ShopRepository } from '../../repositories/shop/shop.repository';
 import { TagRepository } from '../../repositories/tag/tag.repository';
+import { ProductImagesCloudinaryService } from '../cloudinary/product-images-cloudinary.service';
 import { ProductsService } from './products.service';
 
 describe('ProductsService', () => {
@@ -17,6 +18,7 @@ describe('ProductsService', () => {
   let categoryRepository: CategoryRepository;
   let tagRepository: TagRepository;
   let attributeRepository: AttributeRepository;
+  let productImagesCloudinaryService: ProductImagesCloudinaryService;
 
   beforeEach(async () => {
     const productRepositoryMock = {
@@ -48,6 +50,10 @@ describe('ProductsService', () => {
       findById: jest.fn(),
     };
 
+    const productImagesCloudinaryServiceMock = {
+      uploadBase64Image: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ProductsService,
@@ -56,6 +62,10 @@ describe('ProductsService', () => {
         { provide: CategoryRepository, useValue: categoryRepositoryMock },
         { provide: TagRepository, useValue: tagRepositoryMock },
         { provide: AttributeRepository, useValue: attributeRepositoryMock },
+        {
+          provide: ProductImagesCloudinaryService,
+          useValue: productImagesCloudinaryServiceMock,
+        },
       ],
     }).compile();
 
@@ -65,6 +75,9 @@ describe('ProductsService', () => {
     categoryRepository = module.get<CategoryRepository>(CategoryRepository);
     tagRepository = module.get<TagRepository>(TagRepository);
     attributeRepository = module.get<AttributeRepository>(AttributeRepository);
+    productImagesCloudinaryService = module.get<ProductImagesCloudinaryService>(
+      ProductImagesCloudinaryService,
+    );
   });
 
   it('should be defined', () => {
@@ -733,19 +746,43 @@ describe('ProductsService', () => {
     const product = { id: '1', images: [] } as any;
     const withImages = {
       id: '1',
-      images: [{ url: 'https://cdn.example.com/a.jpg', sort: 0 }],
+      images: [
+        { url: 'https://res.cloudinary.com/shop/image/upload/a.jpg', sort: 0 },
+      ],
     } as any;
 
     jest.mocked(productRepository.findById).mockResolvedValueOnce(product);
+    jest
+      .mocked(productImagesCloudinaryService.uploadBase64Image)
+      .mockResolvedValue('https://res.cloudinary.com/shop/image/upload/a.jpg');
     jest.mocked(productRepository.findById).mockResolvedValueOnce(withImages);
 
     const result = await service.assignImages('1', {
-      images: [{ url: 'https://cdn.example.com/a.jpg' }],
+      images: [{ image: 'data:image/png;base64,ZmFrZQ==' }],
     });
 
+    expect(
+      productImagesCloudinaryService.uploadBase64Image,
+    ).toHaveBeenCalledWith('data:image/png;base64,ZmFrZQ==');
     expect(productRepository.replaceImages).toHaveBeenCalledWith('1', [
-      { url: 'https://cdn.example.com/a.jpg', sort: 0 },
+      { url: 'https://res.cloudinary.com/shop/image/upload/a.jpg', sort: 0 },
     ]);
     expect(result).toEqual(withImages);
+  });
+
+  it('should throw when Cloudinary upload fails', async () => {
+    const product = { id: '1', images: [] } as any;
+
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(product);
+    jest
+      .mocked(productImagesCloudinaryService.uploadBase64Image)
+      .mockRejectedValue(new BadRequestException('Failed to upload image'));
+
+    await expect(
+      service.assignImages('1', {
+        images: [{ image: 'data:image/png;base64,ZmFrZQ==' }],
+      }),
+    ).rejects.toThrow(BadRequestException);
+    expect(productRepository.replaceImages).not.toHaveBeenCalled();
   });
 });
