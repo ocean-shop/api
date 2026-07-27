@@ -1,4 +1,4 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional } from 'class-validator';
 import { VariationTypeName } from '../entities/enums/variation-type.enum';
 
 export class UpdateVariationTypeDto {
@@ -6,9 +6,4 @@ export class UpdateVariationTypeDto {
   @IsEnum(VariationTypeName)
   @IsNotEmpty()
   readonly name?: VariationTypeName;
-
-  @IsOptional()
-  @IsString()
-  @IsNotEmpty()
-  readonly value?: string;
 }

@@ -13,7 +13,7 @@ describe('VariationTypesService', () => {
     const variationTypeRepositoryMock = {
       findAllPaginated: jest.fn(),
       findById: jest.fn(),
-      findByNameAndValue: jest.fn(),
+      findByName: jest.fn(),
       create: jest.fn(),
       save: jest.fn((variationType) => Promise.resolve(variationType)),
       remove: jest.fn(),
@@ -65,13 +65,11 @@ describe('VariationTypesService', () => {
       page: 1,
       limit: 20,
       name: VariationTypeName.COLOR,
-      value: 'red',
     });
 
     expect(variationTypeRepository.findAllPaginated).toHaveBeenCalledWith(
       {
         name: VariationTypeName.COLOR,
-        value: 'red',
       },
       0,
       20,
@@ -82,38 +80,31 @@ describe('VariationTypesService', () => {
     const payload = {
       id: '1',
       name: VariationTypeName.COLOR,
-      value: 'Red',
     } as any;
 
-    jest
-      .mocked(variationTypeRepository.findByNameAndValue)
-      .mockResolvedValue(null);
+    jest.mocked(variationTypeRepository.findByName).mockResolvedValue(null);
     jest.mocked(variationTypeRepository.create).mockReturnValue(payload);
     jest.mocked(variationTypeRepository.save).mockResolvedValue(payload);
 
     const result = await service.createVariationType({
       name: VariationTypeName.COLOR,
-      value: 'Red',
     });
 
     expect(variationTypeRepository.create).toHaveBeenCalledWith({
       name: VariationTypeName.COLOR,
-      value: 'Red',
     });
     expect(result).toEqual(payload);
   });
 
   it('should throw when variation type exists on create', async () => {
-    jest.mocked(variationTypeRepository.findByNameAndValue).mockResolvedValue({
+    jest.mocked(variationTypeRepository.findByName).mockResolvedValue({
       id: 'existing-id',
       name: VariationTypeName.COLOR,
-      value: 'Red',
     } as any);
 
     await expect(
       service.createVariationType({
         name: VariationTypeName.COLOR,
-        value: 'Red',
       }),
     ).rejects.toThrow(BadRequestException);
   });
@@ -122,24 +113,20 @@ describe('VariationTypesService', () => {
     const payload = {
       id: '1',
       name: VariationTypeName.COLOR,
-      value: 'Red',
     } as any;
 
-    jest
-      .mocked(variationTypeRepository.findByNameAndValue)
-      .mockResolvedValue(null);
+    jest.mocked(variationTypeRepository.findByName).mockResolvedValue(null);
     jest.mocked(variationTypeRepository.create).mockReturnValue(payload);
     jest.mocked(variationTypeRepository.save).mockRejectedValue(
       new QueryFailedError('INSERT INTO variation_types', [], {
         code: '23505',
-        constraint: 'uq_variation_types_name_value',
+        constraint: 'uq_variation_types_name',
       }),
     );
 
     await expect(
       service.createVariationType({
         name: VariationTypeName.COLOR,
-        value: 'Red',
       }),
     ).rejects.toThrow(BadRequestException);
   });
@@ -148,29 +135,23 @@ describe('VariationTypesService', () => {
     const existing = {
       id: '1',
       name: VariationTypeName.COLOR,
-      value: 'Red',
     } as any;
     const saved = {
       ...existing,
       name: VariationTypeName.CUSTOM,
-      value: 'Cotton',
     };
 
     jest.mocked(variationTypeRepository.findById).mockResolvedValue(existing);
-    jest
-      .mocked(variationTypeRepository.findByNameAndValue)
-      .mockResolvedValue(null);
+    jest.mocked(variationTypeRepository.findByName).mockResolvedValue(null);
     jest.mocked(variationTypeRepository.save).mockResolvedValue(saved);
 
     const result = await service.updateVariationType('1', {
       name: VariationTypeName.CUSTOM,
-      value: 'Cotton',
     });
 
     expect(variationTypeRepository.save).toHaveBeenCalledWith({
       ...existing,
       name: VariationTypeName.CUSTOM,
-      value: 'Cotton',
     });
     expect(result).toEqual(saved);
   });
@@ -179,18 +160,15 @@ describe('VariationTypesService', () => {
     jest.mocked(variationTypeRepository.findById).mockResolvedValue({
       id: '1',
       name: VariationTypeName.COLOR,
-      value: 'Red',
     } as any);
-    jest.mocked(variationTypeRepository.findByNameAndValue).mockResolvedValue({
+    jest.mocked(variationTypeRepository.findByName).mockResolvedValue({
       id: 'existing-id',
       name: VariationTypeName.CUSTOM,
-      value: 'Cotton',
     } as any);
 
     await expect(
       service.updateVariationType('1', {
         name: VariationTypeName.CUSTOM,
-        value: 'Cotton',
       }),
     ).rejects.toThrow(BadRequestException);
   });
@@ -199,7 +177,6 @@ describe('VariationTypesService', () => {
     const variationType = {
       id: '1',
       name: VariationTypeName.COLOR,
-      value: 'Red',
     } as any;
     jest
       .mocked(variationTypeRepository.findById)

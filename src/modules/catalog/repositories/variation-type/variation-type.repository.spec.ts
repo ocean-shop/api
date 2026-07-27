@@ -74,17 +74,6 @@ describe('VariationTypeRepository', () => {
     );
   });
 
-  it('should filter by value', async () => {
-    queryBuilder.getManyAndCount.mockResolvedValue([[], 0]);
-
-    await repository.findAllPaginated({ value: 'red' }, 0, 20);
-
-    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
-      'variationType.value ILIKE :value',
-      { value: '%red%' },
-    );
-  });
-
   it('should find variation type by id', async () => {
     const item = { id: '1' } as VariationType;
     typeOrmRepository.findOne.mockResolvedValue(item);
@@ -105,17 +94,14 @@ describe('VariationTypeRepository', () => {
     );
   });
 
-  it('should find variation type by name and value', async () => {
-    const item = { id: '1', name: VariationTypeName.COLOR, value: 'Red' };
+  it('should find variation type by name', async () => {
+    const item = { id: '1', name: VariationTypeName.COLOR };
     typeOrmRepository.findOne.mockResolvedValue(item);
 
-    const result = await repository.findByNameAndValue(
-      VariationTypeName.COLOR,
-      'Red',
-    );
+    const result = await repository.findByName(VariationTypeName.COLOR);
 
     expect(typeOrmRepository.findOne).toHaveBeenCalledWith({
-      where: { name: VariationTypeName.COLOR, value: 'Red' },
+      where: { name: VariationTypeName.COLOR },
     });
     expect(result).toEqual(item);
   });
@@ -123,7 +109,6 @@ describe('VariationTypeRepository', () => {
   it('should create variation type entity', () => {
     const payload = {
       name: VariationTypeName.COLOR,
-      value: 'Red',
     };
     const item = { id: '1', ...payload };
     typeOrmRepository.create.mockReturnValue(item);

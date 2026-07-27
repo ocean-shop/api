@@ -26,12 +26,6 @@ export class VariationTypeRepository {
       query.andWhere('variationType.name = :name', { name: filters.name });
     }
 
-    if (filters.value) {
-      query.andWhere('variationType.value ILIKE :value', {
-        value: `%${filters.value}%`,
-      });
-    }
-
     const [items, total] = await query.getManyAndCount();
 
     return { items, total };
@@ -47,11 +41,8 @@ export class VariationTypeRepository {
     return variationType;
   }
 
-  async findByNameAndValue(
-    name: VariationType['name'],
-    value: string,
-  ): Promise<VariationType | null> {
-    return this.repository.findOne({ where: { name, value } });
+  async findByName(name: VariationType['name']): Promise<VariationType | null> {
+    return this.repository.findOne({ where: { name } });
   }
 
   create(payload: Partial<VariationType>): VariationType {

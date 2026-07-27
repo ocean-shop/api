@@ -10,9 +10,7 @@ import { VariationTypeRepository } from '../../repositories/variation-type/varia
 
 @Injectable()
 export class VariationTypesService {
-  private readonly duplicateNameValueConstraintNames = [
-    'uq_variation_types_name_value',
-  ];
+  private readonly duplicateNameConstraintNames = ['uq_variation_types_name'];
 
   constructor(
     private readonly variationTypeRepository: VariationTypeRepository,
@@ -26,7 +24,6 @@ export class VariationTypesService {
     const skip = (page - 1) * limit;
     const filters = {
       ...(query.name ? { name: query.name } : {}),
-      ...(query.value ? { value: query.value } : {}),
     };
 
     const { items, total } =
@@ -44,11 +41,10 @@ export class VariationTypesService {
   async createVariationType(
     dto: CreateVariationTypeDto,
   ): Promise<VariationType> {
-    await this.ensureNameAndValueUnique(dto.name, dto.value);
+    await this.ensureNameUnique(dto.name);
 
     const variationType = this.variationTypeRepository.create({
       name: dto.name,
-      value: dto.value,
     });
 
     return this.saveVariationType(variationType);
@@ -61,19 +57,14 @@ export class VariationTypesService {
     const variationType = await this.variationTypeRepository.findById(id);
 
     const nextName = dto.name ?? variationType.name;
-    const nextValue = dto.value ?? variationType.value;
-    const shouldValidateUniqueness =
-      nextName !== variationType.name || nextValue !== variationType.value;
+    const shouldValidateUniqueness = nextName !== variationType.name;
 
     if (shouldValidateUniqueness) {
-      await this.ensureNameAndValueUnique(nextName, nextValue, id);
+      await this.ensureNameUnique(nextName, id);
     }
 
     if (dto.name !== undefined) {
       variationType.name = dto.name;
-    }
-    if (dto.value !== undefined) {
-      variationType.value = dto.value;
     }
 
     return this.saveVariationType(variationType);
@@ -85,19 +76,15 @@ export class VariationTypesService {
     return { message: 'Variation type removed successfully' };
   }
 
-  private async ensureNameAndValueUnique(
+  private async ensureNameUnique(
     name: VariationType['name'],
-    value: string,
     excludeVariationTypeId?: string,
   ): Promise<void> {
-    const existing = await this.variationTypeRepository.findByNameAndValue(
-      name,
-      value,
-    );
+    const existing = await this.variationTypeRepository.findByName(name);
 
     if (existing && existing.id !== excludeVariationTypeId) {
       throw new BadRequestException(
-        'Variation type with this name and value already exists',
+        'Variation type with this name already exists',
       );
     }
   }
@@ -108,9 +95,9 @@ export class VariationTypesService {
     try {
       return await this.variationTypeRepository.save(variationType);
     } catch (error) {
-      if (this.isDuplicateNameValueError(error)) {
+      if (this.isDuplicateNameError(error)) {
         throw new BadRequestException(
-          'Variation type with this name and value already exists',
+          'Variation type with this name already exists',
         );
       }
 
@@ -118,7 +105,7 @@ export class VariationTypesService {
     }
   }
 
-  private isDuplicateNameValueError(error: unknown): boolean {
+  private isDuplicateNameError(error: unknown): boolean {
     if (!(error instanceof QueryFailedError)) {
       return false;
     }
@@ -131,7 +118,7 @@ export class VariationTypesService {
     return (
       databaseError.code === '23505' &&
       !!databaseError.constraint &&
-      this.duplicateNameValueConstraintNames.includes(databaseError.constraint)
+      this.duplicateNameConstraintNames.includes(databaseError.constraint)
     );
   }
 }

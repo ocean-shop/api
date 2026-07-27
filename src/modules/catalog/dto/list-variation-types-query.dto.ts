@@ -1,13 +1,5 @@
 import { Type } from 'class-transformer';
-import {
-  IsEnum,
-  IsInt,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  Max,
-  Min,
-} from 'class-validator';
+import { IsEnum, IsInt, IsOptional, Max, Min } from 'class-validator';
 import { VariationTypeName } from '../entities/enums/variation-type.enum';
 
 export class ListVariationTypesQueryDto {
@@ -25,9 +17,4 @@ export class ListVariationTypesQueryDto {
   @IsOptional()
   @IsEnum(VariationTypeName)
   readonly name?: VariationTypeName;
-
-  @IsOptional()
-  @IsString()
-  @IsNotEmpty()
-  readonly value?: string;
 }

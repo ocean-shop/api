@@ -19,9 +19,6 @@ export class VariationType {
   })
   name: VariationTypeName;
 
-  @Column({ type: 'varchar', length: 255 })
-  value: string;
-
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 

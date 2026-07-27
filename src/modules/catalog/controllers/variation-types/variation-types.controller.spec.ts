@@ -59,7 +59,6 @@ describe('VariationTypesController', () => {
   it('should create variation type', async () => {
     const dto: CreateVariationTypeDto = {
       name: VariationTypeName.COLOR,
-      value: 'Red',
     };
     const expected = { id: '1', ...dto };
     jest
@@ -76,7 +75,6 @@ describe('VariationTypesController', () => {
     const id = '98f21967-fce6-4ceb-af61-304913f593a7';
     const dto: UpdateVariationTypeDto = {
       name: VariationTypeName.CUSTOM,
-      value: 'Cotton',
     };
     const expected = { id, ...dto };
     jest

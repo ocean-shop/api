@@ -3,7 +3,6 @@ import { VariationType } from '../entities/variation-type.entity';
 
 export type VariationTypeFilters = {
   name?: VariationTypeName;
-  value?: string;
 };
 
 export type VariationTypeListResponse = {
