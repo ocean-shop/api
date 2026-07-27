@@ -1,0 +1,67 @@
+src/modules/catalog/controllers/images/images.controller.ts
+  s_48f6445aea1dad::t_b5d92c7461fd70 1-35
+src/modules/catalog/services/images/images.service.ts
+  s_48f6445aea1dad::t_bd5a9dc9ea985a 1-36
+src/modules/catalog/controllers/images/images.controller.spec.ts
+  s_48f6445aea1dad::t_4186c59b87f10e 1-60
+src/modules/catalog/dto/change-product-image-sort.dto.ts
+  s_48f6445aea1dad::t_a6f14f68bd13ae 1-6
+src/modules/catalog/repositories/product/product.repository.ts
+  s_48f6445aea1dad::t_3abbde41a91741 242-284
+src/main.ts
+  s_302fed6b0a609c::t_8b741c2a598914 4,9-10
+src/modules/catalog/catalog.module.ts
+  s_48f6445aea1dad::t_ecf8f5364867d2 10,30,56,64
+src/modules/catalog/services/images/images.service.spec.ts
+  h_eee5bfb8805eb8 63
+  s_615f379bc06ad7::t_48666274dab5f7 52
+  s_48f6445aea1dad::t_7662499c964129 1-51,53-62,64-127
+src/modules/catalog/services/cloudinary/product-images-cloudinary.service.ts
+  h_eee5bfb8805eb8 1,11,14-15,17-18,22-27,29-31,56-110
+  s_57ced5720fab00::t_067e43aadb6c97 28,32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "a15c0027e311c65e88d44817d6fa4e5641d0e501",
+  "prompts": {},
+  "humans": {
+    "h_eee5bfb8805eb8": {
+      "author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  },
+  "sessions": {
+    "s_302fed6b0a609c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "cd2c1f4a-ad43-4786-b66c-4a7ec0eb3320",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    },
+    "s_48f6445aea1dad": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "9e70526d-2d76-493c-b3ad-e4bb8a7921c1",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    },
+    "s_57ced5720fab00": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "d2abd910-0e2a-459b-812d-1af2a3b46603",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    },
+    "s_615f379bc06ad7": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "43d1cd7a-da8d-4dac-84a4-a2a60079022e",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  }
+}
