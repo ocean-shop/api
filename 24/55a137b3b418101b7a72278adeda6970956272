@@ -1,0 +1,37 @@
+src/modules/catalog/dto/update-variation-type.dto.ts
+  s_30aca961a20a4d::t_8ea36b4d021c1b 1
+src/core/db/migrations/1787200000000-MoveVariationTypeValueToVariationVariationTypes.ts
+  s_30aca961a20a4d::t_4a48e454428c4f 1-103,105,108-138
+  s_30aca961a20a4d::t_d8890ba49c7447 104,106-107
+src/modules/catalog/dto/create-variation-type.dto.ts
+  s_30aca961a20a4d::t_5eeb1513b26bdc 1
+src/modules/catalog/services/variation-types/variation-types.service.ts
+  s_30aca961a20a4d::t_d86b0c163bbca0 13,44,60,63,79,83
+src/modules/catalog/repositories/variation-type/variation-type.repository.spec.ts
+  s_30aca961a20a4d::t_7d7537da9383be 97-98,101,104
+src/modules/catalog/repositories/variation-type/variation-type.repository.ts
+  s_30aca961a20a4d::t_57d09294237a0a 44-45
+src/modules/catalog/services/variation-types/variation-types.service.spec.ts
+  s_30aca961a20a4d::t_c66897240c5d24 16,85,100,118,123,145,164
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "2455a137b3b418101b7a72278adeda6970956272",
+  "prompts": {},
+  "humans": {
+    "h_eee5bfb8805eb8": {
+      "author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  },
+  "sessions": {
+    "s_30aca961a20a4d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c063d294-5135-433e-9455-7f2a5277df14",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  }
+}
