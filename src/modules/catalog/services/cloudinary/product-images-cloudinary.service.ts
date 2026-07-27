@@ -1,51 +1,42 @@
-import {
-  BadRequestException,
-  Injectable,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UploadApiResponse, v2 as cloudinary } from 'cloudinary';
 
 @Injectable()
 export class ProductImagesCloudinaryService {
-  private configured = false;
-
   constructor(private readonly configService: ConfigService) {}
 
   async uploadBase64Image(image: string): Promise<string> {
     this.ensureConfigured();
+    const normalizedImage = image.trim();
 
     try {
-      const response = await cloudinary.uploader.upload(image, {
-        resource_type: 'image',
-        folder: this.configService.get<string>('CLOUDINARY_PRODUCTS_FOLDER'),
+      const response = await cloudinary.uploader.upload(normalizedImage, {
+        resource_type: 'auto',
+        folder:
+          this.configService.get<string>('CLOUDINARY_PRODUCTS_FOLDER') ||
+          'shop',
       });
 
       return this.toSecureUrl(response);
-    } catch {
-      throw new BadRequestException('Failed to upload image to Cloudinary');
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      const details = this.extractUploadErrorDetails(error);
+      throw new BadRequestException(
+        details
+          ? `Failed to upload image to Cloudinary: ${details}`
+          : 'Failed to upload image to Cloudinary',
+      );
     }
   }
 
   private ensureConfigured(): void {
-    if (this.configured) {
-      return;
-    }
-
-    const cloudinaryUrl = this.configService.get<string>('CLOUDINARY_URL');
-    if (cloudinaryUrl) {
-      cloudinary.config(cloudinaryUrl);
-      this.configured = true;
-      return;
-    }
-
     const cloudName = this.configService.get<string>('CLOUDINARY_CLOUD_NAME');
     const apiKey = this.configService.get<string>('CLOUDINARY_API_KEY');
     const apiSecret = this.configService.get<string>('CLOUDINARY_API_SECRET');
-
-    if (!cloudName || !apiKey || !apiSecret) {
-      throw new ServiceUnavailableException('Cloudinary is not configured');
-    }
 
     cloudinary.config({
       cloud_name: cloudName,
@@ -53,7 +44,6 @@ export class ProductImagesCloudinaryService {
       api_secret: apiSecret,
       secure: true,
     });
-    this.configured = true;
   }
 
   private toSecureUrl(response: UploadApiResponse): string {
@@ -62,5 +52,61 @@ export class ProductImagesCloudinaryService {
     }
 
     return response.secure_url;
+  }
+
+  private extractUploadErrorDetails(error: unknown): string | null {
+    if (typeof error === 'string') {
+      const message = error.trim();
+      return message || null;
+    }
+
+    if (!(error instanceof Error)) {
+      return this.extractMessageFromUnknownObject(error);
+    }
+
+    const message = error.message.trim();
+    if (!message) {
+      return this.extractMessageFromUnknownObject(error);
+    }
+
+    return message;
+  }
+
+  private extractMessageFromUnknownObject(error: unknown): string | null {
+    if (!error || typeof error !== 'object') {
+      return null;
+    }
+
+    const value = error as Record<string, unknown>;
+    const directMessage = this.toText(value.message);
+    if (directMessage) {
+      return directMessage;
+    }
+
+    const nestedError = value.error;
+    if (nestedError && typeof nestedError === 'object') {
+      const nestedMessage = this.toText(
+        (nestedError as Record<string, unknown>).message,
+      );
+      if (nestedMessage) {
+        return nestedMessage;
+      }
+    }
+
+    try {
+      const serialized = JSON.stringify(error);
+      return serialized === '{}' ? null : serialized;
+    } catch {
+      return null;
+    }
+  }
+
+  private toText(value: unknown): string | null {
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    const message = value.trim();
+    return message || null;
   }
 }

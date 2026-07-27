@@ -7,6 +7,7 @@ import { ProductsController } from './controllers/products/products.controller';
 import { ShopsController } from './controllers/shops/shops.controller';
 import { TagsController } from './controllers/tags/tags.controller';
 import { AttributesController } from './controllers/attributes/attributes.controller';
+import { ImagesController } from './controllers/images/images.controller';
 import { Attribute } from './entities/attribute.entity';
 import { Category } from './entities/category.entity';
 import { ProductImage } from './entities/product-image.entity';
@@ -26,6 +27,7 @@ import { ProductsService } from './services/products/products.service';
 import { ShopsService } from './services/shops/shops.service';
 import { TagsService } from './services/tags/tags.service';
 import { AttributesService } from './services/attributes/attributes.service';
+import { ImagesService } from './services/images/images.service';
 
 @Module({
   imports: [
@@ -51,6 +53,7 @@ import { AttributesService } from './services/attributes/attributes.service';
     TagsController,
     AttributesController,
     ProductsController,
+    ImagesController,
   ],
   providers: [
     ShopsService,
@@ -58,6 +61,7 @@ import { AttributesService } from './services/attributes/attributes.service';
     TagsService,
     AttributesService,
     ProductsService,
+    ImagesService,
     ProductImagesCloudinaryService,
     ShopRepository,
     CategoryRepository,

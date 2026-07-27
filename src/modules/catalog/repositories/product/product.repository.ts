@@ -239,4 +239,47 @@ export class ProductRepository {
 
     return this.imageRepository.save(entities);
   }
+
+  async findImageById(id: string): Promise<ProductImage> {
+    const image = await this.imageRepository.findOne({ where: { id } });
+
+    if (!image) {
+      throw new NotFoundException('Product image not found');
+    }
+
+    return image;
+  }
+
+  async findAdjacentImageSibling(
+    image: ProductImage,
+    direction: 'up' | 'down',
+  ): Promise<ProductImage | null> {
+    const query = this.imageRepository
+      .createQueryBuilder('image')
+      .where('image.productId = :productId', { productId: image.productId })
+      .andWhere(
+        direction === 'up' ? 'image.sort < :sort' : 'image.sort > :sort',
+        { sort: image.sort },
+      )
+      .orderBy('image.sort', direction === 'up' ? 'DESC' : 'ASC')
+      .addOrderBy('image.createdAt', direction === 'up' ? 'DESC' : 'ASC');
+
+    return query.getOne();
+  }
+
+  async swapImageSort(
+    current: ProductImage,
+    sibling: ProductImage,
+  ): Promise<ProductImage> {
+    const currentSort = current.sort;
+    current.sort = sibling.sort;
+    sibling.sort = currentSort;
+
+    await this.imageRepository.save([current, sibling]);
+    return this.findImageById(current.id);
+  }
+
+  async removeImage(image: ProductImage): Promise<ProductImage> {
+    return this.imageRepository.remove(image);
+  }
 }
