@@ -1,0 +1,83 @@
+src/modules/catalog/entities/enums/variation-type.enum.ts
+  s_b4b9b59ee12120::t_28aad95c908f8d 1-4
+src/modules/catalog/repositories/variation-type/variation-type.repository.ts
+  s_b4b9b59ee12120::t_b4a0222b08bb61 1-68
+src/modules/catalog/models/variation-type.models.ts
+  s_b4b9b59ee12120::t_0e0f72a2bb01be 1-15
+src/modules/catalog/controllers/variation-types/variation-types.controller.ts
+  s_b4b9b59ee12120::t_8aded96d9eb56d 1-52
+src/core/db/migrations/1787000000000-CreateVariationTypesTable.ts
+  s_dc993d071e4e48::t_1402e61dadd364 1-2,4-14,35-36,55-72,94-96
+  s_dc993d071e4e48::t_ebc4c323c53b59 3
+  s_283e7fb441db62::t_866aca23202161 15-34,37-54,73-93
+src/modules/catalog/dto/create-variation-type.dto.ts
+  s_b4b9b59ee12120::t_59880ba6d74425 2-12
+  s_00b5ca149aa5f7::t_86bc9d657e67b5 1
+src/modules/catalog/repositories/variation-type/variation-type.repository.spec.ts
+  s_b4b9b59ee12120::t_6dc918b6035fd9 1-154
+  s_b4b9b59ee12120::t_f04e85ba11cf9b 155-156
+src/modules/catalog/entities/variation-type.entity.ts
+  s_b4b9b59ee12120::t_600b482f71bde5 1-30
+src/modules/catalog/controllers/variation-types/variation-types.controller.spec.ts
+  s_b4b9b59ee12120::t_f54e95f51d8b0e 1-100
+  s_b4b9b59ee12120::t_cb38dfbbb693a6 101-103
+src/modules/catalog/services/variation-types/variation-types.service.spec.ts
+  s_b4b9b59ee12120::t_1f9ed4f1166b54 1-203
+  s_b4b9b59ee12120::t_f3d58332752d92 204-206
+src/core/db/migrations/1787100000000-MoveVariationTypeDefaultToProductVariations.ts
+  s_00b5ca149aa5f7::t_10699ad1a1398e 1-47
+src/modules/catalog/services/variation-types/variation-types.service.ts
+  s_b4b9b59ee12120::t_9aef0dca117594 1-137
+src/modules/catalog/dto/update-variation-type.dto.ts
+  s_b4b9b59ee12120::t_7a159735b7bc23 1-14
+src/modules/catalog/dto/list-variation-types-query.dto.ts
+  s_b4b9b59ee12120::t_fb4632a70bcca3 2-33
+  s_00b5ca149aa5f7::t_a8563399a61d80 1
+src/modules/catalog/catalog.module.ts
+  s_b4b9b59ee12120::t_f1a867482b5f96 11,18,24,34,45,62,71,78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "72819bc2d61bab3e48a9f7c0b7928f958dead067",
+  "prompts": {},
+  "humans": {
+    "h_eee5bfb8805eb8": {
+      "author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  },
+  "sessions": {
+    "s_00b5ca149aa5f7": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "6b332e4e-7430-428f-8ac2-48dc787ab2d9",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    },
+    "s_283e7fb441db62": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "593a6704-25d9-4261-8e76-a1e9a41120c7",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    },
+    "s_b4b9b59ee12120": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "7eda393b-9500-434b-8f5c-57dec340c1cc",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    },
+    "s_dc993d071e4e48": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "9f3f7f8b-e1fb-41a3-b618-7e6fc55a84e3",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  }
+}
