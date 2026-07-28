@@ -1,0 +1,26 @@
+src/core/db/migrations/1787300000000-ReplaceVariationTypesWithVariationAttributes.ts
+  s_c70e7633967e53::t_238b5297934776 1-89
+src/core/db/seeders/seed.ts
+  s_c70e7633967e53::t_3a6520b4f0df40 70,74-77,79
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "b8e3ef3e410b115bb85fb2bbc76b56afdfbe9699",
+  "prompts": {},
+  "humans": {
+    "h_eee5bfb8805eb8": {
+      "author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  },
+  "sessions": {
+    "s_c70e7633967e53": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "0da705ff-20fb-4aa7-a4ea-046495301079",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  }
+}
