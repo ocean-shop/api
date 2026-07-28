@@ -132,8 +132,18 @@ export class ProductRepository {
         tags: true,
         attributes: true,
         images: true,
+        variations: {
+          attributes: true,
+          images: true,
+        },
       },
-      order: { images: { sort: 'ASC' } },
+      order: {
+        images: { sort: 'ASC' },
+        variations: {
+          createdAt: 'ASC',
+          images: { sort: 'ASC' },
+        },
+      },
     });
 
     if (!product) {

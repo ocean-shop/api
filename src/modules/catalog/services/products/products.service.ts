@@ -4,6 +4,7 @@ import { AssignProductAttributeDto } from '../../dto/assign-product-attribute.dt
 import { AssignProductCategoryDto } from '../../dto/assign-product-category.dto';
 import { AssignProductImagesDto } from '../../dto/assign-product-images.dto';
 import { AssignProductTagDto } from '../../dto/assign-product-tag.dto';
+import { CreateProductVariationDto } from '../../dto/create-product-variation.dto';
 import { CreateProductDto } from '../../dto/create-product.dto';
 import { ListProductsQueryDto } from '../../dto/list-products-query.dto';
 import { UpdateProductDto } from '../../dto/update-product.dto';
@@ -13,6 +14,7 @@ import { ProductListResponse } from '../../models/product.models';
 import { AttributeRepository } from '../../repositories/attribute/attribute.repository';
 import { CategoryRepository } from '../../repositories/category/category.repository';
 import { ProductRepository } from '../../repositories/product/product.repository';
+import { ProductVariationRepository } from '../../repositories/product-variation/product-variation.repository';
 import { ShopRepository } from '../../repositories/shop/shop.repository';
 import { TagRepository } from '../../repositories/tag/tag.repository';
 import { PAGINATION_MAX } from '../../constants/pagination.constants';
@@ -22,6 +24,7 @@ import { ProductImagesCloudinaryService } from '../cloudinary/product-images-clo
 export class ProductsService {
   constructor(
     private readonly productRepository: ProductRepository,
+    private readonly productVariationRepository: ProductVariationRepository,
     private readonly shopRepository: ShopRepository,
     private readonly categoryRepository: CategoryRepository,
     private readonly tagRepository: TagRepository,
@@ -317,6 +320,61 @@ export class ProductsService {
     await this.productRepository.replaceImages(id, uploadedImages);
 
     return this.productRepository.findById(id);
+  }
+
+  async createVariation(
+    id: string,
+    dto: CreateProductVariationDto,
+  ): Promise<Product> {
+    const product = await this.productRepository.findById(id);
+
+    if (product.type !== ProductType.VARIABLE) {
+      throw new BadRequestException(
+        'Variations can only be created for variable products',
+      );
+    }
+
+    const uploadedImages = await Promise.all(
+      dto.images.map(async (image, index) => ({
+        url: await this.productImagesCloudinaryService.uploadBase64Image(
+          image.image,
+        ),
+        sort: image.sort ?? index,
+      })),
+    );
+
+    const variation = this.productVariationRepository.create({
+      productId: id,
+      sku: null,
+      name: null,
+      title: null,
+      price: this.toNumericString(0),
+      oldPrice: null,
+      available: true,
+      isDefault: false,
+    });
+
+    try {
+      const savedVariation =
+        await this.productVariationRepository.save(variation);
+
+      await this.productVariationRepository.replaceAttributes(
+        savedVariation.id,
+        dto.attributes.map((attribute) => ({
+          name: attribute.name,
+          value: attribute.value,
+        })),
+      );
+
+      await this.productVariationRepository.replaceImages(
+        savedVariation.id,
+        uploadedImages,
+      );
+
+      return this.productRepository.findById(id);
+    } catch (error) {
+      this.rethrowConstraintError(error);
+    }
   }
 
   private toListResponse(

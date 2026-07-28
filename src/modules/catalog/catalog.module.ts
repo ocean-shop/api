@@ -14,9 +14,13 @@ import { ProductImage } from './entities/product-image.entity';
 import { Product } from './entities/product.entity';
 import { Shop } from './entities/shop.entity';
 import { Tag } from './entities/tag.entity';
+import { ProductVariation } from './entities/product-variation.entity';
+import { VariationAttribute } from './entities/variation-attribute.entity';
+import { VariationImage } from './entities/variation-image.entity';
 import { AttributeRepository } from './repositories/attribute/attribute.repository';
 import { CategoryRepository } from './repositories/category/category.repository';
 import { ProductRepository } from './repositories/product/product.repository';
+import { ProductVariationRepository } from './repositories/product-variation/product-variation.repository';
 import { ShopRepository } from './repositories/shop/shop.repository';
 import { TagRepository } from './repositories/tag/tag.repository';
 import { JwtAuthGuard } from '../user/guards/jwt-auth.guard';
@@ -38,6 +42,9 @@ import { ImagesService } from './services/images/images.service';
       Attribute,
       Product,
       ProductImage,
+      ProductVariation,
+      VariationAttribute,
+      VariationImage,
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -68,6 +75,7 @@ import { ImagesService } from './services/images/images.service';
     TagRepository,
     AttributeRepository,
     ProductRepository,
+    ProductVariationRepository,
     JwtAuthGuard,
     RolesGuard,
   ],
