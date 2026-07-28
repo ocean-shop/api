@@ -52,36 +52,8 @@ async function bootstrap() {
     console.log('User role already exists.');
   }
 
-  console.log('Seeding admin user...');
-  const adminEmail = 'kukulyak.taras@gmail.com';
-  let adminUser = await userRepository.findOne({
-    where: { email: adminEmail },
-    relations: { role: true },
-  });
-
-  if (!adminUser) {
-    adminUser = userRepository.create({
-      email: adminEmail,
-      isEmailVerified: true,
-      isActive: true,
-      role: adminRole,
-    });
-    await userRepository.save(adminUser);
-    console.log(`Created admin user: ${adminEmail}`);
-  } else {
-    console.log(`Admin user ${adminEmail} already exists.`);
-
-    // Ensure the admin role is assigned if the user existed but didn't have it
-    const hasAdminRole = adminUser.role?.name === 'admin';
-    if (!hasAdminRole) {
-      adminUser.role = adminRole;
-      await userRepository.save(adminUser);
-      console.log(`Assigned admin role to existing user: ${adminEmail}`);
-    }
-  }
-
   console.log('Seeding super user...');
-  const superEmail = 'super@example.com';
+  const superEmail = 'kukulyak.taras@gmail.com';
   let superUser = await userRepository.findOne({
     where: { email: superEmail },
     relations: { role: true },
@@ -95,15 +67,16 @@ async function bootstrap() {
       role: superRole,
     });
     await userRepository.save(superUser);
-    console.log(`Created super user: ${superEmail}`);
+    console.log(`Created admin user: ${superEmail}`);
   } else {
     console.log(`Super user ${superEmail} already exists.`);
 
-    const hasSuperRole = superUser.role?.name === 'super';
-    if (!hasSuperRole) {
-      superUser.role = superRole;
+    // Ensure the admin role is assigned if the user existed but didn't have it
+    const hasAdminRole = superUser.role?.name === 'admin';
+    if (!hasAdminRole) {
+      superUser.role = adminRole;
       await userRepository.save(superUser);
-      console.log(`Assigned super role to existing user: ${superEmail}`);
+      console.log(`Assigned admin role to existing user: ${superEmail}`);
     }
   }
 
