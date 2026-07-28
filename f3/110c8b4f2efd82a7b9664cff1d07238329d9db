@@ -1,0 +1,74 @@
+src/modules/catalog/entities/variation-attribute.entity.ts
+  s_1490738ae38e07::t_83bf31f52aaba6 1-33
+src/modules/catalog/services/products/products.service.spec.ts
+  s_1490738ae38e07::t_647c116a28390c 804-822,824-826,829-897
+  s_6977a30a91973d::t_78c00fcb8a849d 823,828
+  s_6977a30a91973d::t_1d69f69c083863 827
+  s_1490738ae38e07::t_edf18615b19b65 9,18,39-45,70-73,87-89
+src/modules/catalog/repositories/product/product.repository.ts
+  s_1490738ae38e07::t_c45a68ee48950d 135-145
+src/modules/catalog/dto/create-product-variation.dto.ts
+  s_1490738ae38e07::t_7f5725fe7f9943 1-38
+src/modules/catalog/entities/product-variation.entity.ts
+  s_1490738ae38e07::t_accb40d8cd1b00 1-71
+src/modules/catalog/catalog.module.ts
+  s_1490738ae38e07::t_e97f2b4c177c05 17-19,23,45-47,78
+src/modules/catalog/repositories/product/product.repository.spec.ts
+  s_1490738ae38e07::t_bedfffea9ca329 242-252
+src/modules/catalog/services/products/products.service.ts
+  s_1490738ae38e07::t_425ca183258284 7,17,27,325-377
+  s_1490738ae38e07::t_4430436201aa96 378-379
+src/modules/catalog/repositories/product-variation/product-variation.repository.ts
+  s_1490738ae38e07::t_962f1fd483d8b5 1-82
+src/modules/catalog/entities/variation-image.entity.ts
+  s_1490738ae38e07::t_55d01e097509b2 1-37
+src/modules/catalog/controllers/products/products.controller.ts
+  s_1490738ae38e07::t_b1a39e382c7c01 21,130-137
+  s_1490738ae38e07::t_7461b1ae6d5bf7 138
+src/core/db/migrations/1787300000000-ReplaceVariationTypesWithVariationAttributes.ts
+  s_56b4b9e6d98468::t_cb85e47b0ee194 15-23,27,30-31,33-34,42-44
+src/core/db/migrations/1787400000000-ConsolidateVariationAttributes.ts
+  s_56b4b9e6d98468::t_58bd7449aa0747 1-72
+src/modules/catalog/controllers/products/products.controller.spec.ts
+  s_1490738ae38e07::t_17332709bdd880 8,33,241-259
+  s_1490738ae38e07::t_dbcaf4d8ad9a4c 260-261
+src/modules/catalog/entities/product.entity.ts
+  s_1490738ae38e07::t_47957524878a3a 17,113-117
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "f3110c8b4f2efd82a7b9664cff1d07238329d9db",
+  "prompts": {},
+  "humans": {
+    "h_eee5bfb8805eb8": {
+      "author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  },
+  "sessions": {
+    "s_1490738ae38e07": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "9dcfebe0-2557-4455-82d1-3ff899cf4fa5",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    },
+    "s_56b4b9e6d98468": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "71ba5893-1389-4607-992a-2372d7417ee1",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    },
+    "s_6977a30a91973d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "927b478c-1949-4173-b529-82d60673da4d",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  }
+}
