@@ -1,0 +1,48 @@
+src/modules/catalog/dto/product-variation.dto.ts
+  s_4360a143131ec5::t_c9dff5d02fb1fd 4-6,10-11,23-40,43-52
+src/modules/catalog/services/products/products.service.spec.ts
+  s_a12555c64c25a8::t_cab8506bec54a4 838,937,953,993,1055,1082
+  s_4360a143131ec5::t_dde284d37471f0 839-845,852-856,858,910-916,938-944,962-968,994-1000,1006-1017,1056-1062,1083-1089
+  s_4360a143131ec5::t_f8d571d9988055 861,879-880,882,884-893,895-907,909,917-928,957,1018-1023
+src/modules/catalog/controllers/products/products.controller.ts
+  s_a12555c64c25a8::t_eaa05f6be7d999 133,137-147
+src/modules/catalog/controllers/products/products.controller.spec.ts
+  s_4360a143131ec5::t_74c4c2e8bb19d2 246-252,274-280
+  s_a12555c64c25a8::t_39101460d9d53f 33-34,261,264,266,270,272,284,286,289,291-295
+src/modules/catalog/services/products/products.service.ts
+  s_4360a143131ec5::t_50a8580df9f25c 348-357,387,416-424
+  s_4360a143131ec5::t_6ddcf2ddae70b3 344-345,425,490-492
+  s_a12555c64c25a8::t_ff1b90498815f5 325,346-347,358-386,388-395,397,426-428,431,438,493,497
+  s_4360a143131ec5::t_46d0e98b820034 341-343
+  s_a12555c64c25a8::t_c45da64593afd8 494-496
+  s_a12555c64c25a8::t_1fbc84ae4bc65b 498
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "ac2e163107c7565636c9d6f9bd8b4d1a3588ff64",
+  "prompts": {},
+  "humans": {
+    "h_eee5bfb8805eb8": {
+      "author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  },
+  "sessions": {
+    "s_4360a143131ec5": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8e6bd335-6f32-4c2b-a883-9bddb55adea2",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    },
+    "s_a12555c64c25a8": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "c3f87436-eaab-41b4-bd7c-65796dead014",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  }
+}
