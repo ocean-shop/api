@@ -835,23 +835,30 @@ describe('ProductsService', () => {
       .mocked(productRepository.findById)
       .mockResolvedValueOnce(refreshedProduct);
 
-    const result = await service.modifyVariation('1', {
-      variation: 'product_variations',
+    const result = await service.createVariation('1', {
+      title: 'Iphone X Green',
+      name: 'Green',
+      sku: 'SKU-2',
+      price: 122,
+      oldPrice: 155,
+      available: true,
+      isDefault: true,
       attributes: [{ attributeTypeId: 'attr-id' }],
       images: [{ image: 'data:image/png;base64,ZmFrZQ==' }],
     });
 
     expect(productVariationRepository.create).toHaveBeenCalledWith({
       productId: '1',
-      sku: null,
-      name: null,
-      title: null,
-      price: '0.00',
-      oldPrice: null,
+      sku: 'SKU-2',
+      name: 'Green',
+      title: 'Iphone X Green',
+      price: '122.00',
+      oldPrice: '155.00',
       available: true,
-      isDefault: false,
+      isDefault: true,
     });
     expect(productVariationRepository.save).toHaveBeenCalledWith(variation);
+    expect(productRepository.save).not.toHaveBeenCalled();
     expect(attributeRepository.findById).toHaveBeenCalledWith('attr-id');
     expect(productVariationRepository.replaceAttributes).toHaveBeenCalledWith(
       'variation-id',
@@ -869,21 +876,56 @@ describe('ProductsService', () => {
     expect(result).toEqual(refreshedProduct);
   });
 
-  it('should reject variation creation for non-variable products', async () => {
-    jest.mocked(productRepository.findById).mockResolvedValue({
+  it('should promote product to variable when creating variation', async () => {
+    const product = {
       id: '1',
+      shopId: 'shop-id',
       type: ProductType.SIMPLE,
-    } as any);
+    } as any;
+    const variation = {
+      id: 'variation-id',
+      productId: '1',
+    } as any;
+    const refreshedProduct = {
+      id: '1',
+      type: ProductType.VARIABLE,
+      variations: [variation],
+    } as any;
 
-    await expect(
-      service.modifyVariation('1', {
-        variation: 'product_variations',
-        attributes: [{ attributeTypeId: 'attr-id' }],
-        images: [],
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(product);
+    jest
+      .mocked(attributeRepository.findById)
+      .mockResolvedValue({ id: 'attr-id', shopId: 'shop-id' } as any);
+    jest.mocked(productVariationRepository.create).mockReturnValue(variation);
+    jest.mocked(productVariationRepository.save).mockResolvedValue(variation);
+    jest
+      .mocked(productVariationRepository.replaceAttributes)
+      .mockResolvedValue([]);
+    jest.mocked(productVariationRepository.replaceImages).mockResolvedValue([]);
+    jest
+      .mocked(productRepository.findById)
+      .mockResolvedValueOnce(refreshedProduct);
+
+    const result = await service.createVariation('1', {
+      title: 'Iphone X Green',
+      name: 'Green',
+      sku: 'SKU-2',
+      price: 122,
+      oldPrice: 155,
+      available: true,
+      isDefault: true,
+      attributes: [{ attributeTypeId: 'attr-id' }],
+      images: [],
+    });
+
+    expect(productRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: '1',
+        type: ProductType.VARIABLE,
       }),
-    ).rejects.toThrow(BadRequestException);
-
-    expect(productVariationRepository.create).not.toHaveBeenCalled();
+    );
+    expect(productVariationRepository.create).toHaveBeenCalled();
+    expect(result).toEqual(refreshedProduct);
   });
 
   it('should bubble up not found when creating variation for missing product', async () => {
@@ -892,8 +934,14 @@ describe('ProductsService', () => {
       .mockRejectedValue(new Error('Product not found'));
 
     await expect(
-      service.modifyVariation('missing-id', {
-        variation: 'product_variations',
+      service.createVariation('missing-id', {
+        title: 'Iphone X Green',
+        name: 'Green',
+        sku: 'SKU-2',
+        price: 122,
+        oldPrice: 155,
+        available: true,
+        isDefault: true,
         attributes: [{ attributeTypeId: 'attr-id' }],
         images: [],
       }),
@@ -902,15 +950,22 @@ describe('ProductsService', () => {
     expect(productVariationRepository.save).not.toHaveBeenCalled();
   });
 
-  it('should upsert existing variation when variationId is provided', async () => {
+  it('should update existing variation when variation id is provided', async () => {
     const product = {
       id: '1',
       shopId: 'shop-id',
-      type: ProductType.VARIABLE,
+      type: ProductType.SIMPLE,
     } as any;
     const variation = {
       id: 'variation-id',
       productId: '1',
+      title: 'Old title',
+      name: 'Old name',
+      sku: 'OLD-SKU',
+      price: '100.00',
+      oldPrice: '120.00',
+      available: false,
+      isDefault: false,
     } as any;
     const refreshedProduct = {
       id: '1',
@@ -935,15 +990,37 @@ describe('ProductsService', () => {
       .mocked(productRepository.findById)
       .mockResolvedValueOnce(refreshedProduct);
 
-    const result = await service.modifyVariation('1', {
-      variation: 'product_variations',
-      variationId: 'variation-id',
+    const result = await service.updateVariation('1', 'variation-id', {
+      title: 'Iphone X Green',
+      name: 'Green',
+      sku: 'SKU-2',
+      price: 122,
+      oldPrice: 155,
+      available: true,
+      isDefault: true,
       attributes: [{ attributeTypeId: 'attr-id' }],
       images: [{ image: 'data:image/png;base64,ZmFrZQ==' }],
     });
 
     expect(productVariationRepository.create).not.toHaveBeenCalled();
-    expect(productVariationRepository.save).not.toHaveBeenCalled();
+    expect(productVariationRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'variation-id',
+        title: 'Iphone X Green',
+        name: 'Green',
+        sku: 'SKU-2',
+        price: '122.00',
+        oldPrice: '155.00',
+        available: true,
+        isDefault: true,
+      }),
+    );
+    expect(productRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: '1',
+        type: ProductType.VARIABLE,
+      }),
+    );
     expect(productVariationRepository.replaceAttributes).toHaveBeenCalledWith(
       'variation-id',
       [{ attributeTypeId: 'attr-id' }],
@@ -975,9 +1052,14 @@ describe('ProductsService', () => {
     } as any);
 
     await expect(
-      service.modifyVariation('1', {
-        variation: 'product_variations',
-        variationId: 'variation-id',
+      service.updateVariation('1', 'variation-id', {
+        title: 'Iphone X Green',
+        name: 'Green',
+        sku: 'SKU-2',
+        price: 122,
+        oldPrice: 155,
+        available: true,
+        isDefault: true,
         attributes: [{ attributeTypeId: 'attr-id' }],
         images: [],
       }),
@@ -997,8 +1079,14 @@ describe('ProductsService', () => {
       .mockResolvedValue({ id: 'attr-id', shopId: 'other-shop-id' } as any);
 
     await expect(
-      service.modifyVariation('1', {
-        variation: 'product_variations',
+      service.createVariation('1', {
+        title: 'Iphone X Green',
+        name: 'Green',
+        sku: 'SKU-2',
+        price: 122,
+        oldPrice: 155,
+        available: true,
+        isDefault: true,
         attributes: [{ attributeTypeId: 'attr-id' }],
         images: [],
       }),

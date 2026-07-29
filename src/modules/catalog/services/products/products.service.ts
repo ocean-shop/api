@@ -322,15 +322,79 @@ export class ProductsService {
     return this.productRepository.findById(id);
   }
 
-  async modifyVariation(
+  async createVariation(
     id: string,
     dto: ProductVariationDto,
   ): Promise<Product> {
     const product = await this.productRepository.findById(id);
+    this.assertOldPriceValid(dto.price, dto.oldPrice ?? null);
 
-    if (product.type !== ProductType.VARIABLE) {
+    const validatedAttributes = await this.resolveValidatedVariationAttributes(
+      product.shopId,
+      dto,
+    );
+
+    const uploadedImages = await Promise.all(
+      dto.images.map(async (image, index) => ({
+        url: await this.productImagesCloudinaryService.uploadBase64Image(
+          image.image,
+        ),
+        sort: image.sort ?? index,
+      })),
+    );
+
+    try {
+      await this.ensureProductTypeVariable(product);
+
+      const variation = this.productVariationRepository.create({
+        productId: id,
+        sku: dto.sku,
+        name: dto.name,
+        title: dto.title,
+        price: this.toNumericString(dto.price),
+        oldPrice:
+          dto.oldPrice === null || dto.oldPrice === undefined
+            ? null
+            : this.toNumericString(dto.oldPrice),
+        available: dto.available,
+        isDefault: dto.isDefault,
+      });
+
+      const savedVariation =
+        await this.productVariationRepository.save(variation);
+      const targetVariationId = savedVariation.id;
+
+      await this.productVariationRepository.replaceAttributes(
+        targetVariationId,
+        validatedAttributes.map((attributeTypeId) => ({
+          attributeTypeId,
+        })),
+      );
+
+      await this.productVariationRepository.replaceImages(
+        targetVariationId,
+        uploadedImages,
+      );
+
+      return this.productRepository.findById(id);
+    } catch (error) {
+      this.rethrowConstraintError(error);
+    }
+  }
+
+  async updateVariation(
+    id: string,
+    variationId: string,
+    dto: ProductVariationDto,
+  ): Promise<Product> {
+    const product = await this.productRepository.findById(id);
+    this.assertOldPriceValid(dto.price, dto.oldPrice ?? null);
+
+    const existingVariation =
+      await this.productVariationRepository.findById(variationId);
+    if (existingVariation.productId !== id) {
       throw new BadRequestException(
-        'Variations can only be created for variable products',
+        'Variation does not belong to the specified product',
       );
     }
 
@@ -349,43 +413,29 @@ export class ProductsService {
     );
 
     try {
-      let targetVariationId: string;
+      await this.ensureProductTypeVariable(product);
 
-      if (dto.variationId) {
-        const existingVariation =
-          await this.productVariationRepository.findById(dto.variationId);
-        if (existingVariation.productId !== id) {
-          throw new BadRequestException(
-            'Variation does not belong to the specified product',
-          );
-        }
-        targetVariationId = existingVariation.id;
-      } else {
-        const variation = this.productVariationRepository.create({
-          productId: id,
-          sku: null,
-          name: null,
-          title: null,
-          price: this.toNumericString(0),
-          oldPrice: null,
-          available: true,
-          isDefault: false,
-        });
-
-        const savedVariation =
-          await this.productVariationRepository.save(variation);
-        targetVariationId = savedVariation.id;
-      }
+      existingVariation.title = dto.title;
+      existingVariation.name = dto.name;
+      existingVariation.sku = dto.sku;
+      existingVariation.price = this.toNumericString(dto.price);
+      existingVariation.oldPrice =
+        dto.oldPrice === null || dto.oldPrice === undefined
+          ? null
+          : this.toNumericString(dto.oldPrice);
+      existingVariation.available = dto.available;
+      existingVariation.isDefault = dto.isDefault;
+      await this.productVariationRepository.save(existingVariation);
 
       await this.productVariationRepository.replaceAttributes(
-        targetVariationId,
+        variationId,
         validatedAttributes.map((attributeTypeId) => ({
           attributeTypeId,
         })),
       );
 
       await this.productVariationRepository.replaceImages(
-        targetVariationId,
+        variationId,
         uploadedImages,
       );
 
@@ -435,6 +485,15 @@ export class ProductsService {
 
   private toNumericString(value: number): string {
     return value.toFixed(2);
+  }
+
+  private async ensureProductTypeVariable(product: Product): Promise<void> {
+    if (product.type === ProductType.VARIABLE) {
+      return;
+    }
+
+    product.type = ProductType.VARIABLE;
+    await this.productRepository.save(product);
   }
 
   private async resolveValidatedVariationAttributes(

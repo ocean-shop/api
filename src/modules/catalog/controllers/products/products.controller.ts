@@ -130,10 +130,20 @@ export class ProductsController {
 
   @Post(':id/variations')
   @Roles('admin', 'super')
-  async modifyVariation(
+  async createVariation(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ProductVariationDto,
   ) {
-    return this.productsService.modifyVariation(id, dto);
+    return this.productsService.createVariation(id, dto);
+  }
+
+  @Patch(':id/variations/:variation_id')
+  @Roles('admin', 'super')
+  async updateVariation(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('variation_id', ParseUUIDPipe) variationId: string,
+    @Body() dto: ProductVariationDto,
+  ) {
+    return this.productsService.updateVariation(id, variationId, dto);
   }
 }
