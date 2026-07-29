@@ -38,6 +38,7 @@ describe('ProductsService', () => {
 
     const productVariationRepositoryMock = {
       create: jest.fn(),
+      findById: jest.fn(),
       save: jest.fn(),
       replaceAttributes: jest.fn(),
       replaceImages: jest.fn(),
@@ -805,6 +806,7 @@ describe('ProductsService', () => {
   it('should create product variation for variable products', async () => {
     const product = {
       id: '1',
+      shopId: 'shop-id',
       type: ProductType.VARIABLE,
     } as any;
     const variation = {
@@ -820,6 +822,9 @@ describe('ProductsService', () => {
     jest
       .mocked(productImagesCloudinaryService.uploadBase64Image)
       .mockResolvedValue('https://res.cloudinary.com/shop/image/upload/v.jpg');
+    jest
+      .mocked(attributeRepository.findById)
+      .mockResolvedValue({ id: 'attr-id', shopId: 'shop-id' } as any);
     jest.mocked(productVariationRepository.create).mockReturnValue(variation);
     jest.mocked(productVariationRepository.save).mockResolvedValue(variation);
     jest
@@ -830,9 +835,9 @@ describe('ProductsService', () => {
       .mocked(productRepository.findById)
       .mockResolvedValueOnce(refreshedProduct);
 
-    const result = await service.createVariation('1', {
+    const result = await service.modifyVariation('1', {
       variation: 'product_variations',
-      attributes: [{ name: 'Color', value: 'Blue' }],
+      attributes: [{ attributeTypeId: 'attr-id' }],
       images: [{ image: 'data:image/png;base64,ZmFrZQ==' }],
     });
 
@@ -847,9 +852,10 @@ describe('ProductsService', () => {
       isDefault: false,
     });
     expect(productVariationRepository.save).toHaveBeenCalledWith(variation);
+    expect(attributeRepository.findById).toHaveBeenCalledWith('attr-id');
     expect(productVariationRepository.replaceAttributes).toHaveBeenCalledWith(
       'variation-id',
-      [{ name: 'Color', value: 'Blue' }],
+      [{ attributeTypeId: 'attr-id' }],
     );
     expect(productVariationRepository.replaceImages).toHaveBeenCalledWith(
       'variation-id',
@@ -870,9 +876,9 @@ describe('ProductsService', () => {
     } as any);
 
     await expect(
-      service.createVariation('1', {
+      service.modifyVariation('1', {
         variation: 'product_variations',
-        attributes: [{ name: 'Color', value: 'Blue' }],
+        attributes: [{ attributeTypeId: 'attr-id' }],
         images: [],
       }),
     ).rejects.toThrow(BadRequestException);
@@ -886,13 +892,118 @@ describe('ProductsService', () => {
       .mockRejectedValue(new Error('Product not found'));
 
     await expect(
-      service.createVariation('missing-id', {
+      service.modifyVariation('missing-id', {
         variation: 'product_variations',
-        attributes: [{ name: 'Color', value: 'Blue' }],
+        attributes: [{ attributeTypeId: 'attr-id' }],
         images: [],
       }),
     ).rejects.toThrow('Product not found');
 
     expect(productVariationRepository.save).not.toHaveBeenCalled();
+  });
+
+  it('should upsert existing variation when variationId is provided', async () => {
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      type: ProductType.VARIABLE,
+    } as any;
+    const variation = {
+      id: 'variation-id',
+      productId: '1',
+    } as any;
+    const refreshedProduct = {
+      id: '1',
+      variations: [variation],
+    } as any;
+
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(product);
+    jest
+      .mocked(attributeRepository.findById)
+      .mockResolvedValue({ id: 'attr-id', shopId: 'shop-id' } as any);
+    jest
+      .mocked(productImagesCloudinaryService.uploadBase64Image)
+      .mockResolvedValue('https://res.cloudinary.com/shop/image/upload/v.jpg');
+    jest
+      .mocked(productVariationRepository.findById)
+      .mockResolvedValue(variation);
+    jest
+      .mocked(productVariationRepository.replaceAttributes)
+      .mockResolvedValue([]);
+    jest.mocked(productVariationRepository.replaceImages).mockResolvedValue([]);
+    jest
+      .mocked(productRepository.findById)
+      .mockResolvedValueOnce(refreshedProduct);
+
+    const result = await service.modifyVariation('1', {
+      variation: 'product_variations',
+      variationId: 'variation-id',
+      attributes: [{ attributeTypeId: 'attr-id' }],
+      images: [{ image: 'data:image/png;base64,ZmFrZQ==' }],
+    });
+
+    expect(productVariationRepository.create).not.toHaveBeenCalled();
+    expect(productVariationRepository.save).not.toHaveBeenCalled();
+    expect(productVariationRepository.replaceAttributes).toHaveBeenCalledWith(
+      'variation-id',
+      [{ attributeTypeId: 'attr-id' }],
+    );
+    expect(productVariationRepository.replaceImages).toHaveBeenCalledWith(
+      'variation-id',
+      [
+        {
+          url: 'https://res.cloudinary.com/shop/image/upload/v.jpg',
+          sort: 0,
+        },
+      ],
+    );
+    expect(result).toEqual(refreshedProduct);
+  });
+
+  it('should reject variation upsert when variation belongs to another product', async () => {
+    jest.mocked(productRepository.findById).mockResolvedValueOnce({
+      id: '1',
+      shopId: 'shop-id',
+      type: ProductType.VARIABLE,
+    } as any);
+    jest
+      .mocked(attributeRepository.findById)
+      .mockResolvedValue({ id: 'attr-id', shopId: 'shop-id' } as any);
+    jest.mocked(productVariationRepository.findById).mockResolvedValue({
+      id: 'variation-id',
+      productId: 'other-product-id',
+    } as any);
+
+    await expect(
+      service.modifyVariation('1', {
+        variation: 'product_variations',
+        variationId: 'variation-id',
+        attributes: [{ attributeTypeId: 'attr-id' }],
+        images: [],
+      }),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(productVariationRepository.replaceAttributes).not.toHaveBeenCalled();
+  });
+
+  it('should reject variation attributes from a different shop', async () => {
+    jest.mocked(productRepository.findById).mockResolvedValueOnce({
+      id: '1',
+      shopId: 'shop-id',
+      type: ProductType.VARIABLE,
+    } as any);
+    jest
+      .mocked(attributeRepository.findById)
+      .mockResolvedValue({ id: 'attr-id', shopId: 'other-shop-id' } as any);
+
+    await expect(
+      service.modifyVariation('1', {
+        variation: 'product_variations',
+        attributes: [{ attributeTypeId: 'attr-id' }],
+        images: [],
+      }),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(productVariationRepository.create).not.toHaveBeenCalled();
   });
 });

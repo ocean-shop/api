@@ -240,7 +240,9 @@ describe('ProductRepository', () => {
         attributes: true,
         images: true,
         variations: {
-          attributes: true,
+          attributes: {
+            attributeType: true,
+          },
           images: true,
         },
       },

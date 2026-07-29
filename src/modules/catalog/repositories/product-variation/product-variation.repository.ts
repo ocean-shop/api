@@ -27,7 +27,7 @@ export class ProductVariationRepository {
   async findById(id: string): Promise<ProductVariation> {
     const variation = await this.repository.findOne({
       where: { id },
-      relations: { attributes: true, images: true },
+      relations: { attributes: { attributeType: true }, images: true },
       order: { images: { sort: 'ASC' } },
     });
 
@@ -40,7 +40,7 @@ export class ProductVariationRepository {
 
   async replaceAttributes(
     variationId: string,
-    attributes: Array<{ name: string; value: string }>,
+    attributes: Array<{ attributeTypeId: string }>,
   ): Promise<VariationAttribute[]> {
     await this.attributeRepository.delete({ variationId });
 
@@ -51,8 +51,7 @@ export class ProductVariationRepository {
     const entities = attributes.map((attribute) =>
       this.attributeRepository.create({
         variationId,
-        name: attribute.name,
-        value: attribute.value,
+        attributeTypeId: attribute.attributeTypeId,
       }),
     );
 

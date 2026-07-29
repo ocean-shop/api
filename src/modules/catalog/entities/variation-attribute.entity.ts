@@ -1,33 +1,22 @@
-import {
-  CreateDateColumn,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  PrimaryColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
+import { Attribute } from './attribute.entity';
 import { ProductVariation } from './product-variation.entity';
 
-@Entity('variation_attributes')
+@Entity('variations_attributes')
 export class VariationAttribute {
   @PrimaryColumn('uuid', { name: 'variation_id' })
   variationId: string;
 
-  @PrimaryColumn({ type: 'varchar', length: 255 })
-  name: string;
-
-  @PrimaryColumn({ type: 'varchar', length: 255 })
-  value: string;
-
-  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
-  createdAt: Date;
-
-  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
-  updatedAt: Date;
+  @PrimaryColumn('uuid', { name: 'attribute_type_id' })
+  attributeTypeId: string;
 
   @ManyToOne(() => ProductVariation, (variation) => variation.attributes, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'variation_id' })
   variation: ProductVariation;
+
+  @ManyToOne(() => Attribute, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'attribute_type_id' })
+  attributeType: Attribute;
 }

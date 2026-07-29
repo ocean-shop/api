@@ -2,29 +2,26 @@ import { Type } from 'class-transformer';
 import {
   IsArray,
   IsIn,
-  IsNotEmpty,
+  IsOptional,
   IsString,
-  MaxLength,
+  IsUUID,
   ValidateNested,
 } from 'class-validator';
 import { ProductImageItemDto } from './assign-product-images.dto';
 
 export class ProductVariationAttributeItemDto {
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(255)
-  readonly name: string;
-
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(255)
-  readonly value: string;
+  @IsUUID()
+  readonly attributeTypeId: string;
 }
 
-export class CreateProductVariationDto {
+export class ProductVariationDto {
   @IsString()
   @IsIn(['product_variations'])
   readonly variation: 'product_variations';
+
+  @IsOptional()
+  @IsUUID()
+  readonly variationId?: string;
 
   @IsArray()
   @ValidateNested({ each: true })

@@ -4,7 +4,7 @@ import { AssignProductAttributeDto } from '../../dto/assign-product-attribute.dt
 import { AssignProductCategoryDto } from '../../dto/assign-product-category.dto';
 import { AssignProductImagesDto } from '../../dto/assign-product-images.dto';
 import { AssignProductTagDto } from '../../dto/assign-product-tag.dto';
-import { CreateProductVariationDto } from '../../dto/create-product-variation.dto';
+import { ProductVariationDto } from '../../dto/product-variation.dto';
 import { CreateProductDto } from '../../dto/create-product.dto';
 import { ListProductsQueryDto } from '../../dto/list-products-query.dto';
 import { UpdateProductDto } from '../../dto/update-product.dto';
@@ -322,9 +322,9 @@ export class ProductsService {
     return this.productRepository.findById(id);
   }
 
-  async createVariation(
+  async modifyVariation(
     id: string,
-    dto: CreateProductVariationDto,
+    dto: ProductVariationDto,
   ): Promise<Product> {
     const product = await this.productRepository.findById(id);
 
@@ -333,6 +333,11 @@ export class ProductsService {
         'Variations can only be created for variable products',
       );
     }
+
+    const validatedAttributes = await this.resolveValidatedVariationAttributes(
+      product.shopId,
+      dto,
+    );
 
     const uploadedImages = await Promise.all(
       dto.images.map(async (image, index) => ({
@@ -343,31 +348,44 @@ export class ProductsService {
       })),
     );
 
-    const variation = this.productVariationRepository.create({
-      productId: id,
-      sku: null,
-      name: null,
-      title: null,
-      price: this.toNumericString(0),
-      oldPrice: null,
-      available: true,
-      isDefault: false,
-    });
-
     try {
-      const savedVariation =
-        await this.productVariationRepository.save(variation);
+      let targetVariationId: string;
+
+      if (dto.variationId) {
+        const existingVariation =
+          await this.productVariationRepository.findById(dto.variationId);
+        if (existingVariation.productId !== id) {
+          throw new BadRequestException(
+            'Variation does not belong to the specified product',
+          );
+        }
+        targetVariationId = existingVariation.id;
+      } else {
+        const variation = this.productVariationRepository.create({
+          productId: id,
+          sku: null,
+          name: null,
+          title: null,
+          price: this.toNumericString(0),
+          oldPrice: null,
+          available: true,
+          isDefault: false,
+        });
+
+        const savedVariation =
+          await this.productVariationRepository.save(variation);
+        targetVariationId = savedVariation.id;
+      }
 
       await this.productVariationRepository.replaceAttributes(
-        savedVariation.id,
-        dto.attributes.map((attribute) => ({
-          name: attribute.name,
-          value: attribute.value,
+        targetVariationId,
+        validatedAttributes.map((attributeTypeId) => ({
+          attributeTypeId,
         })),
       );
 
       await this.productVariationRepository.replaceImages(
-        savedVariation.id,
+        targetVariationId,
         uploadedImages,
       );
 
@@ -419,6 +437,27 @@ export class ProductsService {
     return value.toFixed(2);
   }
 
+  private async resolveValidatedVariationAttributes(
+    productShopId: string,
+    dto: ProductVariationDto,
+  ): Promise<string[]> {
+    return Promise.all(
+      dto.attributes.map(async (attribute) => {
+        const existingAttribute = await this.attributeRepository.findById(
+          attribute.attributeTypeId,
+        );
+
+        if (existingAttribute.shopId !== productShopId) {
+          throw new BadRequestException(
+            'Attribute belongs to a different shop than the product',
+          );
+        }
+
+        return attribute.attributeTypeId;
+      }),
+    );
+  }
+
   private rethrowConstraintError(error: unknown): never {
     if (error instanceof QueryFailedError) {
       const databaseError = error as QueryFailedError & {
@@ -436,6 +475,15 @@ export class ProductsService {
       ) {
         throw new BadRequestException(
           'Product SKU already exists for this shop',
+        );
+      }
+
+      if (
+        databaseError.code === '23505' &&
+        databaseError.constraint === 'variations_attributes_pkey'
+      ) {
+        throw new BadRequestException(
+          'Duplicate variation attribute assignment is not allowed',
         );
       }
 
