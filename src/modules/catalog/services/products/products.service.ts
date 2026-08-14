@@ -310,9 +310,7 @@ export class ProductsService {
 
     const uploadedImages = await Promise.all(
       dto.images.map(async (image, index) => ({
-        url: await this.productImagesCloudinaryService.uploadBase64Image(
-          image.image,
-        ),
+        url: await this.resolveImageUrl(image.image),
         sort: image.sort ?? index,
       })),
     );
@@ -336,9 +334,7 @@ export class ProductsService {
 
     const uploadedImages = await Promise.all(
       dto.images.map(async (image, index) => ({
-        url: await this.productImagesCloudinaryService.uploadBase64Image(
-          image.image,
-        ),
+        url: await this.resolveImageUrl(image.image),
         sort: image.sort ?? index,
       })),
     );
@@ -405,9 +401,7 @@ export class ProductsService {
 
     const uploadedImages = await Promise.all(
       dto.images.map(async (image, index) => ({
-        url: await this.productImagesCloudinaryService.uploadBase64Image(
-          image.image,
-        ),
+        url: await this.resolveImageUrl(image.image),
         sort: image.sort ?? index,
       })),
     );
@@ -515,6 +509,14 @@ export class ProductsService {
         return attribute.attributeTypeId;
       }),
     );
+  }
+
+  private async resolveImageUrl(image: string): Promise<string> {
+    if (!image.startsWith('data:image/')) {
+      return image;
+    }
+
+    return this.productImagesCloudinaryService.uploadBase64Image(image);
   }
 
   private rethrowConstraintError(error: unknown): never {
