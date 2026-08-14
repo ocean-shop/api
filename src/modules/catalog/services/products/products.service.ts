@@ -4,6 +4,7 @@ import { AssignProductAttributeDto } from '../../dto/assign-product-attribute.dt
 import { AssignProductCategoryDto } from '../../dto/assign-product-category.dto';
 import { AssignProductImagesDto } from '../../dto/assign-product-images.dto';
 import { AssignProductTagDto } from '../../dto/assign-product-tag.dto';
+import { ProductVariationDto } from '../../dto/product-variation.dto';
 import { CreateProductDto } from '../../dto/create-product.dto';
 import { ListProductsQueryDto } from '../../dto/list-products-query.dto';
 import { UpdateProductDto } from '../../dto/update-product.dto';
@@ -13,18 +14,22 @@ import { ProductListResponse } from '../../models/product.models';
 import { AttributeRepository } from '../../repositories/attribute/attribute.repository';
 import { CategoryRepository } from '../../repositories/category/category.repository';
 import { ProductRepository } from '../../repositories/product/product.repository';
+import { ProductVariationRepository } from '../../repositories/product-variation/product-variation.repository';
 import { ShopRepository } from '../../repositories/shop/shop.repository';
 import { TagRepository } from '../../repositories/tag/tag.repository';
 import { PAGINATION_MAX } from '../../constants/pagination.constants';
+import { ProductImagesCloudinaryService } from '../cloudinary/product-images-cloudinary.service';
 
 @Injectable()
 export class ProductsService {
   constructor(
     private readonly productRepository: ProductRepository,
+    private readonly productVariationRepository: ProductVariationRepository,
     private readonly shopRepository: ShopRepository,
     private readonly categoryRepository: CategoryRepository,
     private readonly tagRepository: TagRepository,
     private readonly attributeRepository: AttributeRepository,
+    private readonly productImagesCloudinaryService: ProductImagesCloudinaryService,
   ) {}
 
   async listProducts(
@@ -303,15 +308,135 @@ export class ProductsService {
   ): Promise<Product> {
     await this.productRepository.findById(id);
 
-    await this.productRepository.replaceImages(
-      id,
-      dto.images.map((image, index) => ({
-        url: image.url,
+    const uploadedImages = await Promise.all(
+      dto.images.map(async (image, index) => ({
+        url: await this.resolveImageUrl(image.image),
         sort: image.sort ?? index,
       })),
     );
 
+    await this.productRepository.replaceImages(id, uploadedImages);
+
     return this.productRepository.findById(id);
+  }
+
+  async createVariation(
+    id: string,
+    dto: ProductVariationDto,
+  ): Promise<Product> {
+    const product = await this.productRepository.findById(id);
+    this.assertOldPriceValid(dto.price, dto.oldPrice ?? null);
+
+    const validatedAttributes = await this.resolveValidatedVariationAttributes(
+      product.shopId,
+      dto,
+    );
+
+    const uploadedImages = await Promise.all(
+      dto.images.map(async (image, index) => ({
+        url: await this.resolveImageUrl(image.image),
+        sort: image.sort ?? index,
+      })),
+    );
+
+    try {
+      await this.ensureProductTypeVariable(product);
+
+      const variation = this.productVariationRepository.create({
+        productId: id,
+        sku: dto.sku,
+        name: dto.name,
+        title: dto.title,
+        price: this.toNumericString(dto.price),
+        oldPrice:
+          dto.oldPrice === null || dto.oldPrice === undefined
+            ? null
+            : this.toNumericString(dto.oldPrice),
+        available: dto.available,
+        isDefault: dto.isDefault,
+      });
+
+      const savedVariation =
+        await this.productVariationRepository.save(variation);
+      const targetVariationId = savedVariation.id;
+
+      await this.productVariationRepository.replaceAttributes(
+        targetVariationId,
+        validatedAttributes.map((attributeTypeId) => ({
+          attributeTypeId,
+        })),
+      );
+
+      await this.productVariationRepository.replaceImages(
+        targetVariationId,
+        uploadedImages,
+      );
+
+      return this.productRepository.findById(id);
+    } catch (error) {
+      this.rethrowConstraintError(error);
+    }
+  }
+
+  async updateVariation(
+    id: string,
+    variationId: string,
+    dto: ProductVariationDto,
+  ): Promise<Product> {
+    const product = await this.productRepository.findById(id);
+    this.assertOldPriceValid(dto.price, dto.oldPrice ?? null);
+
+    const existingVariation =
+      await this.productVariationRepository.findById(variationId);
+    if (existingVariation.productId !== id) {
+      throw new BadRequestException(
+        'Variation does not belong to the specified product',
+      );
+    }
+
+    const validatedAttributes = await this.resolveValidatedVariationAttributes(
+      product.shopId,
+      dto,
+    );
+
+    const uploadedImages = await Promise.all(
+      dto.images.map(async (image, index) => ({
+        url: await this.resolveImageUrl(image.image),
+        sort: image.sort ?? index,
+      })),
+    );
+
+    try {
+      await this.ensureProductTypeVariable(product);
+
+      existingVariation.title = dto.title;
+      existingVariation.name = dto.name;
+      existingVariation.sku = dto.sku;
+      existingVariation.price = this.toNumericString(dto.price);
+      existingVariation.oldPrice =
+        dto.oldPrice === null || dto.oldPrice === undefined
+          ? null
+          : this.toNumericString(dto.oldPrice);
+      existingVariation.available = dto.available;
+      existingVariation.isDefault = dto.isDefault;
+      await this.productVariationRepository.save(existingVariation);
+
+      await this.productVariationRepository.replaceAttributes(
+        variationId,
+        validatedAttributes.map((attributeTypeId) => ({
+          attributeTypeId,
+        })),
+      );
+
+      await this.productVariationRepository.replaceImages(
+        variationId,
+        uploadedImages,
+      );
+
+      return this.productRepository.findById(id);
+    } catch (error) {
+      this.rethrowConstraintError(error);
+    }
   }
 
   private toListResponse(
@@ -356,6 +481,44 @@ export class ProductsService {
     return value.toFixed(2);
   }
 
+  private async ensureProductTypeVariable(product: Product): Promise<void> {
+    if (product.type === ProductType.VARIABLE) {
+      return;
+    }
+
+    product.type = ProductType.VARIABLE;
+    await this.productRepository.save(product);
+  }
+
+  private async resolveValidatedVariationAttributes(
+    productShopId: string,
+    dto: ProductVariationDto,
+  ): Promise<string[]> {
+    return Promise.all(
+      dto.attributes.map(async (attribute) => {
+        const existingAttribute = await this.attributeRepository.findById(
+          attribute.attributeTypeId,
+        );
+
+        if (existingAttribute.shopId !== productShopId) {
+          throw new BadRequestException(
+            'Attribute belongs to a different shop than the product',
+          );
+        }
+
+        return attribute.attributeTypeId;
+      }),
+    );
+  }
+
+  private async resolveImageUrl(image: string): Promise<string> {
+    if (!image.startsWith('data:image/')) {
+      return image;
+    }
+
+    return this.productImagesCloudinaryService.uploadBase64Image(image);
+  }
+
   private rethrowConstraintError(error: unknown): never {
     if (error instanceof QueryFailedError) {
       const databaseError = error as QueryFailedError & {
@@ -373,6 +536,15 @@ export class ProductsService {
       ) {
         throw new BadRequestException(
           'Product SKU already exists for this shop',
+        );
+      }
+
+      if (
+        databaseError.code === '23505' &&
+        databaseError.constraint === 'variations_attributes_pkey'
+      ) {
+        throw new BadRequestException(
+          'Duplicate variation attribute assignment is not allowed',
         );
       }
 

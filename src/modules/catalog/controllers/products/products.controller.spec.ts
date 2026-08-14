@@ -5,6 +5,7 @@ import { AssignProductAttributeDto } from '../../dto/assign-product-attribute.dt
 import { AssignProductCategoryDto } from '../../dto/assign-product-category.dto';
 import { AssignProductImagesDto } from '../../dto/assign-product-images.dto';
 import { AssignProductTagDto } from '../../dto/assign-product-tag.dto';
+import { ProductVariationDto } from '../../dto/product-variation.dto';
 import { CreateProductDto } from '../../dto/create-product.dto';
 import { UpdateProductDto } from '../../dto/update-product.dto';
 import { ProductStatus } from '../../entities/enums/product.enum';
@@ -29,6 +30,8 @@ describe('ProductsController', () => {
       assignTag: jest.fn(),
       assignAttribute: jest.fn(),
       assignImages: jest.fn(),
+      createVariation: jest.fn(),
+      updateVariation: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -224,7 +227,7 @@ describe('ProductsController', () => {
   it('should assign images', async () => {
     const id = '98f21967-fce6-4ceb-af61-304913f593a7';
     const dto: AssignProductImagesDto = {
-      images: [{ url: 'https://cdn.example.com/a.jpg', sort: 0 }],
+      images: [{ image: 'data:image/png;base64,ZmFrZQ==', sort: 0 }],
     };
     const expected = { id, images: dto.images };
     jest
@@ -234,6 +237,62 @@ describe('ProductsController', () => {
     const result = await controller.assignImages(id, dto);
 
     expect(productsService.assignImages).toHaveBeenCalledWith(id, dto);
+    expect(result).toEqual(expected);
+  });
+
+  it('should create product variation', async () => {
+    const id = '98f21967-fce6-4ceb-af61-304913f593a7';
+    const dto: ProductVariationDto = {
+      title: 'Iphone X Green',
+      name: 'Green',
+      sku: '2',
+      price: 122,
+      oldPrice: 155,
+      available: true,
+      isDefault: true,
+      attributes: [
+        { attributeTypeId: '33f21967-fce6-4ceb-af61-304913f593a7' },
+        { attributeTypeId: '44f21967-fce6-4ceb-af61-304913f593a7' },
+      ],
+      images: [{ image: 'data:image/png;base64,ZmFrZQ==', sort: 0 }],
+    };
+    const expected = { id, variations: [{ id: 'variation-id' }] };
+    jest
+      .mocked(productsService.createVariation)
+      .mockResolvedValue(expected as any);
+
+    const result = await controller.createVariation(id, dto);
+
+    expect(productsService.createVariation).toHaveBeenCalledWith(id, dto);
+    expect(result).toEqual(expected);
+  });
+
+  it('should update product variation by variation id', async () => {
+    const id = '98f21967-fce6-4ceb-af61-304913f593a7';
+    const variationId = '55f21967-fce6-4ceb-af61-304913f593a7';
+    const dto: ProductVariationDto = {
+      title: 'Iphone X Green',
+      name: 'Green',
+      sku: '2',
+      price: 122,
+      oldPrice: 155,
+      available: true,
+      isDefault: true,
+      attributes: [{ attributeTypeId: '33f21967-fce6-4ceb-af61-304913f593a7' }],
+      images: [],
+    };
+    const expected = { id, variations: [{ id: variationId }] };
+    jest
+      .mocked(productsService.updateVariation)
+      .mockResolvedValue(expected as any);
+
+    const result = await controller.updateVariation(id, variationId, dto);
+
+    expect(productsService.updateVariation).toHaveBeenCalledWith(
+      id,
+      variationId,
+      dto,
+    );
     expect(result).toEqual(expected);
   });
 });

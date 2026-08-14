@@ -7,24 +7,31 @@ import { ProductsController } from './controllers/products/products.controller';
 import { ShopsController } from './controllers/shops/shops.controller';
 import { TagsController } from './controllers/tags/tags.controller';
 import { AttributesController } from './controllers/attributes/attributes.controller';
+import { ImagesController } from './controllers/images/images.controller';
 import { Attribute } from './entities/attribute.entity';
 import { Category } from './entities/category.entity';
 import { ProductImage } from './entities/product-image.entity';
 import { Product } from './entities/product.entity';
 import { Shop } from './entities/shop.entity';
 import { Tag } from './entities/tag.entity';
+import { ProductVariation } from './entities/product-variation.entity';
+import { VariationAttribute } from './entities/variation-attribute.entity';
+import { VariationImage } from './entities/variation-image.entity';
 import { AttributeRepository } from './repositories/attribute/attribute.repository';
 import { CategoryRepository } from './repositories/category/category.repository';
 import { ProductRepository } from './repositories/product/product.repository';
+import { ProductVariationRepository } from './repositories/product-variation/product-variation.repository';
 import { ShopRepository } from './repositories/shop/shop.repository';
 import { TagRepository } from './repositories/tag/tag.repository';
 import { JwtAuthGuard } from '../user/guards/jwt-auth.guard';
 import { RolesGuard } from '../user/guards/roles.guard';
 import { CategoriesService } from './services/categories/categories.service';
+import { ProductImagesCloudinaryService } from './services/cloudinary/product-images-cloudinary.service';
 import { ProductsService } from './services/products/products.service';
 import { ShopsService } from './services/shops/shops.service';
 import { TagsService } from './services/tags/tags.service';
 import { AttributesService } from './services/attributes/attributes.service';
+import { ImagesService } from './services/images/images.service';
 
 @Module({
   imports: [
@@ -35,6 +42,9 @@ import { AttributesService } from './services/attributes/attributes.service';
       Attribute,
       Product,
       ProductImage,
+      ProductVariation,
+      VariationAttribute,
+      VariationImage,
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -50,6 +60,7 @@ import { AttributesService } from './services/attributes/attributes.service';
     TagsController,
     AttributesController,
     ProductsController,
+    ImagesController,
   ],
   providers: [
     ShopsService,
@@ -57,11 +68,14 @@ import { AttributesService } from './services/attributes/attributes.service';
     TagsService,
     AttributesService,
     ProductsService,
+    ImagesService,
+    ProductImagesCloudinaryService,
     ShopRepository,
     CategoryRepository,
     TagRepository,
     AttributeRepository,
     ProductRepository,
+    ProductVariationRepository,
     JwtAuthGuard,
     RolesGuard,
   ],

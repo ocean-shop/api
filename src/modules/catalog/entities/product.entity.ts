@@ -14,6 +14,7 @@ import { Attribute } from './attribute.entity';
 import { Category } from './category.entity';
 import { ProductStatus, ProductType } from './enums/product.enum';
 import { ProductImage } from './product-image.entity';
+import { ProductVariation } from './product-variation.entity';
 import { Shop } from './shop.entity';
 import { Tag } from './tag.entity';
 
@@ -109,4 +110,9 @@ export class Product {
     cascade: true,
   })
   images: ProductImage[];
+
+  @OneToMany(() => ProductVariation, (variation) => variation.product, {
+    cascade: true,
+  })
+  variations: ProductVariation[];
 }

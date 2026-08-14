@@ -18,6 +18,7 @@ import { AssignProductAttributeDto } from '../../dto/assign-product-attribute.dt
 import { AssignProductCategoryDto } from '../../dto/assign-product-category.dto';
 import { AssignProductImagesDto } from '../../dto/assign-product-images.dto';
 import { AssignProductTagDto } from '../../dto/assign-product-tag.dto';
+import { ProductVariationDto } from '../../dto/product-variation.dto';
 import { CreateProductDto } from '../../dto/create-product.dto';
 import { ListProductsQueryDto } from '../../dto/list-products-query.dto';
 import { UpdateProductDto } from '../../dto/update-product.dto';
@@ -125,5 +126,24 @@ export class ProductsController {
     @Body() dto: AssignProductImagesDto,
   ) {
     return this.productsService.assignImages(id, dto);
+  }
+
+  @Post(':id/variations')
+  @Roles('admin', 'super')
+  async createVariation(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ProductVariationDto,
+  ) {
+    return this.productsService.createVariation(id, dto);
+  }
+
+  @Patch(':id/variations/:variation_id')
+  @Roles('admin', 'super')
+  async updateVariation(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('variation_id', ParseUUIDPipe) variationId: string,
+    @Body() dto: ProductVariationDto,
+  ) {
+    return this.productsService.updateVariation(id, variationId, dto);
   }
 }
