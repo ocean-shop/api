@@ -1,0 +1,24 @@
+src/core/db/migrations/1787600000000-AddOrdersSchema.ts
+  s_36b3269ce3bcbb::t_34d3c2a2bcf3f7 1-87
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "1f89a088e61e1d736bef7fb5c04e1ea7b2614c60",
+  "prompts": {},
+  "humans": {
+    "h_eee5bfb8805eb8": {
+      "author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  },
+  "sessions": {
+    "s_36b3269ce3bcbb": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "61d58f01-4880-467c-86f4-55d88900a83c",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  }
+}
