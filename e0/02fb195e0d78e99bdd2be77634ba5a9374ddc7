@@ -1,0 +1,100 @@
+src/modules/orders/dto/update-order-payment-status.dto.ts
+  s_72c94e1b505082::t_4075a7e0642df9 1-7
+src/modules/orders/dto/list-orders-query.dto.ts
+  s_72c94e1b505082::t_36aacc7f4def2c 1-19
+src/core/db/migrations/1787700000000-ReplaceShippingTableWithOrderShippingNumber.ts
+  s_60c34c6251639d::t_5f26c53266ffb0 1-91
+src/modules/orders/dto/update-order-status.dto.ts
+  s_72c94e1b505082::t_120284cedf8b3c 1-7
+src/app.module.ts
+  s_72c94e1b505082::t_1292e0a5e25b07 7,28
+src/modules/orders/entities/enums/order.enum.ts
+  s_72c94e1b505082::t_0c997089819da7 1-21
+src/modules/orders/services/orders/orders.service.ts
+  s_057e74736e5901::t_8effaeeb16cc4a 63-67
+  s_60c34c6251639d::t_1e5866d63bbcff 71
+  s_72c94e1b505082::t_001faf671becff 1-8,10-62,68-70,72-109
+  s_72c94e1b505082::t_d8f2dba81abac7 9
+src/modules/orders/services/orders/orders.service.spec.ts
+  s_60c34c6251639d::t_5c631b40b797c4 98,129
+  s_057e74736e5901::t_d293e99bbfa44a 24,112-114,122-125
+  s_72c94e1b505082::t_00e13e7544661a 1-23,25-97,99-111,115-116,118-119,121,126-128,130-161,163-165,167-182,184-195
+  s_1c6ad9f15f87f1::t_54b3c3a4c241c7 117,120,166,183
+  s_1c6ad9f15f87f1::t_df2fffc9c45fe3 162
+src/modules/orders/repositories/order/order.repository.ts
+  s_057e74736e5901::t_fa551baffc0104 1-3,5,7-8,19-20,113-135,137-146
+  s_72c94e1b505082::t_89ce9edc19d131 6,9-18,21-112,147-148
+  s_057e74736e5901::t_54178b88ea6c93 4
+  s_057e74736e5901::t_2be2984bb81936 136
+src/modules/orders/entities/order.entity.ts
+  s_60c34c6251639d::t_9e00ce28c33222 32-33
+  s_72c94e1b505082::t_91d2c3a0e0ddbc 1-5,7-31,34-110
+  s_60c34c6251639d::t_39fee8b73baa81 6
+src/modules/orders/dto/create-order-item.dto.ts
+  s_72c94e1b505082::t_dff2fc16b3905e 1-18
+src/modules/orders/dto/create-order.dto.ts
+  s_72c94e1b505082::t_f775be242c0ed4 1-30,32,35-74
+  s_60c34c6251639d::t_2caeb3a434154c 31,33-34
+src/modules/orders/dto/list-orders-by-user-query.dto.ts
+  s_72c94e1b505082::t_4c6c76d72624f4 1-8
+src/modules/orders/entities/order-product.entity.ts
+  s_72c94e1b505082::t_bef693f0129da1 1-26
+src/modules/orders/controllers/orders/orders.controller.ts
+  s_72c94e1b505082::t_741ca6d1a4f45c 1-75
+src/modules/orders/orders.module.ts
+  s_057e74736e5901::t_a5867f7b0de808 7,16
+  s_60c34c6251639d::t_c67d08e50d7907 25
+  s_72c94e1b505082::t_a7a41c81669a50 1-6,8-15,17-24,26-28
+src/modules/orders/controllers/orders/orders.controller.spec.ts
+  s_72c94e1b505082::t_708f08c9d6c899 1-86,88-147
+  s_60c34c6251639d::t_f5c1c7fa6b6fb7 87
+  s_72c94e1b505082::t_58f97016680f8f 148-150
+src/modules/orders/repositories/order/order.repository.spec.ts
+  s_057e74736e5901::t_be0c71825b31b0 4,13,30-33,44-47,190-213
+  s_72c94e1b505082::t_cf840828d3829e 1-3,5-12,14-29,34-43,48-189,214-215
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "e002fb195e0d78e99bdd2be77634ba5a9374ddc7",
+  "prompts": {},
+  "humans": {
+    "h_eee5bfb8805eb8": {
+      "author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  },
+  "sessions": {
+    "s_057e74736e5901": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f206a21b-cac5-416c-92c5-453529469c80",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    },
+    "s_1c6ad9f15f87f1": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f7375e01-c26c-448f-8e58-76169a820e21",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    },
+    "s_60c34c6251639d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "71b05d84-ea50-4522-8382-b485f2c798fb",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    },
+    "s_72c94e1b505082": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "0f7791a4-1cc2-4f42-8f93-b9a6a6070da4",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  }
+}
