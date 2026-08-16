@@ -1,5 +1,14 @@
-import { Type } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsUUID, Max, Min } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsIn,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min,
+} from 'class-validator';
 
 export class ListOrdersQueryDto {
   @Type(() => Number)
@@ -16,4 +25,19 @@ export class ListOrdersQueryDto {
   @IsUUID()
   @IsNotEmpty()
   readonly shopId: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  readonly orderNumber?: string;
+
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => {
+    if (typeof value !== 'string') {
+      return value;
+    }
+    return value.toLowerCase();
+  })
+  @IsIn(['asc', 'desc'])
+  readonly sortOrder?: 'asc' | 'desc' = 'desc';
 }

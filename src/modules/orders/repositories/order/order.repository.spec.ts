@@ -60,16 +60,23 @@ describe('OrderRepository', () => {
     const items = [{ id: 'order-1' }] as Order[];
     typeOrmRepository.findAndCount.mockResolvedValue([items, 1]);
 
-    const result = await repository.findAllByShopId('shop-id', 0, 20);
+    const result = await repository.findAllByShopId(
+      'shop-id',
+      0,
+      20,
+      'ORD-1001',
+      'asc',
+    );
 
     expect(typeOrmRepository.findAndCount).toHaveBeenCalledWith({
-      where: { shopId: 'shop-id' },
+      where: { shopId: 'shop-id', orderNumber: expect.anything() },
       relations: {
         items: {
           product: true,
         },
+        user: true,
       },
-      order: { createdAt: 'DESC' },
+      order: { createdAt: 'ASC' },
       skip: 0,
       take: 20,
     });
@@ -93,6 +100,7 @@ describe('OrderRepository', () => {
         items: {
           product: true,
         },
+        user: true,
       },
       order: { createdAt: 'DESC' },
       skip: 10,
@@ -113,6 +121,7 @@ describe('OrderRepository', () => {
         items: {
           product: true,
         },
+        user: true,
       },
     });
     expect(result).toEqual(order);

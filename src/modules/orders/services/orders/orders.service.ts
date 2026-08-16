@@ -23,6 +23,8 @@ export class OrdersService {
       query.shopId,
       skip,
       limit,
+      query.orderNumber,
+      query.sortOrder,
     );
 
     return {

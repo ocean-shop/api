@@ -49,12 +49,16 @@ describe('OrdersService', () => {
       shopId: '98f21967-fce6-4ceb-af61-304913f593a7',
       page: 1,
       limit: 20,
+      orderNumber: 'ORD-1001',
+      sortOrder: 'asc',
     });
 
     expect(orderRepository.findAllByShopId).toHaveBeenCalledWith(
       '98f21967-fce6-4ceb-af61-304913f593a7',
       0,
       20,
+      'ORD-1001',
+      'asc',
     );
     expect(result.totalPages).toBe(1);
   });

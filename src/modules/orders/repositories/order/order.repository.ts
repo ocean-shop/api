@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { ILike, In, Repository } from 'typeorm';
 import { Product } from '../../../catalog/entities/product.entity';
 import { OrderProduct } from '../../entities/order-product.entity';
 import { Order } from '../../entities/order.entity';
@@ -24,15 +24,21 @@ export class OrderRepository {
     shopId: string,
     skip: number,
     take: number,
+    name?: string,
+    sortOrder: 'asc' | 'desc' = 'desc',
   ): Promise<{ items: Order[]; total: number }> {
     const [items, total] = await this.repository.findAndCount({
-      where: { shopId },
+      where: {
+        shopId,
+        ...(name ? { orderNumber: ILike(`%${name}%`) } : {}),
+      },
       relations: {
         items: {
           product: true,
         },
+        user: true,
       },
-      order: { createdAt: 'DESC' },
+      order: { createdAt: sortOrder === 'asc' ? 'ASC' : 'DESC' },
       skip,
       take,
     });
@@ -52,6 +58,7 @@ export class OrderRepository {
         items: {
           product: true,
         },
+        user: true,
       },
       order: { createdAt: 'DESC' },
       skip,
@@ -68,6 +75,7 @@ export class OrderRepository {
         items: {
           product: true,
         },
+        user: true,
       },
     });
 
