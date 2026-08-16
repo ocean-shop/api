@@ -1,0 +1,38 @@
+src/modules/orders/repositories/order/order.repository.ts
+  s_e7e275ca1b426e::t_368fbe144e14c4 7,27-28,31-34,41
+  h_eee5bfb8805eb8 39,61
+  s_e7e275ca1b426e::t_0ff4875479767b 78
+src/modules/orders/services/orders/orders.service.spec.ts
+  s_e7e275ca1b426e::t_02e93e28414dea 52
+  s_e7e275ca1b426e::t_cab7c20eff826b 53,60-61
+src/modules/orders/repositories/order/order.repository.spec.ts
+  s_e7e275ca1b426e::t_f64a404610f02b 63-69,72,79
+  s_e7e275ca1b426e::t_4434917f20ea06 77,103,124
+src/modules/orders/dto/list-orders-query.dto.ts
+  s_e7e275ca1b426e::t_9013aa5669bfc5 1-11,28-31,35-42
+  h_eee5bfb8805eb8 32-34
+src/modules/orders/services/orders/orders.service.ts
+  s_e7e275ca1b426e::t_fbd700ba1609e7 27
+  h_eee5bfb8805eb8 26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "7b17cdd1a037c481564f5a707799401aedc41762",
+  "prompts": {},
+  "humans": {
+    "h_eee5bfb8805eb8": {
+      "author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  },
+  "sessions": {
+    "s_e7e275ca1b426e": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "62994676-6511-49d3-8640-634e78293041",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  }
+}
