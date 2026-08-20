@@ -1,0 +1,30 @@
+src/core/db/migrations/1783403695573-AddShopSchema.ts
+  s_babfebfda96834::t_f539d4557d7d31 18,141,228
+src/modules/user/entities/user.entity.ts
+  s_babfebfda96834::t_799006832db9aa 66
+src/core/db/migrations/1787900000000-CreateUsersShopsTable.ts
+  s_babfebfda96834::t_05857eb6505266 1-22
+src/core/db/migrations/1787800000000-RenameUsersShopsToAdminsShops.ts
+  s_babfebfda96834::t_88217b8f8a1497 1-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "a91b93e6ddb0cfedde07098c9cbee2820a3447c4",
+  "prompts": {},
+  "humans": {
+    "h_eee5bfb8805eb8": {
+      "author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  },
+  "sessions": {
+    "s_babfebfda96834": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "1dbde8d1-f898-4415-8d04-136932bdf017",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  }
+}
