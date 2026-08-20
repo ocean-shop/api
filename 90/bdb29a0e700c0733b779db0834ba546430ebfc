@@ -1,0 +1,49 @@
+src/modules/user/controllers/users/users.controller.spec.ts
+  s_e704c849071198::t_4967cf1806d105 15,50-58
+  s_e704c849071198::t_7280a153dddd09 59-61
+src/modules/user/services/users/users.service.spec.ts
+  s_e704c849071198::t_8cc8ff53e527b2 12,107-114,116-124
+  s_e704c849071198::t_a63f76b8094ad4 40,55,115
+  s_e704c849071198::t_453287e545b972 125
+src/modules/user/controllers/users/users.controller.ts
+  s_e704c849071198::t_dc55ba97447a7f 1-8,25-29
+  s_e704c849071198::t_128a395d5c9c0b 30
+src/modules/user/repositories/users/users.repository.spec.ts
+  s_e704c849071198::t_993eacf96dd4e7 3,17,76-77,111,157,163-171,176,178-182,196-204
+  s_e704c849071198::t_d57e519ece8a0b 103,158,172-175,177,190,193-195
+  s_e704c849071198::t_c9aaf79d699f2a 159-162
+src/modules/user/models/users.models.ts
+  s_e704c849071198::t_e856871635661e 9
+src/modules/user/services/users/users.service.ts
+  s_e704c849071198::t_34d9e6b41b44e5 34,36
+  s_e704c849071198::t_542eef4a598d19 3,35
+  s_e704c849071198::t_063505c9982586 37
+src/modules/user/repositories/users/users.repository.ts
+  s_e704c849071198::t_41b0ab76845c73 29-30
+  s_e704c849071198::t_140530cb05e09e 24,78-83,88,101,103,107-110
+  s_e704c849071198::t_375feb21c55e3f 61
+  s_e704c849071198::t_55e7e32fb660b6 1,86-87,89-90,98-100
+  s_e704c849071198::t_1711f2b84f3350 75-77
+  s_e704c849071198::t_5480f7ca36f721 84-85
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "90bdb29a0e700c0733b779db0834ba546430ebfc",
+  "prompts": {},
+  "humans": {
+    "h_eee5bfb8805eb8": {
+      "author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  },
+  "sessions": {
+    "s_e704c849071198": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "caf3df3d-419a-4fbb-a74f-b3eb294b01b0",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  }
+}
