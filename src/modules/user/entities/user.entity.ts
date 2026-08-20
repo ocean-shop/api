@@ -63,7 +63,7 @@ export class User {
 
   @ManyToMany(() => Shop, (shop) => shop.users)
   @JoinTable({
-    name: 'users_shops',
+    name: 'admins_shops',
     joinColumn: { name: 'user_id', referencedColumnName: 'id' },
     inverseJoinColumn: { name: 'shop_id', referencedColumnName: 'id' },
   })

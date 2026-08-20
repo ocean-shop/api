@@ -15,7 +15,7 @@ export class AddShopSchema1783403695573 implements MigrationInterface {
                 updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             );
 
-            CREATE TABLE users_shops (
+            CREATE TABLE admins_shops (
                 user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                 shop_id UUID NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
                 PRIMARY KEY(user_id, shop_id)
@@ -138,7 +138,7 @@ export class AddShopSchema1783403695573 implements MigrationInterface {
                 ON categories(shop_id, parent_id, slug)
                 WHERE parent_id IS NOT NULL;
 
-            CREATE INDEX idx_users_shops_shop_id ON users_shops(shop_id);
+            CREATE INDEX idx_admins_shops_shop_id ON admins_shops(shop_id);
             CREATE INDEX idx_categories_shop_id ON categories(shop_id);
             CREATE INDEX idx_categories_parent_id ON categories(parent_id);
             CREATE INDEX idx_products_shop_id ON products(shop_id);
@@ -225,7 +225,7 @@ export class AddShopSchema1783403695573 implements MigrationInterface {
             DROP TABLE IF EXISTS product_variations;
             DROP TABLE IF EXISTS products;
             DROP TABLE IF EXISTS categories;
-            DROP TABLE IF EXISTS users_shops;
+            DROP TABLE IF EXISTS admins_shops;
             DROP TABLE IF EXISTS shops;
 
             DROP TYPE IF EXISTS product_status;
