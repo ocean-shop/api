@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { NotFoundException } from '@nestjs/common';
 import { Order } from '../../../orders/entities/order.entity';
 import { User } from '../../entities/user.entity';
 import { UsersRepository } from './users.repository';
@@ -13,6 +14,7 @@ describe('UsersRepository', () => {
     userTypeOrmRepository = {
       createQueryBuilder: jest.fn(),
       find: jest.fn(),
+      findOne: jest.fn(),
     };
 
     orderTypeOrmRepository = {
@@ -71,8 +73,8 @@ describe('UsersRepository', () => {
     expect(baseQueryBuilder.innerJoin).toHaveBeenNthCalledWith(
       1,
       'users_shops',
-      'usersShops',
-      'usersShops.user_id = user.id AND usersShops.shop_id = :shopId',
+      'users_shops',
+      'users_shops.user_id = user.id AND users_shops.shop_id = :shopId',
       { shopId: 'shop-id' },
     );
     expect(baseQueryBuilder.innerJoin).toHaveBeenNthCalledWith(
@@ -98,7 +100,7 @@ describe('UsersRepository', () => {
     expect(result).toEqual({ items: [], total: 0 });
   });
 
-  it('should return paginated users with sessions, otps, role and orders', async () => {
+  it('should return paginated users without loading orders', async () => {
     const countQueryBuilder = {
       select: jest.fn().mockReturnThis(),
       distinct: jest.fn().mockReturnThis(),
@@ -106,6 +108,7 @@ describe('UsersRepository', () => {
     };
     const idsQueryBuilder = {
       select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
       distinct: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
       skip: jest.fn().mockReturnThis(),
@@ -127,21 +130,10 @@ describe('UsersRepository', () => {
     userTypeOrmRepository.find.mockResolvedValue([
       {
         id: 'user-1',
-        role: { name: 'user' },
-        sessions: [{ id: 's1' }],
-        otps: [{ id: 'o1' }],
       },
       {
         id: 'user-2',
-        role: { name: 'user' },
-        sessions: [{ id: 's2' }],
-        otps: [{ id: 'o2' }],
       },
-    ]);
-    orderTypeOrmRepository.find.mockResolvedValue([
-      { id: 'order-1', userId: 'user-2', shopId: 'shop-id' },
-      { id: 'order-2', userId: 'user-1', shopId: 'shop-id' },
-      { id: 'order-3', userId: 'user-2', shopId: 'shop-id' },
     ]);
 
     const result = await repository.findUsersByShopId(
@@ -162,6 +154,32 @@ describe('UsersRepository', () => {
     expect(idsQueryBuilder.take).toHaveBeenCalledWith(10);
     expect(userTypeOrmRepository.find).toHaveBeenCalledWith({
       where: { id: expect.anything() },
+    });
+    expect(orderTypeOrmRepository.find).not.toHaveBeenCalled();
+    expect(result.total).toBe(2);
+    expect(result.items).toHaveLength(2);
+    expect(result.items[0].id).toBe('user-2');
+    expect(result.items[1].id).toBe('user-1');
+  });
+
+  it('should return user details by id', async () => {
+    const expected = {
+      id: '98f21967-fce6-4ceb-af61-304913f593a7',
+      role: { name: 'user' },
+      sessions: [{ id: 'session-1' }],
+      otps: [{ id: 'otp-1' }],
+    };
+    const expectedOrders = [
+      { id: 'order-2', userId: expected.id },
+      { id: 'order-1', userId: expected.id },
+    ];
+    userTypeOrmRepository.findOne.mockResolvedValue(expected);
+    orderTypeOrmRepository.find.mockResolvedValue(expectedOrders);
+
+    const result = await repository.findUserDetailsById(expected.id);
+
+    expect(userTypeOrmRepository.findOne).toHaveBeenCalledWith({
+      where: { id: expected.id },
       relations: {
         role: true,
         sessions: true,
@@ -169,22 +187,20 @@ describe('UsersRepository', () => {
       },
     });
     expect(orderTypeOrmRepository.find).toHaveBeenCalledWith({
-      where: {
-        shopId: 'shop-id',
-        userId: expect.anything(),
-      },
+      where: { userId: expected.id },
       order: { createdAt: 'DESC' },
     });
-    expect(result.total).toBe(2);
-    expect(result.items).toHaveLength(2);
-    expect(result.items[0].id).toBe('user-2');
-    expect(result.items[0].orders).toEqual([
-      { id: 'order-1', userId: 'user-2', shopId: 'shop-id' },
-      { id: 'order-3', userId: 'user-2', shopId: 'shop-id' },
-    ]);
-    expect(result.items[1].id).toBe('user-1');
-    expect(result.items[1].orders).toEqual([
-      { id: 'order-2', userId: 'user-1', shopId: 'shop-id' },
-    ]);
+    expect(result).toEqual({
+      ...expected,
+      orders: expectedOrders,
+    });
+  });
+
+  it('should throw when user details are not found', async () => {
+    userTypeOrmRepository.findOne.mockResolvedValue(null);
+
+    await expect(
+      repository.findUserDetailsById('98f21967-fce6-4ceb-af61-304913f593a7'),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 });

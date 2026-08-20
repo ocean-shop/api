@@ -12,6 +12,7 @@ describe('UsersController', () => {
   beforeEach(async () => {
     const usersServiceMock = {
       getUsersByShop: jest.fn(),
+      getUserDetails: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -44,6 +45,22 @@ describe('UsersController', () => {
     const result = await controller.getUsersByShop(query);
 
     expect(usersService.getUsersByShop).toHaveBeenCalledWith(query);
+    expect(result).toEqual(expected);
+  });
+
+  it('should return user details by id', async () => {
+    const userId = '98f21967-fce6-4ceb-af61-304913f593a7';
+    const expected = {
+      id: userId,
+      role: { name: 'user' },
+      sessions: [],
+      otps: [],
+    };
+    jest.mocked(usersService.getUserDetails).mockResolvedValue(expected as any);
+
+    const result = await controller.getUserDetails(userId);
+
+    expect(usersService.getUserDetails).toHaveBeenCalledWith(userId);
     expect(result).toEqual(expected);
   });
 });

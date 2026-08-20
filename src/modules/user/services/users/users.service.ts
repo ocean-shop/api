@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ListUsersByShopQueryDto } from '../../dto/list-users-by-shop-query.dto';
-import { UsersByShopResponse } from '../../models/users.models';
+import { UserWithOrders, UsersByShopResponse } from '../../models/users.models';
 import { UsersRepository } from '../../repositories/users/users.repository';
 
 @Injectable()
@@ -30,5 +30,9 @@ export class UsersService {
       limit,
       totalPages: total > 0 ? Math.ceil(total / limit) : 0,
     };
+  }
+
+  async getUserDetails(id: string): Promise<UserWithOrders> {
+    return this.usersRepository.findUserDetailsById(id);
   }
 }

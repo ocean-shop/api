@@ -9,6 +9,7 @@ describe('UsersService', () => {
   beforeEach(async () => {
     const usersRepositoryMock = {
       findUsersByShopId: jest.fn(),
+      findUserDetailsById: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -36,7 +37,7 @@ describe('UsersService', () => {
       sortOrder: 'asc' as const,
     };
     jest.mocked(usersRepository.findUsersByShopId).mockResolvedValue({
-      items: [{ id: 'user-1', orders: [] }] as any,
+      items: [{ id: 'user-1' }] as any,
       total: 21,
     });
 
@@ -51,7 +52,7 @@ describe('UsersService', () => {
       query.sortOrder,
     );
     expect(result).toEqual({
-      items: [{ id: 'user-1', orders: [] }],
+      items: [{ id: 'user-1' }],
       total: 21,
       page: 2,
       limit: 10,
@@ -102,5 +103,24 @@ describe('UsersService', () => {
       undefined,
       undefined,
     );
+  });
+
+  it('should return user details by id', async () => {
+    const userId = '98f21967-fce6-4ceb-af61-304913f593a7';
+    const expected = {
+      id: userId,
+      role: { name: 'user' },
+      sessions: [{ id: 'session-1' }],
+      otps: [{ id: 'otp-1' }],
+      orders: [{ id: 'order-1', userId }],
+    };
+    jest
+      .mocked(usersRepository.findUserDetailsById)
+      .mockResolvedValue(expected as any);
+
+    const result = await service.getUserDetails(userId);
+
+    expect(usersRepository.findUserDetailsById).toHaveBeenCalledWith(userId);
+    expect(result).toEqual(expected);
   });
 });

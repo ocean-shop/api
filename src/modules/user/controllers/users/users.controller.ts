@@ -1,4 +1,11 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { Roles } from '../../decorators/roles.decorator';
 import { ListUsersByShopQueryDto } from '../../dto/list-users-by-shop-query.dto';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
@@ -14,5 +21,11 @@ export class UsersController {
   @Roles('admin', 'super')
   async getUsersByShop(@Query() query: ListUsersByShopQueryDto) {
     return this.usersService.getUsersByShop(query);
+  }
+
+  @Get(':id')
+  @Roles('admin', 'super')
+  async getUserDetails(@Param('id', ParseUUIDPipe) id: string) {
+    return this.usersService.getUserDetails(id);
   }
 }

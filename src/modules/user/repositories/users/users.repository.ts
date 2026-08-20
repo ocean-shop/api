@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Order } from '../../../orders/entities/order.entity';
@@ -21,13 +21,13 @@ export class UsersRepository {
     email?: string,
     phoneNumber?: string,
     sortOrder: 'asc' | 'desc' = 'desc',
-  ): Promise<{ items: UserWithOrders[]; total: number }> {
+  ): Promise<{ items: User[]; total: number }> {
     const baseQuery = this.userRepository
       .createQueryBuilder('user')
       .innerJoin(
         'users_shops',
-        'usersShops',
-        'usersShops.user_id = user.id AND usersShops.shop_id = :shopId',
+        'users_shops',
+        'users_shops.user_id = user.id AND users_shops.shop_id = :shopId',
         { shopId },
       )
       .innerJoin('user.role', 'role', 'role.name = :roleName', {
@@ -58,6 +58,7 @@ export class UsersRepository {
     const userIdsRows = await baseQuery
       .clone()
       .select('user.id', 'id')
+      .addSelect('user.createdAt', 'createdAt')
       .distinct(true)
       .orderBy('user.createdAt', sortOrder === 'asc' ? 'ASC' : 'DESC')
       .skip(skip)
@@ -71,6 +72,22 @@ export class UsersRepository {
 
     const users = await this.userRepository.find({
       where: { id: In(userIds) },
+    });
+
+    const usersById = new Map(users.map((user) => [user.id, user]));
+    const items: User[] = userIds
+      .map((userId) => {
+        const user = usersById.get(userId);
+        return user ?? null;
+      })
+      .filter((user): user is User => !!user);
+
+    return { items, total };
+  }
+
+  async findUserDetailsById(id: string): Promise<UserWithOrders> {
+    const user = await this.userRepository.findOne({
+      where: { id },
       relations: {
         role: true,
         sessions: true,
@@ -78,39 +95,18 @@ export class UsersRepository {
       },
     });
 
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
     const orders = await this.orderRepository.find({
-      where: {
-        shopId,
-        userId: In(userIds),
-      },
+      where: { userId: id },
       order: { createdAt: 'DESC' },
     });
 
-    const ordersByUserId = new Map<string, Order[]>();
-    for (const order of orders) {
-      const existing = ordersByUserId.get(order.userId);
-      if (existing) {
-        existing.push(order);
-      } else {
-        ordersByUserId.set(order.userId, [order]);
-      }
-    }
-
-    const usersById = new Map(users.map((user) => [user.id, user]));
-    const items: UserWithOrders[] = userIds
-      .map((userId) => {
-        const user = usersById.get(userId);
-        if (!user) {
-          return null;
-        }
-
-        return {
-          ...user,
-          orders: ordersByUserId.get(userId) ?? [],
-        };
-      })
-      .filter((user): user is UserWithOrders => !!user);
-
-    return { items, total };
+    return {
+      ...user,
+      orders,
+    };
   }
 }

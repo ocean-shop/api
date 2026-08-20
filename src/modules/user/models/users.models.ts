@@ -6,7 +6,7 @@ export type UserWithOrders = User & {
 };
 
 export type UsersByShopResponse = {
-  items: UserWithOrders[];
+  items: User[];
   total: number;
   page: number;
   limit: number;
