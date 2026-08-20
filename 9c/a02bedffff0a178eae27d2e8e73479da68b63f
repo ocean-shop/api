@@ -1,0 +1,57 @@
+src/modules/user/controllers/users/users.controller.spec.ts
+  s_2d3c2cf043ff78::t_2aae9d72fd0efc 1-49
+src/modules/user/dto/list-users-by-shop-query.dto.ts
+  s_2d3c2cf043ff78::t_d8f818635a45b0 12-27,57
+  s_9e2cbc2baafa31::t_618063248ec5b3 1-11,28-56
+  s_2d3c2cf043ff78::t_7d1163858fb99d 58-59
+src/modules/user/models/users.models.ts
+  s_2d3c2cf043ff78::t_335fef64eb862b 1-14
+src/modules/user/services/users/users.service.ts
+  s_9e2cbc2baafa31::t_dae54ddc21eb23 19-21
+  s_2d3c2cf043ff78::t_b124a95102291d 1-18,22-32
+  s_2d3c2cf043ff78::t_91848677bbb2da 33-34
+src/modules/user/services/users/users.service.spec.ts
+  s_9e2cbc2baafa31::t_7db696da1e1ec1 34-36,49-51,82-104
+  s_2d3c2cf043ff78::t_b0bcfc9e1cc844 1-33,37-48,52-81,105-106
+src/modules/user/repositories/users/users.repository.ts
+  s_2d3c2cf043ff78::t_772927907c6250 1-20,24-36,49-57,59-112
+  s_9e2cbc2baafa31::t_1d271909202a47 21-23,37-48,58
+  s_2d3c2cf043ff78::t_9c5d66c52c87ca 113-115
+src/modules/user/controllers/users/users.controller.ts
+  s_2d3c2cf043ff78::t_3338ac16710f9c 1-18
+src/modules/user/repositories/users/users.repository.spec.ts
+  s_2d3c2cf043ff78::t_671c33fcae733c 1-50,52-58,67-83,94-116,118-144,153,156-185
+  s_9e2cbc2baafa31::t_58dbd9f9d71723 51,59-66,84-93,117,145-152,154-155
+  s_2d3c2cf043ff78::t_29212ff3638f10 186-188
+src/modules/user/user.module.ts
+  s_2d3c2cf043ff78::t_67593bdee35a8e 13,17,22,31,48,58-63,69,78,97-98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "9ca02bedffff0a178eae27d2e8e73479da68b63f",
+  "prompts": {},
+  "humans": {
+    "h_eee5bfb8805eb8": {
+      "author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  },
+  "sessions": {
+    "s_2d3c2cf043ff78": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "244e36d8-6c1a-4a4f-9077-4e495bf0f65a",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    },
+    "s_9e2cbc2baafa31": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "3639ceab-ce1d-4d17-b8d5-22b519118fc2",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  }
+}
