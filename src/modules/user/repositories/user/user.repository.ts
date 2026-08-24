@@ -16,6 +16,7 @@ export class UserRepository {
       relations: {
         role: true,
         shops: true,
+        otps: true,
       },
     });
 

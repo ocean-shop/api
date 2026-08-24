@@ -10,6 +10,10 @@ import { AuthOtpRepository } from '../../repositories/auth-otp/auth-otp.reposito
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+  private static readonly OTP_ATTEMPTS_LIMIT = 5;
+  private static readonly OTP_BLOCK_WINDOW_MS = 5 * 60 * 1000;
+  private static readonly OTP_BLOCKED_MESSAGE =
+    'Too many attempts. Try again in 5 minutes.';
 
   constructor(
     private readonly userRepository: UserRepository,
@@ -81,12 +85,43 @@ export class AuthService {
   }
 
   async validateOtpCode(code: string, latestOtp: AuthOtp) {
+    await this.resetOtpAttemptsIfBlockExpired(latestOtp);
+
+    if (latestOtp.blockedUntil && latestOtp.blockedUntil > new Date()) {
+      throw new BadRequestException(AuthService.OTP_BLOCKED_MESSAGE);
+    }
+
     const isValid = await bcrypt.compare(code, latestOtp.codeHash);
     if (!isValid) {
       latestOtp.attempts += 1;
+
+      if (latestOtp.attempts >= AuthService.OTP_ATTEMPTS_LIMIT) {
+        latestOtp.blockedUntil = new Date(
+          Date.now() + AuthService.OTP_BLOCK_WINDOW_MS,
+        );
+        await this.authOtpRepository.save(latestOtp);
+        throw new BadRequestException(AuthService.OTP_BLOCKED_MESSAGE);
+      }
+
       await this.authOtpRepository.save(latestOtp);
       throw new BadRequestException('Invalid OTP code');
     }
+  }
+
+  private async resetOtpAttemptsIfBlockExpired(
+    latestOtp: AuthOtp,
+  ): Promise<void> {
+    if (!latestOtp.blockedUntil) {
+      return;
+    }
+
+    if (latestOtp.blockedUntil > new Date()) {
+      return;
+    }
+
+    latestOtp.attempts = 0;
+    latestOtp.blockedUntil = null;
+    await this.authOtpRepository.save(latestOtp);
   }
 
   async verifyUserIfRegistered(

@@ -19,6 +19,7 @@ export class VerifyOtpService {
       dto.email,
       dto.phone,
     );
+
     await this.processOtp(user, dto.code, dto.email, dto.phone);
     const { accessToken, refreshToken } = this.authService.generateTokens(user);
     await this.saveUserSession(user.id, refreshToken, userAgent, ipAddress);
