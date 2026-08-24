@@ -1,0 +1,41 @@
+src/core/db/migrations/1788000000000-AddAuthOtpBlockedUntil.ts
+  s_7043251a7da1a8::t_475f51d2ec1736 1-17
+src/modules/user/services/auth/auth.service.spec.ts
+  s_7043251a7da1a8::t_b972a203bdadd8 175-177,179,188-192,194-234,237-239,241
+  s_7043251a7da1a8::t_02f291f8d767bc 178
+  s_7043251a7da1a8::t_57294e672948ec 193
+  s_7043251a7da1a8::t_eaab773936874b 240
+src/modules/user/entities/auth-otp.entity.ts
+  s_7043251a7da1a8::t_68d01cc05d7d64 38-40
+src/modules/user/services/auth/auth.service.ts
+  s_7043251a7da1a8::t_c2651fff57f182 13-16,88-93,97-105,111,113-124
+  s_7043251a7da1a8::t_6e8a8de21da305 112
+  s_7043251a7da1a8::t_6b1beb54acc671 125-126
+src/modules/user/repositories/user/user.repository.spec.ts
+  s_7043251a7da1a8::t_23f791993c49fe 44,58
+src/modules/user/services/verify-otp/verify-otp.service.ts
+  h_eee5bfb8805eb8 22
+src/modules/user/repositories/user/user.repository.ts
+  h_eee5bfb8805eb8 19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "1e51a6d79e76d69bd3d3519ff9698713593758d9",
+  "prompts": {},
+  "humans": {
+    "h_eee5bfb8805eb8": {
+      "author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  },
+  "sessions": {
+    "s_7043251a7da1a8": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "69e6f23e-a387-475f-a7b5-42b0ebb9ad4b",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  }
+}
