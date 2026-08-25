@@ -3,7 +3,10 @@ import { ConfigService } from '@nestjs/config';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/adapters/handlebars.adapter';
 import { join } from 'path';
-import { DEFAULT_SMTP_PORT } from './constants/mail.constants';
+import {
+  DEFAULT_SMTP_PORT,
+  SMTP_SECURE_PORT,
+} from './constants/mail.constants';
 
 @Global()
 @Module({
@@ -14,12 +17,13 @@ import { DEFAULT_SMTP_PORT } from './constants/mail.constants';
           configService.get<string>('SMTP_PORT') ?? `${DEFAULT_SMTP_PORT}`,
           10,
         );
+        const secure = port === SMTP_SECURE_PORT;
 
         return {
           transport: {
             host: configService.get<string>('SMTP_HOST'),
             port,
-            secure: false,
+            secure,
             auth: {
               user: configService.get<string>('SMTP_USER'),
               pass: configService.get<string>('SMTP_PASSWORD'),
