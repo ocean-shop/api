@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsString,
   Length,
+  Matches,
   ValidateIf,
 } from 'class-validator';
 
@@ -14,6 +15,10 @@ export class VerifyOtpDto {
 
   @ValidateIf((o: VerifyOtpDto) => !o.email)
   @IsString()
+  @Matches(/^(\+380|380|0)\d{9}$/, {
+    message:
+      'Phone must be a valid Ukrainian number in +380XXXXXXXXX, 380XXXXXXXXX, or 0XXXXXXXXX format',
+  })
   readonly phone?: string;
 
   @IsString()

@@ -1,19 +1,19 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { User } from '../../entities/user.entity';
 import { RequestOtpDto } from '../../dto/request-otp.dto';
 import { OtpPurpose } from '../../entities/enums/auth-otp.enum';
 import { AuthService } from '../auth/auth.service';
 import { EmailService } from '../email/email.service';
+import { SmsService } from '../sms/sms.service';
 import { UserRepository } from '../../repositories/user/user.repository';
 
 @Injectable()
 export class RequestOtpService {
-  private readonly logger = new Logger(RequestOtpService.name);
-
   constructor(
     private readonly userRepository: UserRepository,
     private readonly authService: AuthService,
     private readonly emailService: EmailService,
+    private readonly smsService: SmsService,
   ) {}
 
   async requestAdminOtp(dto: RequestOtpDto) {
@@ -70,7 +70,10 @@ export class RequestOtpService {
       return;
     }
 
-    // No SMS provider yet: keep logging the code for the phone channel.
-    this.logger.log(`Generated OTP code for ${phone}: ${code}`);
+    if (!phone) {
+      throw new BadRequestException('Email or phone must be provided');
+    }
+
+    await this.smsService.sendOtpSms(phone, code);
   }
 }

@@ -26,6 +26,7 @@ import { VerifyOtpService } from './services/verify-otp/verify-otp.service';
 import { RefreshTokenService } from './services/refresh-token/refresh-token.service';
 import { LogoutService } from './services/logout/logout.service';
 import { EmailService } from './services/email/email.service';
+import { SmsService } from './services/sms/sms.service';
 import { SettingsService } from './services/settings/settings.service';
 import { AdminsService } from './services/admins/admins.service';
 import { UsersService } from './services/users/users.service';
@@ -73,6 +74,7 @@ import { RolesGuard } from './guards/roles.guard';
     RefreshTokenService,
     LogoutService,
     EmailService,
+    SmsService,
     SettingsService,
     AdminsService,
     UsersService,

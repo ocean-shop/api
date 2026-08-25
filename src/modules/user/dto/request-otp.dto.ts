@@ -1,4 +1,10 @@
-import { IsEmail, IsOptional, IsString, ValidateIf } from 'class-validator';
+import {
+  IsEmail,
+  IsOptional,
+  IsString,
+  Matches,
+  ValidateIf,
+} from 'class-validator';
 
 export class RequestOtpDto {
   @IsOptional()
@@ -7,5 +13,9 @@ export class RequestOtpDto {
 
   @ValidateIf((o: RequestOtpDto) => !o.email)
   @IsString()
+  @Matches(/^(\+380|380|0)\d{9}$/, {
+    message:
+      'Phone must be a valid Ukrainian number in +380XXXXXXXXX, 380XXXXXXXXX, or 0XXXXXXXXX format',
+  })
   readonly phone?: string;
 }

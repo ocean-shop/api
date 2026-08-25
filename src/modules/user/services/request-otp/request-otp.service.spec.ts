@@ -3,6 +3,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { RequestOtpService } from './request-otp.service';
 import { AuthService } from '../auth/auth.service';
 import { EmailService } from '../email/email.service';
+import { SmsService } from '../sms/sms.service';
 import { User } from '../../entities/user.entity';
 import { UserRepository } from '../../repositories/user/user.repository';
 
@@ -11,6 +12,7 @@ describe('RequestOtpService', () => {
   let userRepository: any;
   let authService: any;
   let emailService: any;
+  let smsService: any;
 
   beforeEach(async () => {
     userRepository = {
@@ -34,12 +36,17 @@ describe('RequestOtpService', () => {
       sendOtpEmail: jest.fn().mockResolvedValue(undefined),
     };
 
+    smsService = {
+      sendOtpSms: jest.fn().mockResolvedValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         RequestOtpService,
         { provide: UserRepository, useValue: userRepository },
         { provide: AuthService, useValue: authService },
         { provide: EmailService, useValue: emailService },
+        { provide: SmsService, useValue: smsService },
       ],
     }).compile();
 
@@ -122,16 +129,25 @@ describe('RequestOtpService', () => {
       userRepository.findByEmailOrPhone.mockResolvedValue(existingUser);
       authService.isUserVerified.mockReturnValue(true);
 
-      const loggerSpy = jest.spyOn(service['logger'], 'log');
-
       const result = await service.requestAdminOtp({ phone: '1234567890' });
 
       expect(authService.saveOtp).toHaveBeenCalled();
       expect(emailService.sendOtpEmail).not.toHaveBeenCalled();
-      expect(loggerSpy).toHaveBeenCalledWith(
-        'Generated OTP code for 1234567890: 1234',
-      );
+      expect(smsService.sendOtpSms).toHaveBeenCalledWith('1234567890', '1234');
+      expect(smsService.sendOtpSms).toHaveBeenCalledTimes(1);
       expect(result).toEqual({ message: 'OTP sent successfully' });
+    });
+
+    it('should throw if SMS sending fails for phone flow', async () => {
+      const existingUser = { id: 'uuid', role: { name: 'admin' } };
+      userRepository.findByEmailOrPhone.mockResolvedValue(existingUser);
+      authService.isUserVerified.mockReturnValue(true);
+      smsService.sendOtpSms.mockRejectedValue(new Error('TurboSMS failed'));
+
+      await expect(
+        service.requestAdminOtp({ phone: '1234567890' }),
+      ).rejects.toThrow('TurboSMS failed');
+      expect(emailService.sendOtpEmail).not.toHaveBeenCalled();
     });
   });
 });
