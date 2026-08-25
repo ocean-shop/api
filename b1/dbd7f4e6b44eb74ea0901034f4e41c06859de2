@@ -1,0 +1,28 @@
+src/core/mail/mail.module.ts
+  s_c1c5d1b38a6ebd::t_2c6bf667f55a9e 6
+  s_c1c5d1b38a6ebd::t_748570fba5f150 7-9
+.env.example
+  s_c1c5d1b38a6ebd::t_e38566e9e696d4 9-12,14-15
+  s_c1c5d1b38a6ebd::t_b7156ce9ae34d1 13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "b1dbd7f4e6b44eb74ea0901034f4e41c06859de2",
+  "prompts": {},
+  "humans": {
+    "h_eee5bfb8805eb8": {
+      "author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  },
+  "sessions": {
+    "s_c1c5d1b38a6ebd": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "56d4b789-3ac6-43b0-9ac1-2bb2d405d8b1",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  }
+}
