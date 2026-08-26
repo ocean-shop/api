@@ -39,7 +39,7 @@ export class TagRepository {
     const tag = await this.repository.findOne({ where: { id } });
 
     if (!tag) {
-      throw new NotFoundException('Tag not found');
+      throw new NotFoundException('Тег не знайдено');
     }
 
     return tag;

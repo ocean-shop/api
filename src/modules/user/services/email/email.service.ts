@@ -38,7 +38,7 @@ export class EmailService {
   async sendOtpEmailNow(email: string, code: string): Promise<void> {
     await this.mailerService.sendMail({
       to: email,
-      subject: 'Your verification code',
+      subject: 'Ваш код підтвердження',
       template: 'otp-code',
       context: {
         code,

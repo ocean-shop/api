@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtAuthGuard } from '../../../user/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../user/guards/roles.guard';
-import { ChangeProductImageSortDto } from '../../dto/change-product-image-sort.dto';
+import { ChangeProductImageSortDto } from '../../dto/images/change-product-image-sort.dto';
 import { ImagesService } from '../../services/images/images.service';
 import { ImagesController } from './images.controller';
 
@@ -49,7 +49,7 @@ describe('ImagesController', () => {
 
   it('should remove image', async () => {
     const id = '98f21967-fce6-4ceb-af61-304913f593a7';
-    const expected = { message: 'Image removed successfully' };
+    const expected = { message: 'Зображення успішно видалено' };
     jest.mocked(imagesService.removeImage).mockResolvedValue(expected);
 
     const result = await controller.removeImage(id);

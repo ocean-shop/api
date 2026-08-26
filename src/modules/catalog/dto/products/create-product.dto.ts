@@ -10,7 +10,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { ProductStatus, ProductType } from '../entities/enums/product.enum';
+import { ProductStatus, ProductType } from '../../entities/enums/product.enum';
 
 export class CreateProductDto {
   @IsUUID()

@@ -1,13 +1,13 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { QueryFailedError } from 'typeorm';
-import { AssignProductAttributeDto } from '../../dto/assign-product-attribute.dto';
-import { AssignProductCategoryDto } from '../../dto/assign-product-category.dto';
-import { AssignProductImagesDto } from '../../dto/assign-product-images.dto';
-import { AssignProductTagDto } from '../../dto/assign-product-tag.dto';
-import { ProductVariationDto } from '../../dto/product-variation.dto';
-import { CreateProductDto } from '../../dto/create-product.dto';
-import { ListProductsQueryDto } from '../../dto/list-products-query.dto';
-import { UpdateProductDto } from '../../dto/update-product.dto';
+import { AssignProductAttributeDto } from '../../dto/attributes/assign-product-attribute.dto';
+import { AssignProductCategoryDto } from '../../dto/products/assign-product-category.dto';
+import { AssignProductImagesDto } from '../../dto/products/assign-product-images.dto';
+import { AssignProductTagDto } from '../../dto/products/assign-product-tag.dto';
+import { ProductVariationDto } from '../../dto/products/product-variation.dto';
+import { CreateProductDto } from '../../dto/products/create-product.dto';
+import { ListProductsQueryDto } from '../../dto/products/list-products-query.dto';
+import { UpdateProductDto } from '../../dto/products/update-product.dto';
 import { ProductStatus, ProductType } from '../../entities/enums/product.enum';
 import { Product } from '../../entities/product.entity';
 import { ProductListResponse } from '../../models/product.models';
@@ -214,7 +214,7 @@ export class ProductsService {
   async removeProduct(id: string): Promise<{ message: string }> {
     const product = await this.productRepository.findById(id);
     await this.productRepository.remove(product);
-    return { message: 'Product removed successfully' };
+    return { message: 'Продукт успішно видалено' };
   }
 
   async assignCategory(
@@ -226,7 +226,7 @@ export class ProductsService {
 
     if (category.shopId !== product.shopId) {
       throw new BadRequestException(
-        'Category belongs to a different shop than the product',
+        'Категорія належить іншому магазину, ніж продукт',
       );
     }
 
@@ -253,7 +253,7 @@ export class ProductsService {
 
     if (tag.shopId !== product.shopId) {
       throw new BadRequestException(
-        'Tag belongs to a different shop than the product',
+        'Тег належить іншому магазину, ніж продукт',
       );
     }
 
@@ -281,7 +281,7 @@ export class ProductsService {
 
     if (attribute.shopId !== product.shopId) {
       throw new BadRequestException(
-        'Attribute belongs to a different shop than the product',
+        'Атрибут належить іншому магазину, ніж продукт',
       );
     }
 
@@ -389,9 +389,7 @@ export class ProductsService {
     const existingVariation =
       await this.productVariationRepository.findById(variationId);
     if (existingVariation.productId !== id) {
-      throw new BadRequestException(
-        'Variation does not belong to the specified product',
-      );
+      throw new BadRequestException('Варіація не належить вказаному продукту');
     }
 
     const validatedAttributes = await this.resolveValidatedVariationAttributes(
@@ -465,14 +463,16 @@ export class ProductsService {
     );
 
     if (existing && existing.id !== excludeProductId) {
-      throw new BadRequestException('Product SKU already exists for this shop');
+      throw new BadRequestException(
+        'SKU продукту вже існує для цього магазину',
+      );
     }
   }
 
   private assertOldPriceValid(price: number, oldPrice: number | null): void {
     if (oldPrice !== null && oldPrice < price) {
       throw new BadRequestException(
-        'oldPrice must be greater than or equal to price',
+        'oldPrice має бути більшим або дорівнювати price',
       );
     }
   }
@@ -502,7 +502,7 @@ export class ProductsService {
 
         if (existingAttribute.shopId !== productShopId) {
           throw new BadRequestException(
-            'Attribute belongs to a different shop than the product',
+            'Атрибут належить іншому магазину, ніж продукт',
           );
         }
 
@@ -527,7 +527,7 @@ export class ProductsService {
       };
 
       if (databaseError.code === '23503') {
-        throw new BadRequestException('Referenced entity does not exist');
+        throw new BadRequestException('Повʼязана сутність не існує');
       }
 
       if (
@@ -535,7 +535,7 @@ export class ProductsService {
         databaseError.constraint === 'uq_products_shop_sku'
       ) {
         throw new BadRequestException(
-          'Product SKU already exists for this shop',
+          'SKU продукту вже існує для цього магазину',
         );
       }
 
@@ -544,7 +544,7 @@ export class ProductsService {
         databaseError.constraint === 'variations_attributes_pkey'
       ) {
         throw new BadRequestException(
-          'Duplicate variation attribute assignment is not allowed',
+          'Дублювання призначення атрибутів варіації заборонено',
         );
       }
 
@@ -553,12 +553,14 @@ export class ProductsService {
         databaseError.constraint?.includes('old_price')
       ) {
         throw new BadRequestException(
-          'oldPrice must be greater than or equal to price',
+          'oldPrice має бути більшим або дорівнювати price',
         );
       }
 
       if (databaseError.code === '23514') {
-        throw new BadRequestException('Product data violates a database check');
+        throw new BadRequestException(
+          'Дані продукту порушують обмеження бази даних',
+        );
       }
     }
 

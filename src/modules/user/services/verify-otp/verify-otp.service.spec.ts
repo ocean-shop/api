@@ -66,7 +66,7 @@ describe('VerifyOtpService', () => {
   describe('verifyOtp', () => {
     it('should throw NotFoundException if user is not found by email', async () => {
       userRepository.findByEmailOrPhone.mockRejectedValue(
-        new NotFoundException('User not found'),
+        new NotFoundException('Користувача не знайдено'),
       );
       await expect(
         service.verifyOtp({ email: 'test@example.com', code: '1234' }),
@@ -79,7 +79,7 @@ describe('VerifyOtpService', () => {
 
     it('should throw NotFoundException if user is not found by phone', async () => {
       userRepository.findByEmailOrPhone.mockRejectedValue(
-        new NotFoundException('User not found'),
+        new NotFoundException('Користувача не знайдено'),
       );
       await expect(
         service.verifyOtp({ phone: '1234567890', code: '1234' }),

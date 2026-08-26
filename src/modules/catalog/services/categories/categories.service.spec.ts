@@ -384,9 +384,7 @@ describe('CategoriesService', () => {
 
     await expect(
       service.changeCategorySort('1', { direction: 'up' }),
-    ).rejects.toThrow(
-      new BadRequestException('Category is already at the top'),
-    );
+    ).rejects.toThrow(new BadRequestException('Категорія вже на початку'));
   });
 
   it('should throw when category is already at the bottom', async () => {
@@ -398,9 +396,7 @@ describe('CategoriesService', () => {
 
     await expect(
       service.changeCategorySort('1', { direction: 'down' }),
-    ).rejects.toThrow(
-      new BadRequestException('Category is already at the bottom'),
-    );
+    ).rejects.toThrow(new BadRequestException('Категорія вже в кінці'));
   });
 
   it('should remove a category', async () => {
@@ -412,6 +408,6 @@ describe('CategoriesService', () => {
 
     expect(categoryRepository.findById).toHaveBeenCalledWith('1');
     expect(categoryRepository.remove).toHaveBeenCalledWith(category);
-    expect(result).toEqual({ message: 'Category removed successfully' });
+    expect(result).toEqual({ message: 'Категорію успішно видалено' });
   });
 });

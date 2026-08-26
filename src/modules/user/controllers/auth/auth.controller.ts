@@ -72,7 +72,7 @@ export class AuthController {
       sameSite: 'strict',
     });
 
-    return { message: 'Logged out successfully' };
+    return { message: 'Ви успішно вийшли з системи' };
   }
 
   private setRefreshTokenCookie(response: Response, refreshToken: string) {

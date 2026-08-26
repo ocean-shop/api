@@ -24,12 +24,12 @@ export class RequestOtpService {
     );
     await this.validateAdminAccess(user, dto.email, dto.phone);
     await this.handleExistingUserOtp(user, dto.email, dto.phone);
-    return { message: 'OTP sent successfully' };
+    return { message: 'OTP-код успішно надіслано' };
   }
 
   private validateContactInfo(email?: string, phone?: string): void {
     if (!email && !phone) {
-      throw new BadRequestException('Email or phone must be provided');
+      throw new BadRequestException('Потрібно вказати email або телефон');
     }
   }
 
@@ -39,11 +39,11 @@ export class RequestOtpService {
     phone?: string,
   ): Promise<void> {
     if (user.role?.name !== 'admin' && user.role?.name !== 'super') {
-      throw new BadRequestException('Access denied');
+      throw new BadRequestException('Доступ заборонено');
     }
     await this.authService.checkActiveOtpRequest(user.id);
     if (!this.authService.isUserVerified(user, email, phone)) {
-      throw new BadRequestException('User not found');
+      throw new BadRequestException('Користувача не знайдено');
     }
   }
 
@@ -71,7 +71,7 @@ export class RequestOtpService {
     }
 
     if (!phone) {
-      throw new BadRequestException('Email or phone must be provided');
+      throw new BadRequestException('Потрібно вказати email або телефон');
     }
 
     await this.smsService.sendOtpSms(phone, code);

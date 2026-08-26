@@ -50,7 +50,7 @@ describe('SmsService', () => {
       recipients: ['380991112233'],
       sms: {
         sender: 'TestSender',
-        text: 'Your verification code: 1234',
+        text: 'Ваш код підтвердження: 1234',
       },
     });
   });

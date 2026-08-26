@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { CreateShopDto } from '../../dto/create-shop.dto';
-import { ListShopsQueryDto } from '../../dto/list-shops-query.dto';
-import { UpdateShopDto } from '../../dto/update-shop.dto';
+import { CreateShopDto } from '../../dto/shops/create-shop.dto';
+import { ListShopsQueryDto } from '../../dto/shops/list-shops-query.dto';
+import { UpdateShopDto } from '../../dto/shops/update-shop.dto';
 import { Shop } from '../../entities/shop.entity';
 import { ShopListResponse } from '../../models/shop.models';
 import { ShopRepository } from '../../repositories/shop/shop.repository';
@@ -62,6 +62,6 @@ export class ShopsService {
   async removeShop(id: string): Promise<{ message: string }> {
     const shop = await this.shopRepository.findById(id);
     await this.shopRepository.remove(shop);
-    return { message: 'Shop removed successfully' };
+    return { message: 'Магазин успішно видалено' };
   }
 }

@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { ChangeProductImageSortDto } from '../../dto/change-product-image-sort.dto';
+import { ChangeProductImageSortDto } from '../../dto/images/change-product-image-sort.dto';
 import { ProductImage } from '../../entities/product-image.entity';
 import { ProductRepository } from '../../repositories/product/product.repository';
 
@@ -20,8 +20,8 @@ export class ImagesService {
     if (!sibling) {
       throw new BadRequestException(
         dto.direction === 'up'
-          ? 'Image is already at the top'
-          : 'Image is already at the bottom',
+          ? 'Зображення вже на початку'
+          : 'Зображення вже в кінці',
       );
     }
 
@@ -31,6 +31,6 @@ export class ImagesService {
   async removeImage(id: string): Promise<{ message: string }> {
     const image = await this.productRepository.findImageById(id);
     await this.productRepository.removeImage(image);
-    return { message: 'Image removed successfully' };
+    return { message: 'Зображення успішно видалено' };
   }
 }

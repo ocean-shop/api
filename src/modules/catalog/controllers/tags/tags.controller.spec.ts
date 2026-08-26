@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtAuthGuard } from '../../../user/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../user/guards/roles.guard';
-import { CreateTagDto } from '../../dto/create-tag.dto';
-import { UpdateTagDto } from '../../dto/update-tag.dto';
+import { CreateTagDto } from '../../dto/tags/create-tag.dto';
+import { UpdateTagDto } from '../../dto/tags/update-tag.dto';
 import { TagsService } from '../../services/tags/tags.service';
 import { TagsController } from './tags.controller';
 
@@ -87,7 +87,7 @@ describe('TagsController', () => {
 
   it('should remove tag', async () => {
     const id = '98f21967-fce6-4ceb-af61-304913f593a7';
-    const expected = { message: 'Tag removed successfully' };
+    const expected = { message: 'Тег успішно видалено' };
     jest.mocked(tagsService.removeTag).mockResolvedValue(expected);
 
     const result = await controller.removeTag(id);

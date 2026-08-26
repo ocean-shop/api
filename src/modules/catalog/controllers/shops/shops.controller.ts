@@ -13,9 +13,9 @@ import {
 import { Roles } from '../../../user/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../../user/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../user/guards/roles.guard';
-import { CreateShopDto } from '../../dto/create-shop.dto';
-import { ListShopsQueryDto } from '../../dto/list-shops-query.dto';
-import { UpdateShopDto } from '../../dto/update-shop.dto';
+import { CreateShopDto } from '../../dto/shops/create-shop.dto';
+import { ListShopsQueryDto } from '../../dto/shops/list-shops-query.dto';
+import { UpdateShopDto } from '../../dto/shops/update-shop.dto';
 import { ShopsService } from '../../services/shops/shops.service';
 
 @Controller('catalog/shops')

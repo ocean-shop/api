@@ -66,7 +66,7 @@ describe('RequestOtpService', () => {
 
     it('should throw NotFoundException if user is not found by email', async () => {
       userRepository.findByEmailOrPhone.mockRejectedValue(
-        new NotFoundException('User not found'),
+        new NotFoundException('Користувача не знайдено'),
       );
       await expect(
         service.requestAdminOtp({ email: 'test@example.com' }),
@@ -75,7 +75,7 @@ describe('RequestOtpService', () => {
 
     it('should throw NotFoundException if user is not found by phone', async () => {
       userRepository.findByEmailOrPhone.mockRejectedValue(
-        new NotFoundException('User not found'),
+        new NotFoundException('Користувача не знайдено'),
       );
       await expect(
         service.requestAdminOtp({ phone: '1234567890' }),
@@ -91,7 +91,7 @@ describe('RequestOtpService', () => {
 
       await expect(
         service.requestAdminOtp({ email: 'test@example.com' }),
-      ).rejects.toThrow(new BadRequestException('Access denied'));
+      ).rejects.toThrow(new BadRequestException('Доступ заборонено'));
     });
 
     it('should throw BadRequestException if user is not verified', async () => {
@@ -104,7 +104,7 @@ describe('RequestOtpService', () => {
 
       await expect(
         service.requestAdminOtp({ email: 'test@example.com' }),
-      ).rejects.toThrow(new BadRequestException('User not found'));
+      ).rejects.toThrow(new BadRequestException('Користувача не знайдено'));
     });
 
     it('should successfully handle an existing verified user with email', async () => {
@@ -121,7 +121,7 @@ describe('RequestOtpService', () => {
         'test@example.com',
         '1234',
       );
-      expect(result).toEqual({ message: 'OTP sent successfully' });
+      expect(result).toEqual({ message: 'OTP-код успішно надіслано' });
     });
 
     it('should successfully handle an existing verified user with phone', async () => {
@@ -135,7 +135,7 @@ describe('RequestOtpService', () => {
       expect(emailService.sendOtpEmail).not.toHaveBeenCalled();
       expect(smsService.sendOtpSms).toHaveBeenCalledWith('1234567890', '1234');
       expect(smsService.sendOtpSms).toHaveBeenCalledTimes(1);
-      expect(result).toEqual({ message: 'OTP sent successfully' });
+      expect(result).toEqual({ message: 'OTP-код успішно надіслано' });
     });
 
     it('should throw if SMS sending fails for phone flow', async () => {

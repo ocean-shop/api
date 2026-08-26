@@ -21,7 +21,7 @@ export class UserRepository {
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('Користувача не знайдено');
     }
 
     return user;
@@ -34,7 +34,7 @@ export class UserRepository {
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('Користувача не знайдено');
     }
 
     return user;
@@ -86,7 +86,7 @@ export class UserRepository {
       .getOne();
 
     if (!user) {
-      throw new NotFoundException('Admin user not found');
+      throw new NotFoundException('Адміністратора не знайдено');
     }
 
     return user;

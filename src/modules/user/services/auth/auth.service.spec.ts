@@ -194,7 +194,7 @@ describe('AuthService', () => {
       } as AuthOtp;
 
       await expect(service.validateOtpCode('1234', otp)).rejects.toThrow(
-        'Too many attempts. Try again in 5 minutes.',
+        'Забагато спроб. Спробуйте знову через 5 хвилин.',
       );
       expect(otp.attempts).toBe(5);
       expect(otp.blockedUntil).toBeInstanceOf(Date);
@@ -209,7 +209,7 @@ describe('AuthService', () => {
       } as AuthOtp;
 
       await expect(service.validateOtpCode('1234', otp)).rejects.toThrow(
-        'Too many attempts. Try again in 5 minutes.',
+        'Забагато спроб. Спробуйте знову через 5 хвилин.',
       );
       expect(bcrypt.compare).not.toHaveBeenCalled();
       expect(authOtpRepository.save).not.toHaveBeenCalled();
@@ -224,7 +224,7 @@ describe('AuthService', () => {
       } as AuthOtp;
 
       await expect(service.validateOtpCode('1234', otp)).rejects.toThrow(
-        'Invalid OTP code',
+        'Неправильний OTP-код',
       );
       expect(otp.attempts).toBe(1);
       expect(otp.blockedUntil).toBeNull();

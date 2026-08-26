@@ -32,7 +32,7 @@ export class ProductVariationRepository {
     });
 
     if (!variation) {
-      throw new NotFoundException('Product variation not found');
+      throw new NotFoundException('Варіацію продукта не знайдено');
     }
 
     return variation;

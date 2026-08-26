@@ -58,7 +58,7 @@ describe('EmailService', () => {
       expect(emailQueue.add).not.toHaveBeenCalled();
       expect(mailerService.sendMail).toHaveBeenCalledWith({
         to: 'test@example.com',
-        subject: 'Your verification code',
+        subject: 'Ваш код підтвердження',
         template: 'otp-code',
         context: { code: '2110', expiresInMinutes: 5 },
       });

@@ -14,14 +14,14 @@ import {
 import { Roles } from '../../../user/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../../user/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../user/guards/roles.guard';
-import { AssignProductAttributeDto } from '../../dto/assign-product-attribute.dto';
-import { AssignProductCategoryDto } from '../../dto/assign-product-category.dto';
-import { AssignProductImagesDto } from '../../dto/assign-product-images.dto';
-import { AssignProductTagDto } from '../../dto/assign-product-tag.dto';
-import { ProductVariationDto } from '../../dto/product-variation.dto';
-import { CreateProductDto } from '../../dto/create-product.dto';
-import { ListProductsQueryDto } from '../../dto/list-products-query.dto';
-import { UpdateProductDto } from '../../dto/update-product.dto';
+import { AssignProductAttributeDto } from '../../dto/attributes/assign-product-attribute.dto';
+import { AssignProductCategoryDto } from '../../dto/products/assign-product-category.dto';
+import { AssignProductImagesDto } from '../../dto/products/assign-product-images.dto';
+import { AssignProductTagDto } from '../../dto/products/assign-product-tag.dto';
+import { ProductVariationDto } from '../../dto/products/product-variation.dto';
+import { CreateProductDto } from '../../dto/products/create-product.dto';
+import { ListProductsQueryDto } from '../../dto/products/list-products-query.dto';
+import { UpdateProductDto } from '../../dto/products/update-product.dto';
 import { ProductsService } from '../../services/products/products.service';
 
 @Controller('catalog/products')

@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtAuthGuard } from '../../../user/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../user/guards/roles.guard';
-import { ChangeCategorySortDto } from '../../dto/change-category-sort.dto';
-import { CreateCategoryDto } from '../../dto/create-category.dto';
-import { UpdateCategoryDto } from '../../dto/update-category.dto';
+import { ChangeCategorySortDto } from '../../dto/categories/change-category-sort.dto';
+import { CreateCategoryDto } from '../../dto/categories/create-category.dto';
+import { UpdateCategoryDto } from '../../dto/categories/update-category.dto';
 import { CategoriesService } from '../../services/categories/categories.service';
 import { CategoriesController } from './categories.controller';
 
@@ -112,7 +112,7 @@ describe('CategoriesController', () => {
 
   it('should remove category', async () => {
     const id = '98f21967-fce6-4ceb-af61-304913f593a7';
-    const expected = { message: 'Category removed successfully' };
+    const expected = { message: 'Категорію успішно видалено' };
     jest.mocked(categoriesService.removeCategory).mockResolvedValue(expected);
 
     const result = await controller.removeCategory(id);

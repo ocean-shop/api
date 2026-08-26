@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtAuthGuard } from '../../../user/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../user/guards/roles.guard';
-import { CreateAttributeDto } from '../../dto/create-attribute.dto';
+import { CreateAttributeDto } from '../../dto/attributes/create-attribute.dto';
 import { AttributesService } from '../../services/attributes/attributes.service';
 import { AttributesController } from './attributes.controller';
 
@@ -75,7 +75,7 @@ describe('AttributesController', () => {
 
   it('should remove an attribute', async () => {
     const id = '98f21967-fce6-4ceb-af61-304913f593a7';
-    const expected = { message: 'Attribute removed successfully' };
+    const expected = { message: 'Атрибут успішно видалено.' };
     jest.mocked(attributesService.removeAttribute).mockResolvedValue(expected);
 
     const result = await controller.removeAttribute(id);

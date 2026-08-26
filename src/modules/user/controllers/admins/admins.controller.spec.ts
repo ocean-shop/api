@@ -101,7 +101,7 @@ describe('AdminsController', () => {
     const req = {
       user: { sub: '8f222f64-fa6e-4f7f-b2f2-68d2180058a8' },
     } as any;
-    const expected = { message: 'Admin user removed successfully' };
+    const expected = { message: 'Адміністратора успішно видалено' };
     jest.mocked(adminsService.removeAdmin).mockResolvedValue(expected);
 
     const result = await controller.removeAdmin(id, req);

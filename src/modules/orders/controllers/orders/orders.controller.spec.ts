@@ -113,7 +113,7 @@ describe('OrdersController', () => {
 
   it('should remove order', async () => {
     const id = '98f21967-fce6-4ceb-af61-304913f593a7';
-    const expected = { message: 'Order removed successfully' };
+    const expected = { message: 'Замовлення успішно видалено' };
     jest.mocked(ordersService.removeOrder).mockResolvedValue(expected);
 
     const result = await controller.removeOrder(id);

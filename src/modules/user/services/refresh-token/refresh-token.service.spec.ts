@@ -75,7 +75,7 @@ describe('RefreshTokenService', () => {
 
     it('should throw UnauthorizedException if user not found', async () => {
       userRepository.findById.mockRejectedValue(
-        new UnauthorizedException('User not found'),
+        new UnauthorizedException('Користувача не знайдено'),
       );
       await expect(service.refreshToken('token')).rejects.toThrow(
         UnauthorizedException,

@@ -149,7 +149,7 @@ export class ProductRepository {
     });
 
     if (!product) {
-      throw new NotFoundException('Product not found');
+      throw new NotFoundException('Продукт не знайдено');
     }
 
     return product;
@@ -256,7 +256,7 @@ export class ProductRepository {
     const image = await this.imageRepository.findOne({ where: { id } });
 
     if (!image) {
-      throw new NotFoundException('Product image not found');
+      throw new NotFoundException('Зображення продукта не знайдено');
     }
 
     return image;

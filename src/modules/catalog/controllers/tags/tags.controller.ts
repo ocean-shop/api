@@ -13,9 +13,9 @@ import {
 import { Roles } from '../../../user/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../../user/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../user/guards/roles.guard';
-import { CreateTagDto } from '../../dto/create-tag.dto';
-import { ListTagsQueryDto } from '../../dto/list-tags-query.dto';
-import { UpdateTagDto } from '../../dto/update-tag.dto';
+import { CreateTagDto } from '../../dto/tags/create-tag.dto';
+import { ListTagsQueryDto } from '../../dto/tags/list-tags-query.dto';
+import { UpdateTagDto } from '../../dto/tags/update-tag.dto';
 import { TagsService } from '../../services/tags/tags.service';
 
 @Controller('catalog/tags')

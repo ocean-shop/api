@@ -21,7 +21,7 @@ export class RefreshTokenService {
     ipAddress?: string,
   ) {
     if (!refreshToken) {
-      throw new UnauthorizedException('Refresh token is required');
+      throw new UnauthorizedException('Потрібен refresh-токен');
     }
 
     try {
@@ -50,7 +50,7 @@ export class RefreshTokenService {
         },
       };
     } catch {
-      throw new UnauthorizedException('Invalid refresh token');
+      throw new UnauthorizedException('Недійсний refresh-токен');
     }
   }
 
@@ -79,7 +79,7 @@ export class RefreshTokenService {
       }
     }
 
-    throw new UnauthorizedException('Invalid refresh token');
+    throw new UnauthorizedException('Недійсний refresh-токен');
   }
 
   private async updateSession(

@@ -28,7 +28,7 @@ export class ShopRepository {
     const shop = await this.repository.findOne({ where: { id } });
 
     if (!shop) {
-      throw new NotFoundException('Shop not found');
+      throw new NotFoundException('Магазин не знайдено');
     }
 
     return shop;

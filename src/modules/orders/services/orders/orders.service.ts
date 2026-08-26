@@ -91,7 +91,7 @@ export class OrdersService {
   async removeOrder(id: string): Promise<{ message: string }> {
     const order = await this.orderRepository.findById(id);
     await this.orderRepository.remove(order);
-    return { message: 'Order removed successfully' };
+    return { message: 'Замовлення успішно видалено' };
   }
 
   async updatePaymentStatus(

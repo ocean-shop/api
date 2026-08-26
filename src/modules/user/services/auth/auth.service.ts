@@ -13,7 +13,7 @@ export class AuthService {
   private static readonly OTP_ATTEMPTS_LIMIT = 5;
   private static readonly OTP_BLOCK_WINDOW_MS = 5 * 60 * 1000;
   private static readonly OTP_BLOCKED_MESSAGE =
-    'Too many attempts. Try again in 5 minutes.';
+    'Забагато спроб. Спробуйте знову через 5 хвилин.';
 
   constructor(
     private readonly userRepository: UserRepository,
@@ -65,7 +65,7 @@ export class AuthService {
 
     if (activeOtp) {
       throw new BadRequestException(
-        'You have already sent a request. Please wait until it expires.',
+        'Ви вже надіслали запит. Будь ласка, зачекайте, доки він завершиться.',
       );
     }
   }
@@ -74,11 +74,11 @@ export class AuthService {
     const latestOtp = await this.authOtpRepository.findLatestOtp(userId);
 
     if (!latestOtp) {
-      throw new BadRequestException('No active OTP found');
+      throw new BadRequestException('Активний OTP-код не знайдено');
     }
 
     if (latestOtp.expiresAt < new Date()) {
-      throw new BadRequestException('OTP has expired');
+      throw new BadRequestException('Термін дії OTP-коду минув');
     }
 
     return latestOtp;
@@ -104,7 +104,7 @@ export class AuthService {
       }
 
       await this.authOtpRepository.save(latestOtp);
-      throw new BadRequestException('Invalid OTP code');
+      throw new BadRequestException('Неправильний OTP-код');
     }
   }
 

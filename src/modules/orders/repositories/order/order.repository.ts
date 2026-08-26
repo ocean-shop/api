@@ -80,7 +80,7 @@ export class OrderRepository {
     });
 
     if (!order) {
-      throw new NotFoundException('Order not found');
+      throw new NotFoundException('Замовлення не знайдено');
     }
 
     return order;
@@ -149,7 +149,7 @@ export class OrderRepository {
 
     if (missingProductIds.length > 0) {
       throw new BadRequestException(
-        `Unknown product IDs for this shop: ${missingProductIds.join(', ')}`,
+        `Невідомі ID продуктів для цього магазину: ${missingProductIds.join(', ')}`,
       );
     }
   }

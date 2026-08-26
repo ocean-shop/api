@@ -10,7 +10,7 @@ import {
 import { Roles } from '../../../user/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../../user/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../user/guards/roles.guard';
-import { ChangeProductImageSortDto } from '../../dto/change-product-image-sort.dto';
+import { ChangeProductImageSortDto } from '../../dto/images/change-product-image-sort.dto';
 import { ImagesService } from '../../services/images/images.service';
 
 @Controller('catalog/images')

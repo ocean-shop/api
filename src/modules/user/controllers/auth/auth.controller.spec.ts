@@ -63,7 +63,7 @@ describe('AuthController', () => {
   describe('requestOtp', () => {
     it('should call requestOtpService.requestAdminOtp and return the result', async () => {
       const dto: RequestOtpDto = { email: 'test@example.com' };
-      const expectedResult = { message: 'OTP sent successfully' };
+      const expectedResult = { message: 'OTP-код успішно надіслано' };
       jest
         .mocked(requestOtpService.requestAdminOtp)
         .mockResolvedValue(expectedResult);
@@ -231,7 +231,7 @@ describe('AuthController', () => {
         secure: false,
         sameSite: 'strict',
       });
-      expect(result).toEqual({ message: 'Logged out successfully' });
+      expect(result).toEqual({ message: 'Ви успішно вийшли з системи' });
     });
 
     it('should clear cookie with secure true in production', async () => {

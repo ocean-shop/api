@@ -12,8 +12,8 @@ import {
 import { Roles } from '../../../user/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../../user/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../user/guards/roles.guard';
-import { CreateAttributeDto } from '../../dto/create-attribute.dto';
-import { ListAttributesQueryDto } from '../../dto/list-attributes-query.dto';
+import { CreateAttributeDto } from '../../dto/attributes/create-attribute.dto';
+import { ListAttributesQueryDto } from '../../dto/attributes/list-attributes-query.dto';
 import { AttributesService } from '../../services/attributes/attributes.service';
 
 @Controller('catalog/attributes')

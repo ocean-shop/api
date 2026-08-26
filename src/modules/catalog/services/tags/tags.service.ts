@@ -1,8 +1,8 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { QueryFailedError } from 'typeorm';
-import { CreateTagDto } from '../../dto/create-tag.dto';
-import { ListTagsQueryDto } from '../../dto/list-tags-query.dto';
-import { UpdateTagDto } from '../../dto/update-tag.dto';
+import { CreateTagDto } from '../../dto/tags/create-tag.dto';
+import { ListTagsQueryDto } from '../../dto/tags/list-tags-query.dto';
+import { UpdateTagDto } from '../../dto/tags/update-tag.dto';
 import { Tag } from '../../entities/tag.entity';
 import { TagListResponse } from '../../models/tag.models';
 import { TagRepository } from '../../repositories/tag/tag.repository';
@@ -67,7 +67,7 @@ export class TagsService {
   async removeTag(id: string): Promise<{ message: string }> {
     const tag = await this.tagRepository.findById(id);
     await this.tagRepository.remove(tag);
-    return { message: 'Tag removed successfully' };
+    return { message: 'Тег успішно видалено' };
   }
 
   private async ensureNameUniqueInShop(
@@ -78,7 +78,7 @@ export class TagsService {
     const existing = await this.tagRepository.findByShopIdAndName(shopId, name);
 
     if (existing && existing.id !== excludeTagId) {
-      throw new BadRequestException('Tag name already exists for this shop');
+      throw new BadRequestException('Назва тегу вже існує для цього магазину');
     }
   }
 
@@ -87,7 +87,9 @@ export class TagsService {
       return await this.tagRepository.save(tag);
     } catch (error) {
       if (this.isDuplicateNameError(error)) {
-        throw new BadRequestException('Tag name already exists for this shop');
+        throw new BadRequestException(
+          'Назва тегу вже існує для цього магазину',
+        );
       }
 
       throw error;

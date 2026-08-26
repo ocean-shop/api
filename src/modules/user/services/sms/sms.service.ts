@@ -31,9 +31,7 @@ export class SmsService {
       process.env.TURBOSMS_API_URL ?? SmsService.TURBOSMS_DEFAULT_URL;
 
     if (!token || !sender) {
-      throw new InternalServerErrorException(
-        'TurboSMS configuration is missing',
-      );
+      throw new InternalServerErrorException('Налаштування TurboSMS відсутні');
     }
 
     const normalizedPhone = this.normalizeUkrainianPhone(phone);
@@ -41,7 +39,7 @@ export class SmsService {
       recipients: [normalizedPhone],
       sms: {
         sender,
-        text: `Your verification code: ${code}`,
+        text: `Ваш код підтвердження: ${code}`,
       },
     };
 
@@ -57,22 +55,22 @@ export class SmsService {
       });
     } catch (error: unknown) {
       const message =
-        error instanceof Error ? error.message : 'Unknown TurboSMS error';
+        error instanceof Error ? error.message : 'Невідома помилка TurboSMS';
       this.logger.error(
-        `Failed to send OTP SMS to ${normalizedPhone}: ${message}`,
+        `Не вдалося надіслати OTP SMS на ${normalizedPhone}: ${message}`,
       );
-      throw new ServiceUnavailableException('Failed to send OTP SMS');
+      throw new ServiceUnavailableException('Не вдалося надіслати OTP SMS');
     }
 
     const responseBody = await this.parseResponseBody(response);
     if (!response.ok || !this.isSuccessResponse(responseBody)) {
       this.logger.error(
-        `TurboSMS rejected OTP SMS for ${normalizedPhone}. Status: ${response.status}. Body: ${JSON.stringify(responseBody)}`,
+        `TurboSMS відхилив OTP SMS для ${normalizedPhone}. Статус: ${response.status}. Тіло: ${JSON.stringify(responseBody)}`,
       );
-      throw new ServiceUnavailableException('Failed to send OTP SMS');
+      throw new ServiceUnavailableException('Не вдалося надіслати OTP SMS');
     }
 
-    this.logger.log(`Sent OTP SMS to ${normalizedPhone}`);
+    this.logger.log(`Надіслано OTP SMS на ${normalizedPhone}`);
   }
 
   private normalizeUkrainianPhone(phone: string): string {
@@ -82,7 +80,7 @@ export class SmsService {
       : phoneWithoutPlus;
 
     if (!/^380\d{9}$/.test(normalized)) {
-      throw new BadRequestException('Invalid Ukrainian phone number');
+      throw new BadRequestException('Некоректний український номер телефону');
     }
 
     return normalized;
