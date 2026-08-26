@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcryptjs';
 import { UserSessionRepository } from '../../repositories/user-session/user-session.repository';
+import { findSessionByRefreshToken } from '../session/user-session.helpers';
 
 @Injectable()
 export class LogoutService {
@@ -37,16 +37,13 @@ export class LogoutService {
     const sessions =
       await this.userSessionRepository.findActiveSessionsByUserId(userId);
 
-    for (const session of sessions) {
-      const isValid = await bcrypt.compare(
-        refreshToken,
-        session.refreshTokenHash,
-      );
-      if (isValid) {
-        session.revokedAt = new Date();
-        await this.userSessionRepository.save(session);
-        break;
-      }
+    const matchingSession = await findSessionByRefreshToken(
+      sessions,
+      refreshToken,
+    );
+    if (matchingSession) {
+      matchingSession.revokedAt = new Date();
+      await this.userSessionRepository.save(matchingSession);
     }
   }
 }

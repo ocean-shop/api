@@ -1,10 +1,14 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcryptjs';
 import { UserSession } from '../../entities/user-session.entity';
 import { UserRepository } from '../../repositories/user/user.repository';
 import { UserSessionRepository } from '../../repositories/user-session/user-session.repository';
 import { AuthService } from '../auth/auth.service';
+import {
+  buildRefreshTokenExpiryDate,
+  findSessionByRefreshToken,
+  hashRefreshToken,
+} from '../session/user-session.helpers';
 
 @Injectable()
 export class RefreshTokenService {
@@ -66,17 +70,15 @@ export class RefreshTokenService {
     const sessions =
       await this.userSessionRepository.findActiveSessionsByUserId(userId);
 
-    for (const session of sessions) {
-      if (session.expiresAt < new Date()) {
-        continue;
-      }
-      const isValid = await bcrypt.compare(
-        refreshToken,
-        session.refreshTokenHash,
-      );
-      if (isValid) {
-        return session;
-      }
+    const matchingSession = await findSessionByRefreshToken(
+      sessions,
+      refreshToken,
+      {
+        skipExpired: true,
+      },
+    );
+    if (matchingSession) {
+      return matchingSession;
     }
 
     throw new UnauthorizedException('Недійсний refresh-токен');
@@ -88,13 +90,8 @@ export class RefreshTokenService {
     userAgent?: string,
     ipAddress?: string,
   ): Promise<void> {
-    const salt = await bcrypt.genSalt(10);
-    session.refreshTokenHash = await bcrypt.hash(newRefreshToken, salt);
-
-    const refreshExpireTime = process.env.REFRESH_EXPIRE_TIME
-      ? parseInt(process.env.REFRESH_EXPIRE_TIME, 10)
-      : 7 * 24 * 60 * 60 * 1000;
-    session.expiresAt = new Date(Date.now() + refreshExpireTime);
+    session.refreshTokenHash = await hashRefreshToken(newRefreshToken);
+    session.expiresAt = buildRefreshTokenExpiryDate();
 
     if (userAgent) session.userAgent = userAgent;
     if (ipAddress) session.ipAddress = ipAddress;

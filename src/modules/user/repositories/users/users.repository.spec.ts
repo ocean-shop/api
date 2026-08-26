@@ -162,6 +162,49 @@ describe('UsersRepository', () => {
     expect(result.items[1].id).toBe('user-1');
   });
 
+  it('should keep source order and ignore missing hydrated users', async () => {
+    const countQueryBuilder = {
+      select: jest.fn().mockReturnThis(),
+      distinct: jest.fn().mockReturnThis(),
+      getCount: jest.fn().mockResolvedValue(2),
+    };
+    const idsQueryBuilder = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      distinct: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getRawMany: jest
+        .fn()
+        .mockResolvedValue([{ id: 'user-2' }, { id: 'user-1' }]),
+    };
+    const baseQueryBuilder = {
+      innerJoin: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      clone: jest
+        .fn()
+        .mockReturnValueOnce(countQueryBuilder)
+        .mockReturnValueOnce(idsQueryBuilder),
+    };
+
+    userTypeOrmRepository.createQueryBuilder.mockReturnValue(baseQueryBuilder);
+    userTypeOrmRepository.find.mockResolvedValue([{ id: 'user-1' }]);
+
+    const result = await repository.findUsersByShopId(
+      'shop-id',
+      0,
+      20,
+      undefined,
+      undefined,
+      'desc',
+    );
+
+    expect(result.total).toBe(2);
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0].id).toBe('user-1');
+  });
+
   it('should return user details by id', async () => {
     const expected = {
       id: '98f21967-fce6-4ceb-af61-304913f593a7',

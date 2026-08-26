@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { QueryFailedError } from 'typeorm';
+import { matchesQueryFailedError } from '../../../../core/db/helpers/query-failed-error.helpers';
 import { CreateTagDto } from '../../dto/tags/create-tag.dto';
 import { ListTagsQueryDto } from '../../dto/tags/list-tags-query.dto';
 import { UpdateTagDto } from '../../dto/tags/update-tag.dto';
@@ -97,19 +97,9 @@ export class TagsService {
   }
 
   private isDuplicateNameError(error: unknown): boolean {
-    if (!(error instanceof QueryFailedError)) {
-      return false;
-    }
-
-    const databaseError = error as QueryFailedError & {
-      code?: string;
-      constraint?: string;
-    };
-
-    return (
-      databaseError.code === '23505' &&
-      !!databaseError.constraint &&
-      this.duplicateNameConstraintNames.includes(databaseError.constraint)
-    );
+    return matchesQueryFailedError(error, {
+      code: '23505',
+      constraintIn: this.duplicateNameConstraintNames,
+    });
   }
 }

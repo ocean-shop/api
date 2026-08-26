@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { QueryFailedError } from 'typeorm';
+import { matchesQueryFailedError } from '../../../../core/db/helpers/query-failed-error.helpers';
 import { Category } from '../../entities/category.entity';
 import { CategoryListResponse } from '../../models/category.models';
 import { CategoryRepository } from '../../repositories/category/category.repository';
@@ -185,19 +185,9 @@ export class CategoriesService {
   }
 
   private isDuplicateSlugError(error: unknown): boolean {
-    if (!(error instanceof QueryFailedError)) {
-      return false;
-    }
-
-    const databaseError = error as QueryFailedError & {
-      code?: string;
-      constraint?: string;
-    };
-
-    return (
-      databaseError.code === '23505' &&
-      !!databaseError.constraint &&
-      this.duplicateSlugConstraintNames.includes(databaseError.constraint)
-    );
+    return matchesQueryFailedError(error, {
+      code: '23505',
+      constraintIn: this.duplicateSlugConstraintNames,
+    });
   }
 }

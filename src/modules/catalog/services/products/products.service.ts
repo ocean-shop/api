@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { QueryFailedError } from 'typeorm';
+import { matchesQueryFailedError } from '../../../../core/db/helpers/query-failed-error.helpers';
 import { AssignProductAttributeDto } from '../../dto/attributes/assign-product-attribute.dto';
 import { AssignProductCategoryDto } from '../../dto/products/assign-product-category.dto';
 import { AssignProductImagesDto } from '../../dto/products/assign-product-images.dto';
@@ -9,6 +9,7 @@ import { CreateProductDto } from '../../dto/products/create-product.dto';
 import { ListProductsQueryDto } from '../../dto/products/list-products-query.dto';
 import { UpdateProductDto } from '../../dto/products/update-product.dto';
 import { ProductStatus, ProductType } from '../../entities/enums/product.enum';
+import { ProductVariation } from '../../entities/product-variation.entity';
 import { Product } from '../../entities/product.entity';
 import { ProductListResponse } from '../../models/product.models';
 import { AttributeRepository } from '../../repositories/attribute/attribute.repository';
@@ -35,9 +36,7 @@ export class ProductsService {
   async listProducts(
     query: ListProductsQueryDto,
   ): Promise<ProductListResponse> {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? PAGINATION_MAX;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = this.resolvePagination(query);
 
     const { items, total } = await this.productRepository.findAllPaginated(
       {
@@ -61,10 +60,7 @@ export class ProductsService {
     query: ListProductsQueryDto,
   ): Promise<ProductListResponse> {
     await this.categoryRepository.findById(categoryId);
-
-    const page = query.page ?? 1;
-    const limit = query.limit ?? PAGINATION_MAX;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = this.resolvePagination(query);
 
     const { items, total } =
       await this.productRepository.findByCategoryIdPaginated(
@@ -83,10 +79,7 @@ export class ProductsService {
     query: ListProductsQueryDto,
   ): Promise<ProductListResponse> {
     await this.tagRepository.findById(tagId);
-
-    const page = query.page ?? 1;
-    const limit = query.limit ?? PAGINATION_MAX;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = this.resolvePagination(query);
 
     const { items, total } = await this.productRepository.findByTagIdPaginated(
       tagId,
@@ -104,10 +97,7 @@ export class ProductsService {
     query: ListProductsQueryDto,
   ): Promise<ProductListResponse> {
     await this.attributeRepository.findById(attributeTypeId);
-
-    const page = query.page ?? 1;
-    const limit = query.limit ?? PAGINATION_MAX;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = this.resolvePagination(query);
 
     const { items, total } =
       await this.productRepository.findByAttributeTypeIdPaginated(
@@ -221,85 +211,41 @@ export class ProductsService {
     id: string,
     dto: AssignProductCategoryDto,
   ): Promise<Product> {
-    const product = await this.productRepository.findById(id);
     const category = await this.categoryRepository.findById(dto.categoryId);
-
-    if (category.shopId !== product.shopId) {
-      throw new BadRequestException(
-        'Категорія належить іншому магазину, ніж продукт',
-      );
-    }
-
-    const alreadyAssigned = product.categories.some(
-      (item) => item.id === category.id,
-    );
-    if (dto.assign && !alreadyAssigned) {
-      product.categories = [...product.categories, category];
-      await this.productRepository.save(product);
-    }
-    if (!dto.assign && alreadyAssigned) {
-      product.categories = product.categories.filter(
-        (item) => item.id !== category.id,
-      );
-      await this.productRepository.save(product);
-    }
-
-    return this.productRepository.findById(id);
+    return this.assignProductRelation({
+      productId: id,
+      relationName: 'categories',
+      relationEntity: category,
+      assign: dto.assign,
+      crossShopMessage: 'Категорія належить іншому магазину, ніж продукт',
+    });
   }
 
   async assignTag(id: string, dto: AssignProductTagDto): Promise<Product> {
-    const product = await this.productRepository.findById(id);
     const tag = await this.tagRepository.findById(dto.tagId);
-
-    if (tag.shopId !== product.shopId) {
-      throw new BadRequestException(
-        'Тег належить іншому магазину, ніж продукт',
-      );
-    }
-
-    const alreadyAssigned = product.tags.some((item) => item.id === tag.id);
-    if (dto.assign && !alreadyAssigned) {
-      product.tags = [...product.tags, tag];
-      await this.productRepository.save(product);
-    }
-    if (!dto.assign && alreadyAssigned) {
-      product.tags = product.tags.filter((item) => item.id !== tag.id);
-      await this.productRepository.save(product);
-    }
-
-    return this.productRepository.findById(id);
+    return this.assignProductRelation({
+      productId: id,
+      relationName: 'tags',
+      relationEntity: tag,
+      assign: dto.assign,
+      crossShopMessage: 'Тег належить іншому магазину, ніж продукт',
+    });
   }
 
   async assignAttribute(
     id: string,
     dto: AssignProductAttributeDto,
   ): Promise<Product> {
-    const product = await this.productRepository.findById(id);
     const attribute = await this.attributeRepository.findById(
       dto.attributeTypeId,
     );
-
-    if (attribute.shopId !== product.shopId) {
-      throw new BadRequestException(
-        'Атрибут належить іншому магазину, ніж продукт',
-      );
-    }
-
-    const alreadyAssigned = product.attributes.some(
-      (item) => item.id === attribute.id,
-    );
-    if (dto.assign && !alreadyAssigned) {
-      product.attributes = [...product.attributes, attribute];
-      await this.productRepository.save(product);
-    }
-    if (!dto.assign && alreadyAssigned) {
-      product.attributes = product.attributes.filter(
-        (item) => item.id !== attribute.id,
-      );
-      await this.productRepository.save(product);
-    }
-
-    return this.productRepository.findById(id);
+    return this.assignProductRelation({
+      productId: id,
+      relationName: 'attributes',
+      relationEntity: attribute,
+      assign: dto.assign,
+      crossShopMessage: 'Атрибут належить іншому магазину, ніж продукт',
+    });
   }
 
   async assignImages(
@@ -324,58 +270,7 @@ export class ProductsService {
     id: string,
     dto: ProductVariationDto,
   ): Promise<Product> {
-    const product = await this.productRepository.findById(id);
-    this.assertOldPriceValid(dto.price, dto.oldPrice ?? null);
-
-    const validatedAttributes = await this.resolveValidatedVariationAttributes(
-      product.shopId,
-      dto,
-    );
-
-    const uploadedImages = await Promise.all(
-      dto.images.map(async (image, index) => ({
-        url: await this.resolveImageUrl(image.image),
-        sort: image.sort ?? index,
-      })),
-    );
-
-    try {
-      await this.ensureProductTypeVariable(product);
-
-      const variation = this.productVariationRepository.create({
-        productId: id,
-        sku: dto.sku,
-        name: dto.name,
-        title: dto.title,
-        price: this.toNumericString(dto.price),
-        oldPrice:
-          dto.oldPrice === null || dto.oldPrice === undefined
-            ? null
-            : this.toNumericString(dto.oldPrice),
-        available: dto.available,
-        isDefault: dto.isDefault,
-      });
-
-      const savedVariation =
-        await this.productVariationRepository.save(variation);
-      const targetVariationId = savedVariation.id;
-
-      await this.productVariationRepository.replaceAttributes(
-        targetVariationId,
-        validatedAttributes.map((attributeTypeId) => ({
-          attributeTypeId,
-        })),
-      );
-
-      await this.productVariationRepository.replaceImages(
-        targetVariationId,
-        uploadedImages,
-      );
-
-      return this.productRepository.findById(id);
-    } catch (error) {
-      this.rethrowConstraintError(error);
-    }
+    return this.upsertVariation(id, dto);
   }
 
   async updateVariation(
@@ -383,58 +278,7 @@ export class ProductsService {
     variationId: string,
     dto: ProductVariationDto,
   ): Promise<Product> {
-    const product = await this.productRepository.findById(id);
-    this.assertOldPriceValid(dto.price, dto.oldPrice ?? null);
-
-    const existingVariation =
-      await this.productVariationRepository.findById(variationId);
-    if (existingVariation.productId !== id) {
-      throw new BadRequestException('Варіація не належить вказаному продукту');
-    }
-
-    const validatedAttributes = await this.resolveValidatedVariationAttributes(
-      product.shopId,
-      dto,
-    );
-
-    const uploadedImages = await Promise.all(
-      dto.images.map(async (image, index) => ({
-        url: await this.resolveImageUrl(image.image),
-        sort: image.sort ?? index,
-      })),
-    );
-
-    try {
-      await this.ensureProductTypeVariable(product);
-
-      existingVariation.title = dto.title;
-      existingVariation.name = dto.name;
-      existingVariation.sku = dto.sku;
-      existingVariation.price = this.toNumericString(dto.price);
-      existingVariation.oldPrice =
-        dto.oldPrice === null || dto.oldPrice === undefined
-          ? null
-          : this.toNumericString(dto.oldPrice);
-      existingVariation.available = dto.available;
-      existingVariation.isDefault = dto.isDefault;
-      await this.productVariationRepository.save(existingVariation);
-
-      await this.productVariationRepository.replaceAttributes(
-        variationId,
-        validatedAttributes.map((attributeTypeId) => ({
-          attributeTypeId,
-        })),
-      );
-
-      await this.productVariationRepository.replaceImages(
-        variationId,
-        uploadedImages,
-      );
-
-      return this.productRepository.findById(id);
-    } catch (error) {
-      this.rethrowConstraintError(error);
-    }
+    return this.upsertVariation(id, dto, variationId);
   }
 
   private toListResponse(
@@ -450,6 +294,59 @@ export class ProductsService {
       limit,
       totalPages: total > 0 ? Math.ceil(total / limit) : 0,
     };
+  }
+
+  private resolvePagination(query: ListProductsQueryDto): {
+    page: number;
+    limit: number;
+    skip: number;
+  } {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? PAGINATION_MAX;
+    const skip = (page - 1) * limit;
+    return { page, limit, skip };
+  }
+
+  private async assignProductRelation<
+    TEntity extends { id: string; shopId: string },
+  >({
+    productId,
+    relationName,
+    relationEntity,
+    assign,
+    crossShopMessage,
+  }: {
+    productId: string;
+    relationName: 'categories' | 'tags' | 'attributes';
+    relationEntity: TEntity;
+    assign: boolean;
+    crossShopMessage: string;
+  }): Promise<Product> {
+    const product = await this.productRepository.findById(productId);
+
+    if (relationEntity.shopId !== product.shopId) {
+      throw new BadRequestException(crossShopMessage);
+    }
+
+    const currentRelations =
+      (product[relationName] as Array<{ id: string }> | undefined) ?? [];
+    const alreadyAssigned = currentRelations.some(
+      (item) => item.id === relationEntity.id,
+    );
+
+    if (assign && !alreadyAssigned) {
+      product[relationName] = [...currentRelations, relationEntity] as never;
+      await this.productRepository.save(product);
+    }
+
+    if (!assign && alreadyAssigned) {
+      product[relationName] = currentRelations.filter(
+        (item) => item.id !== relationEntity.id,
+      ) as never;
+      await this.productRepository.save(product);
+    }
+
+    return this.productRepository.findById(productId);
   }
 
   private async ensureSkuUniqueInShop(
@@ -511,6 +408,126 @@ export class ProductsService {
     );
   }
 
+  private async upsertVariation(
+    productId: string,
+    dto: ProductVariationDto,
+    variationId?: string,
+  ): Promise<Product> {
+    const product = await this.productRepository.findById(productId);
+    this.assertOldPriceValid(dto.price, dto.oldPrice ?? null);
+
+    const existingVariation = variationId
+      ? await this.findVariationForProduct(productId, variationId)
+      : null;
+    const validatedAttributes = await this.resolveValidatedVariationAttributes(
+      product.shopId,
+      dto,
+    );
+    const uploadedImages = await this.resolveUploadedImages(dto);
+
+    try {
+      await this.ensureProductTypeVariable(product);
+
+      const targetVariationId = existingVariation
+        ? await this.updateExistingVariation(existingVariation, dto)
+        : await this.createNewVariation(productId, dto);
+
+      await this.syncVariationRelations(
+        targetVariationId,
+        validatedAttributes,
+        uploadedImages,
+      );
+
+      return this.productRepository.findById(productId);
+    } catch (error) {
+      this.rethrowConstraintError(error);
+    }
+  }
+
+  private async findVariationForProduct(
+    productId: string,
+    variationId: string,
+  ): Promise<ProductVariation> {
+    const variation =
+      await this.productVariationRepository.findById(variationId);
+    if (variation.productId !== productId) {
+      throw new BadRequestException('Варіація не належить вказаному продукту');
+    }
+
+    return variation;
+  }
+
+  private async resolveUploadedImages(
+    dto: ProductVariationDto,
+  ): Promise<Array<{ url: string; sort: number }>> {
+    return Promise.all(
+      dto.images.map(async (image, index) => ({
+        url: await this.resolveImageUrl(image.image),
+        sort: image.sort ?? index,
+      })),
+    );
+  }
+
+  private buildVariationPayload(
+    dto: ProductVariationDto,
+  ): Pick<
+    ProductVariation,
+    'sku' | 'name' | 'title' | 'price' | 'oldPrice' | 'available' | 'isDefault'
+  > {
+    return {
+      sku: dto.sku,
+      name: dto.name,
+      title: dto.title,
+      price: this.toNumericString(dto.price),
+      oldPrice:
+        dto.oldPrice === null || dto.oldPrice === undefined
+          ? null
+          : this.toNumericString(dto.oldPrice),
+      available: dto.available,
+      isDefault: dto.isDefault,
+    };
+  }
+
+  private async createNewVariation(
+    productId: string,
+    dto: ProductVariationDto,
+  ): Promise<string> {
+    const variation = this.productVariationRepository.create({
+      productId,
+      ...this.buildVariationPayload(dto),
+    });
+    const savedVariation =
+      await this.productVariationRepository.save(variation);
+    return savedVariation.id;
+  }
+
+  private async updateExistingVariation(
+    variation: ProductVariation,
+    dto: ProductVariationDto,
+  ): Promise<string> {
+    Object.assign(variation, this.buildVariationPayload(dto));
+    await this.productVariationRepository.save(variation);
+    return variation.id;
+  }
+
+  private async syncVariationRelations(
+    variationId: string,
+    validatedAttributes: string[],
+    uploadedImages: Array<{ url: string; sort: number }>,
+  ): Promise<void> {
+    await this.productVariationRepository.replaceAttributes(
+      variationId,
+      validatedAttributes.map((attributeTypeId) => ({
+        attributeTypeId,
+      })),
+    );
+
+    await this.productVariationRepository.replaceImages(
+      variationId,
+      uploadedImages,
+    );
+  }
+
   private async resolveImageUrl(image: string): Promise<string> {
     if (!image.startsWith('data:image/')) {
       return image;
@@ -520,48 +537,47 @@ export class ProductsService {
   }
 
   private rethrowConstraintError(error: unknown): never {
-    if (error instanceof QueryFailedError) {
-      const databaseError = error as QueryFailedError & {
-        code?: string;
-        constraint?: string;
-      };
+    if (matchesQueryFailedError(error, { code: '23503' })) {
+      throw new BadRequestException('Повʼязана сутність не існує');
+    }
 
-      if (databaseError.code === '23503') {
-        throw new BadRequestException('Повʼязана сутність не існує');
-      }
+    if (
+      matchesQueryFailedError(error, {
+        code: '23505',
+        constraint: 'uq_products_shop_sku',
+      })
+    ) {
+      throw new BadRequestException(
+        'SKU продукту вже існує для цього магазину',
+      );
+    }
 
-      if (
-        databaseError.code === '23505' &&
-        databaseError.constraint === 'uq_products_shop_sku'
-      ) {
-        throw new BadRequestException(
-          'SKU продукту вже існує для цього магазину',
-        );
-      }
+    if (
+      matchesQueryFailedError(error, {
+        code: '23505',
+        constraint: 'variations_attributes_pkey',
+      })
+    ) {
+      throw new BadRequestException(
+        'Дублювання призначення атрибутів варіації заборонено',
+      );
+    }
 
-      if (
-        databaseError.code === '23505' &&
-        databaseError.constraint === 'variations_attributes_pkey'
-      ) {
-        throw new BadRequestException(
-          'Дублювання призначення атрибутів варіації заборонено',
-        );
-      }
+    if (
+      matchesQueryFailedError(error, {
+        code: '23514',
+        constraintIncludes: 'old_price',
+      })
+    ) {
+      throw new BadRequestException(
+        'oldPrice має бути більшим або дорівнювати price',
+      );
+    }
 
-      if (
-        databaseError.code === '23514' &&
-        databaseError.constraint?.includes('old_price')
-      ) {
-        throw new BadRequestException(
-          'oldPrice має бути більшим або дорівнювати price',
-        );
-      }
-
-      if (databaseError.code === '23514') {
-        throw new BadRequestException(
-          'Дані продукту порушують обмеження бази даних',
-        );
-      }
+    if (matchesQueryFailedError(error, { code: '23514' })) {
+      throw new BadRequestException(
+        'Дані продукту порушують обмеження бази даних',
+      );
     }
 
     throw error;

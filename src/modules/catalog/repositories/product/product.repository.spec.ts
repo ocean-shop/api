@@ -226,6 +226,17 @@ describe('ProductRepository', () => {
     expect(result.items.map((item) => item.id)).toEqual(['2', '1']);
   });
 
+  it('should skip missing products after hydration while preserving order', async () => {
+    queryBuilder.getCount.mockResolvedValue(2);
+    queryBuilder.getRawMany.mockResolvedValue([{ id: '2' }, { id: '1' }]);
+    typeOrmRepository.find.mockResolvedValue([{ id: '1' }] as Product[]);
+
+    const result = await repository.findAllPaginated({}, 0, 20);
+
+    expect(result.total).toBe(2);
+    expect(result.items.map((item) => item.id)).toEqual(['1']);
+  });
+
   it('should find product by id with relations', async () => {
     const product = { id: '1' } as Product;
     typeOrmRepository.findOne.mockResolvedValue(product);

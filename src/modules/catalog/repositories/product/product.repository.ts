@@ -162,18 +162,50 @@ export class ProductRepository {
     sortBy?: ProductSortBy,
     sortOrder?: ProductSortOrder,
   ): Promise<{ items: Product[]; total: number }> {
-    const baseQuery = this.repository
-      .createQueryBuilder('product')
-      .distinct(true);
+    const baseQuery = this.buildBasePaginatedQuery();
     applyFilters(baseQuery);
 
-    const total = await baseQuery.clone().getCount();
+    const total = await this.countPaginatedResults(baseQuery);
+    const ids = await this.findPageIds(
+      baseQuery,
+      skip,
+      take,
+      sortBy,
+      sortOrder,
+    );
+    if (ids.length === 0) {
+      return { items: [], total };
+    }
 
-    const orderByColumn =
-      sortBy === ProductSortBy.NAME ? 'product.name' : 'product.createdAt';
-    const orderDirection = sortOrder === ProductSortOrder.ASC ? 'ASC' : 'DESC';
+    return {
+      items: await this.findProductsWithRelationsInOrder(ids),
+      total,
+    };
+  }
 
-    const idRows = await baseQuery
+  private buildBasePaginatedQuery(): SelectQueryBuilder<Product> {
+    return this.repository.createQueryBuilder('product').distinct(true);
+  }
+
+  private async countPaginatedResults(
+    query: SelectQueryBuilder<Product>,
+  ): Promise<number> {
+    return query.clone().getCount();
+  }
+
+  private async findPageIds(
+    query: SelectQueryBuilder<Product>,
+    skip: number,
+    take: number,
+    sortBy?: ProductSortBy,
+    sortOrder?: ProductSortOrder,
+  ): Promise<string[]> {
+    const { orderByColumn, orderDirection } = this.resolveSortOptions(
+      sortBy,
+      sortOrder,
+    );
+
+    const idRows = await query
       .clone()
       .select('product.id', 'id')
       .addSelect(orderByColumn, 'sortValue')
@@ -182,11 +214,26 @@ export class ProductRepository {
       .limit(take)
       .getRawMany<{ id: string; sortValue: string }>();
 
-    const ids = idRows.map((row) => row.id);
-    if (ids.length === 0) {
-      return { items: [], total };
-    }
+    return idRows.map((row) => row.id);
+  }
 
+  private resolveSortOptions(
+    sortBy?: ProductSortBy,
+    sortOrder?: ProductSortOrder,
+  ): {
+    orderByColumn: string;
+    orderDirection: 'ASC' | 'DESC';
+  } {
+    return {
+      orderByColumn:
+        sortBy === ProductSortBy.NAME ? 'product.name' : 'product.createdAt',
+      orderDirection: sortOrder === ProductSortOrder.ASC ? 'ASC' : 'DESC',
+    };
+  }
+
+  private async findProductsWithRelationsInOrder(
+    ids: string[],
+  ): Promise<Product[]> {
     const items = await this.repository.find({
       where: { id: In(ids) },
       relations: {
@@ -200,12 +247,9 @@ export class ProductRepository {
 
     const itemsById = new Map(items.map((item) => [item.id, item]));
 
-    return {
-      items: ids
-        .map((id) => itemsById.get(id))
-        .filter((item): item is Product => item !== undefined),
-      total,
-    };
+    return ids
+      .map((id) => itemsById.get(id))
+      .filter((item): item is Product => item !== undefined);
   }
 
   async findOneById(id: string): Promise<Product | null> {

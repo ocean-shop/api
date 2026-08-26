@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, Repository, SelectQueryBuilder } from 'typeorm';
 import { Order } from '../../../orders/entities/order.entity';
 import { User } from '../../entities/user.entity';
 import { UserWithOrders } from '../../models/users.models';
@@ -22,7 +22,33 @@ export class UsersRepository {
     phoneNumber?: string,
     sortOrder: 'asc' | 'desc' = 'desc',
   ): Promise<{ items: User[]; total: number }> {
-    const baseQuery = this.userRepository
+    const baseQuery = this.buildUsersByShopQuery(shopId, email, phoneNumber);
+    const total = await this.countUsers(baseQuery);
+    if (total === 0) {
+      return { items: [], total: 0 };
+    }
+
+    const userIds = await this.findPagedUserIds(
+      baseQuery,
+      skip,
+      take,
+      sortOrder,
+    );
+    if (userIds.length === 0) {
+      return { items: [], total };
+    }
+
+    const items = await this.findUsersInSourceOrder(userIds);
+
+    return { items, total };
+  }
+
+  private buildUsersByShopQuery(
+    shopId: string,
+    email?: string,
+    phoneNumber?: string,
+  ): SelectQueryBuilder<User> {
+    const query = this.userRepository
       .createQueryBuilder('user')
       .innerJoin(
         'users_shops',
@@ -35,27 +61,31 @@ export class UsersRepository {
       });
 
     if (email) {
-      baseQuery.andWhere('user.email ILIKE :email', {
+      query.andWhere('user.email ILIKE :email', {
         email: `%${email}%`,
       });
     }
 
     if (phoneNumber) {
-      baseQuery.andWhere('user.mobileNumber ILIKE :phoneNumber', {
+      query.andWhere('user.mobileNumber ILIKE :phoneNumber', {
         phoneNumber: `%${phoneNumber}%`,
       });
     }
 
-    const total = await baseQuery
-      .clone()
-      .select('user.id')
-      .distinct(true)
-      .getCount();
-    if (total === 0) {
-      return { items: [], total: 0 };
-    }
+    return query;
+  }
 
-    const userIdsRows = await baseQuery
+  private async countUsers(query: SelectQueryBuilder<User>): Promise<number> {
+    return query.clone().select('user.id').distinct(true).getCount();
+  }
+
+  private async findPagedUserIds(
+    query: SelectQueryBuilder<User>,
+    skip: number,
+    take: number,
+    sortOrder: 'asc' | 'desc',
+  ): Promise<string[]> {
+    const rows = await query
       .clone()
       .select('user.id', 'id')
       .addSelect('user.createdAt', 'createdAt')
@@ -65,24 +95,18 @@ export class UsersRepository {
       .take(take)
       .getRawMany<{ id: string }>();
 
-    const userIds = userIdsRows.map((row) => row.id);
-    if (userIds.length === 0) {
-      return { items: [], total };
-    }
+    return rows.map((row) => row.id);
+  }
 
+  private async findUsersInSourceOrder(userIds: string[]): Promise<User[]> {
     const users = await this.userRepository.find({
       where: { id: In(userIds) },
     });
 
     const usersById = new Map(users.map((user) => [user.id, user]));
-    const items: User[] = userIds
-      .map((userId) => {
-        const user = usersById.get(userId);
-        return user ?? null;
-      })
+    return userIds
+      .map((userId) => usersById.get(userId))
       .filter((user): user is User => !!user);
-
-    return { items, total };
   }
 
   async findUserDetailsById(id: string): Promise<UserWithOrders> {

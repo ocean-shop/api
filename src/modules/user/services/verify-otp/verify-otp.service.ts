@@ -1,10 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import * as bcrypt from 'bcryptjs';
 import { User } from '../../entities/user.entity';
 import { VerifyOtpDto } from '../../dto/verify-otp.dto';
 import { AuthService } from '../auth/auth.service';
 import { UserRepository } from '../../repositories/user/user.repository';
 import { UserSessionRepository } from '../../repositories/user-session/user-session.repository';
+import {
+  buildRefreshTokenExpiryDate,
+  hashRefreshToken,
+} from '../session/user-session.helpers';
 
 @Injectable()
 export class VerifyOtpService {
@@ -60,18 +63,13 @@ export class VerifyOtpService {
     userAgent?: string,
     ipAddress?: string,
   ) {
-    const salt = await bcrypt.genSalt(10);
-    const refreshTokenHash = await bcrypt.hash(refreshToken, salt);
-
-    const refreshExpireTime = process.env.REFRESH_EXPIRE_TIME
-      ? parseInt(process.env.REFRESH_EXPIRE_TIME, 10)
-      : 7 * 24 * 60 * 60 * 1000;
+    const refreshTokenHash = await hashRefreshToken(refreshToken);
     const session = this.userSessionRepository.create({
       userId,
       refreshTokenHash,
       userAgent: userAgent || null,
       ipAddress: ipAddress || null,
-      expiresAt: new Date(Date.now() + refreshExpireTime),
+      expiresAt: buildRefreshTokenExpiryDate(),
     });
     await this.userSessionRepository.save(session);
   }
