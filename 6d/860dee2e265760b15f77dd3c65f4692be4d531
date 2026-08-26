@@ -1,0 +1,160 @@
+src/modules/catalog/repositories/category/category.repository.ts
+  h_eee5bfb8805eb8 45
+src/modules/user/services/auth/auth.service.ts
+  s_92d63e9f04a680::t_5c67405d21d630 16,68,77,81,107
+src/modules/catalog/controllers/categories/categories.controller.ts
+  h_eee5bfb8805eb8 16-19
+src/modules/orders/services/orders/orders.service.ts
+  s_92d63e9f04a680::t_b9d010309aff66 94
+src/modules/catalog/controllers/categories/categories.controller.spec.ts
+  h_eee5bfb8805eb8 4-6
+  s_92d63e9f04a680::t_3b01848ff023c6 115
+src/modules/orders/repositories/order/order.repository.ts
+  s_92d63e9f04a680::t_9802e2edb04aad 83,152
+src/modules/catalog/services/shops/shops.service.spec.ts
+  s_92d63e9f04a680::t_72ae11f3e575f9 119
+src/modules/user/services/request-otp/request-otp.service.spec.ts
+  s_92d63e9f04a680::t_150590c24a7480 69,78
+  s_92d63e9f04a680::t_61bcf7a0512fb2 94,107,124,138
+src/modules/orders/repositories/order/order.repository.spec.ts
+  s_92d63e9f04a680::t_22d3fdca3893ad 222
+src/modules/catalog/services/categories/categories.service.ts
+  s_92d63e9f04a680::t_df978b6f0075a7 59,63,90-92,97,101,134-135,145,162,182
+  h_eee5bfb8805eb8 10-13
+src/modules/catalog/repositories/product/product.repository.ts
+  h_eee5bfb8805eb8 152,259
+src/modules/orders/services/orders/orders.service.spec.ts
+  s_92d63e9f04a680::t_585a7e646523be 160
+src/modules/catalog/repositories/attribute/attribute.repository.ts
+  h_eee5bfb8805eb8 17
+src/modules/user/repositories/users/users.repository.ts
+  s_92d63e9f04a680::t_e982a6bcf1d3cd 99
+src/modules/orders/controllers/orders/orders.controller.spec.ts
+  s_92d63e9f04a680::t_704ba1480c5592 116
+src/modules/catalog/dto/products/list-products-query.dto.ts
+  h_eee5bfb8805eb8 1-82
+src/modules/user/controllers/admins/admins.controller.spec.ts
+  s_92d63e9f04a680::t_78e90769cda388 104
+src/modules/user/services/admins/admins.service.ts
+  s_92d63e9f04a680::t_845595ce04f667 98,112,122,130,146,164,190,227,239,247-249
+src/modules/user/services/verify-otp/verify-otp.service.spec.ts
+  s_92d63e9f04a680::t_72f358372d8824 69,82
+src/modules/user/services/request-otp/request-otp.service.ts
+  s_92d63e9f04a680::t_2e4b82cb9a41fc 27,32,42,46,74
+src/modules/catalog/services/shops/shops.service.ts
+  s_92d63e9f04a680::t_8335dd0889ea99 65
+  h_eee5bfb8805eb8 2-4
+src/modules/catalog/services/images/images.service.ts
+  h_eee5bfb8805eb8 2
+  s_92d63e9f04a680::t_bc7599f493e109 23-24,34
+src/modules/catalog/controllers/images/images.controller.spec.ts
+  s_92d63e9f04a680::t_f3e67382bc8d77 52
+  h_eee5bfb8805eb8 4
+src/modules/user/services/sms/sms.service.ts
+  s_92d63e9f04a680::t_7ef121baa02337 42,62,70,83
+  s_92d63e9f04a680::t_d211a97cb365da 58,60,68,73
+  h_eee5bfb8805eb8 34
+src/modules/catalog/controllers/attributes/attributes.controller.ts
+  h_eee5bfb8805eb8 15-16
+src/modules/catalog/dto/products/update-product.dto.ts
+  h_eee5bfb8805eb8 1-57
+src/modules/catalog/services/products/products.service.spec.ts
+  s_92d63e9f04a680::t_6f0be5ae058fc1 439
+src/modules/user/services/refresh-token/refresh-token.service.spec.ts
+  s_92d63e9f04a680::t_aec3a22b7baf50 78
+src/modules/user/services/email/email.service.spec.ts
+  s_92d63e9f04a680::t_f1afa8d1276b86 61
+src/modules/catalog/repositories/shop/shop.repository.ts
+  h_eee5bfb8805eb8 31
+src/modules/catalog/controllers/attributes/attributes.controller.spec.ts
+  h_eee5bfb8805eb8 4
+  s_92d63e9f04a680::t_01d87189f48998 78
+src/modules/catalog/repositories/tag/tag.repository.ts
+  h_eee5bfb8805eb8 42
+src/modules/user/controllers/auth/auth.controller.spec.ts
+  s_92d63e9f04a680::t_e77c50ffb86252 66,234
+src/modules/user/services/sms/sms.service.spec.ts
+  s_92d63e9f04a680::t_13c2bd96b33991 53
+src/modules/catalog/services/products/products.service.ts
+  h_eee5bfb8805eb8 3-10
+  s_92d63e9f04a680::t_ef4e5fa8e3d4df 217,229,256,284,392,466-468,475,505,530,538,547,556,561
+  s_92d63e9f04a680::t_b210886c13830c 562-563
+src/modules/catalog/controllers/products/products.controller.ts
+  h_eee5bfb8805eb8 17-24
+src/modules/user/repositories/user/user.repository.ts
+  s_92d63e9f04a680::t_ae0c8e3f3e1c16 24,37,89
+src/modules/catalog/dto/products/create-product.dto.ts
+  h_eee5bfb8805eb8 1-61
+src/modules/catalog/controllers/shops/shops.controller.ts
+  h_eee5bfb8805eb8 16-18
+src/modules/catalog/controllers/tags/tags.controller.spec.ts
+  s_92d63e9f04a680::t_f032b3e1a12d6b 90
+  h_eee5bfb8805eb8 4-5
+src/modules/catalog/controllers/images/images.controller.ts
+  h_eee5bfb8805eb8 13
+src/modules/catalog/controllers/shops/shops.controller.spec.ts
+  h_eee5bfb8805eb8 4-5
+  s_92d63e9f04a680::t_2fb81d205a22c7 91
+src/modules/user/guards/roles.guard.ts
+  s_92d63e9f04a680::t_0e2a989e402ae0 28
+  s_92d63e9f04a680::t_627f6750f1d882 29-30
+  h_eee5bfb8805eb8 36
+src/modules/user/services/email/email.service.ts
+  s_92d63e9f04a680::t_6ea4311be79e2b 41
+src/core/mail/assets/templates/emails/otp-code.hbs
+  h_eee5bfb8805eb8 17-18,24
+src/modules/catalog/services/cloudinary/product-images-cloudinary.service.ts
+  s_92d63e9f04a680::t_1f0aece308e246 30-31,51
+src/modules/user/guards/jwt-auth.guard.ts
+  s_92d63e9f04a680::t_ac5c0304ee25b3 22,29
+  s_92d63e9f04a680::t_08591e81fdbd51 30-31
+src/modules/user/services/auth/auth.service.spec.ts
+  s_92d63e9f04a680::t_81681ff483dd4e 197,212,227
+src/modules/catalog/services/images/images.service.spec.ts
+  h_eee5bfb8805eb8 3
+  s_92d63e9f04a680::t_7431e2f17bd7b5 114
+src/modules/catalog/services/attributes/attributes.service.spec.ts
+  s_92d63e9f04a680::t_baddfb5c566867 165,179
+src/modules/catalog/controllers/tags/tags.controller.ts
+  h_eee5bfb8805eb8 16-18
+src/modules/catalog/services/attributes/attributes.service.ts
+  h_eee5bfb8805eb8 3-4,53,64
+src/modules/user/controllers/auth/auth.controller.ts
+  s_92d63e9f04a680::t_75b7fd587de540 75
+src/modules/catalog/services/tags/tags.service.spec.ts
+  s_92d63e9f04a680::t_bae8a90d6e5a6d 202
+src/modules/catalog/services/tags/tags.service.ts
+  s_92d63e9f04a680::t_96ab98ea707911 70,81,90
+  h_eee5bfb8805eb8 3-5
+  s_92d63e9f04a680::t_7396779d40483c 91-92
+src/modules/catalog/controllers/products/products.controller.spec.ts
+  s_92d63e9f04a680::t_cfe7ba807e10bc 169
+  h_eee5bfb8805eb8 4-10
+src/modules/catalog/repositories/product-variation/product-variation.repository.ts
+  h_eee5bfb8805eb8 35
+src/modules/user/services/refresh-token/refresh-token.service.ts
+  s_92d63e9f04a680::t_37bef1c40145e2 24,53,82
+src/modules/catalog/services/categories/categories.service.spec.ts
+  h_eee5bfb8805eb8 387,399,411
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "6d860dee2e265760b15f77dd3c65f4692be4d531",
+  "prompts": {},
+  "humans": {
+    "h_eee5bfb8805eb8": {
+      "author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  },
+  "sessions": {
+    "s_92d63e9f04a680": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "84d2b4e0-da0d-480f-b61e-66cf3c290a9a",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  }
+}
