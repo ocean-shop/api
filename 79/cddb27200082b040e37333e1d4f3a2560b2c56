@@ -1,0 +1,59 @@
+src/modules/catalog/services/categories/categories.service.ts
+  s_92d63e9f04a680::t_2385c0cc93ef39 6,188-191
+src/modules/user/services/logout/logout.service.ts
+  s_92d63e9f04a680::t_ab6649d264643c 4,40-46
+src/modules/user/repositories/users/users.repository.spec.ts
+  s_92d63e9f04a680::t_b4ebe9418246eb 165-207
+src/modules/catalog/repositories/product/product.repository.ts
+  s_92d63e9f04a680::t_e118b8bfbc9b8e 165,168-178,180-184,186-208,217-218,220-226
+  s_92d63e9f04a680::t_7a03b2421a5276 227-229
+src/modules/user/services/verify-otp/verify-otp.service.ts
+  s_92d63e9f04a680::t_3dd0ef64d8c93d 7-10,66,72
+src/modules/user/repositories/users/users.repository.ts
+  s_92d63e9f04a680::t_f0946e76c4d717 3,25-51,64,70,75-80,82-83
+  s_92d63e9f04a680::t_a6ab71fe15eaf7 84-86
+src/modules/user/services/refresh-token/refresh-token.service.ts
+  s_92d63e9f04a680::t_28d5daa98c47d1 7-11,73-77
+  s_92d63e9f04a680::t_6e963deba14592 78-80
+src/modules/user/services/session/user-session.helpers.ts
+  s_92d63e9f04a680::t_94128b0b04303a 1-36
+  s_92d63e9f04a680::t_39d1781e68fba7 37-39
+src/core/db/helpers/query-failed-error.helpers.ts
+  s_92d63e9f04a680::t_b597c3571aeb86 1-54
+  s_92d63e9f04a680::t_2c6f4fa7279628 55-57
+src/modules/catalog/services/tags/tags.service.ts
+  s_92d63e9f04a680::t_c45a2dae0d65b9 2,100-103
+src/modules/catalog/services/products/products.service.ts
+  s_92d63e9f04a680::t_029abd587b8d81 2,540-542,544-550,552-553,555-564,566-572,574-575,577-578,580
+  s_92d63e9f04a680::t_d4c5edd6173aa3 39,63,82,100,215-221,226-232,242-248,299-349
+  s_92d63e9f04a680::t_f60cd4465e3953 273,281,350,411-449,451-470,477-504,506-529
+  s_92d63e9f04a680::t_98c72ca83b03ff 12,450,471-476,505
+  s_92d63e9f04a680::t_ff289f83fa1eaa 351
+  s_92d63e9f04a680::t_7a58b0be9cd4b9 530
+  s_92d63e9f04a680::t_42548d3eef80c7 551
+  s_92d63e9f04a680::t_ed9e68df2be070 573
+  s_92d63e9f04a680::t_cae1f7857e1640 579
+src/modules/catalog/repositories/product/product.repository.spec.ts
+  s_92d63e9f04a680::t_ab62c5b42a7d49 229-239
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "79cddb27200082b040e37333e1d4f3a2560b2c56",
+  "prompts": {},
+  "humans": {
+    "h_eee5bfb8805eb8": {
+      "author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  },
+  "sessions": {
+    "s_92d63e9f04a680": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "84d2b4e0-da0d-480f-b61e-66cf3c290a9a",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  }
+}
