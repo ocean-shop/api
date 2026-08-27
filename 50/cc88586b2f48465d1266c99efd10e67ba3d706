@@ -1,0 +1,35 @@
+package.json
+  s_91174c540ff6a2::t_e3b435257011e1 27-30
+railway.json
+  s_91174c540ff6a2::t_07cdc2384f40d8 1-13
+src/main.ts
+  s_91174c540ff6a2::t_95292ab2435496 11-12,14-16,19,22
+src/core/db/data-source.ts
+  s_91174c540ff6a2::t_eae8fe9763fb74 4-7,11-13
+  s_91174c540ff6a2::t_2c9b769454cfa7 14
+.env.example
+  s_91174c540ff6a2::t_b98c3ba6a2a669 1-7,10-12
+src/app.module.ts
+  s_91174c540ff6a2::t_08d31ab4058fb4 21-24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "50cc88586b2f48465d1266c99efd10e67ba3d706",
+  "prompts": {},
+  "humans": {
+    "h_eee5bfb8805eb8": {
+      "author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  },
+  "sessions": {
+    "s_91174c540ff6a2": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a93f4886-f9a9-4964-9aa7-b0a5cee3ab71",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  }
+}
