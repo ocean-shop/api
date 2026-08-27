@@ -10,8 +10,8 @@ import {
   Max,
   Min,
 } from 'class-validator';
-import { ProductStatus } from '../entities/enums/product.enum';
-import { ProductSortBy, ProductSortOrder } from '../models/product.models';
+import { ProductStatus } from '../../entities/enums/product.enum';
+import { ProductSortBy, ProductSortOrder } from '../../models/product.models';
 
 export class ListProductsQueryDto {
   @Type(() => Number)

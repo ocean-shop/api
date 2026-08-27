@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { QueryFailedError } from 'typeorm';
-import { CreateAttributeDto } from '../../dto/create-attribute.dto';
-import { ListAttributesQueryDto } from '../../dto/list-attributes-query.dto';
+import { CreateAttributeDto } from '../../dto/attributes/create-attribute.dto';
+import { ListAttributesQueryDto } from '../../dto/attributes/list-attributes-query.dto';
 import { Attribute } from '../../entities/attribute.entity';
 import { AttributeListResponse } from '../../models/attribute.models';
 import { AttributeRepository } from '../../repositories/attribute/attribute.repository';
@@ -50,7 +50,7 @@ export class AttributesService {
     } catch (error) {
       if (this.isDuplicateAttributeError(error)) {
         throw new BadRequestException(
-          'Attribute with this name and value already exists for this shop',
+          'Атрибут із такою назвою та значенням уже існує для цього магазину.',
         );
       }
 
@@ -61,7 +61,7 @@ export class AttributesService {
   async removeAttribute(id: string): Promise<{ message: string }> {
     const attribute = await this.attributeRepository.findById(id);
     await this.attributeRepository.remove(attribute);
-    return { message: 'Attribute removed successfully' };
+    return { message: 'Атрибут успішно видалено.' };
   }
 
   private isDuplicateAttributeError(error: unknown): boolean {

@@ -95,7 +95,7 @@ export class AdminsService {
     actorId?: string,
   ): Promise<{ message: string }> {
     if (actorId && actorId === id) {
-      throw new ForbiddenException('You cannot delete your own account');
+      throw new ForbiddenException('Ви не можете видалити власний акаунт');
     }
 
     const admin = await this.userRepository.findByIdAndRoles(
@@ -109,7 +109,7 @@ export class AdminsService {
 
     await this.userRepository.remove(admin);
 
-    return { message: 'Admin user removed successfully' };
+    return { message: 'Адміністратора успішно видалено' };
   }
 
   private async ensureUniqueIdentity(
@@ -119,7 +119,7 @@ export class AdminsService {
     if (email) {
       const existingByEmail = await this.userRepository.findByEmail(email);
       if (existingByEmail) {
-        throw new BadRequestException('Email is already in use');
+        throw new BadRequestException('Email вже використовується');
       }
     }
 
@@ -127,7 +127,7 @@ export class AdminsService {
       const existingByMobile =
         await this.userRepository.findByMobileNumber(mobileNumber);
       if (existingByMobile) {
-        throw new BadRequestException('Mobile number is already in use');
+        throw new BadRequestException('Номер телефону вже використовується');
       }
     }
   }
@@ -143,7 +143,7 @@ export class AdminsService {
 
     const existingByEmail = await this.userRepository.findByEmail(email);
     if (existingByEmail && existingByEmail.id !== adminId) {
-      throw new BadRequestException('Email is already in use');
+      throw new BadRequestException('Email вже використовується');
     }
 
     admin.email = email;
@@ -161,7 +161,7 @@ export class AdminsService {
     const existingByMobile =
       await this.userRepository.findByMobileNumber(mobileNumber);
     if (existingByMobile && existingByMobile.id !== adminId) {
-      throw new BadRequestException('Mobile number is already in use');
+      throw new BadRequestException('Номер телефону вже використовується');
     }
 
     admin.mobileNumber = mobileNumber;
@@ -187,7 +187,7 @@ export class AdminsService {
     }
 
     if (actorId && actorId === adminId && nextRole === 'admin') {
-      throw new ForbiddenException('You cannot demote your own super account');
+      throw new ForbiddenException('Ви не можете понизити власний суперакаунт');
     }
 
     if (admin.role?.name === 'super' && nextRole !== 'super') {
@@ -224,7 +224,7 @@ export class AdminsService {
         (id) => !existingShopIds.has(id),
       );
       throw new BadRequestException(
-        `Some shops do not exist: ${missingShopIds.join(', ')}`,
+        `Деякі магазини не існують: ${missingShopIds.join(', ')}`,
       );
     }
 
@@ -236,7 +236,7 @@ export class AdminsService {
       where: { name: roleName },
     });
     if (!role) {
-      throw new BadRequestException(`Role ${roleName} is not configured`);
+      throw new BadRequestException(`Роль ${roleName} не налаштована`);
     }
     return role;
   }
@@ -244,7 +244,9 @@ export class AdminsService {
   private async ensureSuperUserCanBeChanged(): Promise<void> {
     const superUsersCount = await this.userRepository.countByRole('super');
     if (superUsersCount <= 1) {
-      throw new BadRequestException('Cannot modify the last super user');
+      throw new BadRequestException(
+        'Неможливо змінити останнього суперкористувача',
+      );
     }
   }
 }

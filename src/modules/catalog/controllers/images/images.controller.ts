@@ -7,19 +7,31 @@ import {
   Patch,
   UseGuards,
 } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Roles } from '../../../user/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../../user/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../user/guards/roles.guard';
-import { ChangeProductImageSortDto } from '../../dto/change-product-image-sort.dto';
+import { ChangeProductImageSortDto } from '../../dto/images/change-product-image-sort.dto';
 import { ImagesService } from '../../services/images/images.service';
 
 @Controller('catalog/images')
 @UseGuards(JwtAuthGuard, RolesGuard)
+@ApiTags('Catalog Images')
+@ApiBearerAuth('access-token')
 export class ImagesController {
   constructor(private readonly imagesService: ImagesService) {}
 
   @Patch(':id/sort')
   @Roles('admin', 'super')
+  @ApiOperation({ summary: 'Change product image sort order' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiBody({ type: ChangeProductImageSortDto })
   async changeImageSort(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ChangeProductImageSortDto,
@@ -29,6 +41,8 @@ export class ImagesController {
 
   @Delete(':id')
   @Roles('admin', 'super')
+  @ApiOperation({ summary: 'Delete image by id' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
   async removeImage(@Param('id', ParseUUIDPipe) id: string) {
     return this.imagesService.removeImage(id);
   }

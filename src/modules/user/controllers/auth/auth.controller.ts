@@ -1,4 +1,5 @@
 import { Controller, Post, Body, Res, Req, Headers, Ip } from '@nestjs/common';
+import { ApiBody, ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Response, Request } from 'express';
 import { RequestOtpService } from '../../services/request-otp/request-otp.service';
 import { VerifyOtpService } from '../../services/verify-otp/verify-otp.service';
@@ -8,6 +9,7 @@ import { RequestOtpDto } from '../../dto/request-otp.dto';
 import { VerifyOtpDto } from '../../dto/verify-otp.dto';
 
 @Controller('user/auth')
+@ApiTags('User Auth')
 export class AuthController {
   constructor(
     private readonly requestOtpService: RequestOtpService,
@@ -17,11 +19,15 @@ export class AuthController {
   ) {}
 
   @Post('admin/request-otp')
+  @ApiOperation({ summary: 'Request admin OTP code' })
+  @ApiBody({ type: RequestOtpDto })
   async requestOtp(@Body() requestOtpDto: RequestOtpDto) {
     return await this.requestOtpService.requestAdminOtp(requestOtpDto);
   }
 
   @Post('verify-otp')
+  @ApiOperation({ summary: 'Verify OTP and issue tokens' })
+  @ApiBody({ type: VerifyOtpDto })
   async verifyOtp(
     @Body() verifyOtpDto: VerifyOtpDto,
     @Headers('user-agent') userAgent: string,
@@ -40,6 +46,8 @@ export class AuthController {
   }
 
   @Post('refresh')
+  @ApiOperation({ summary: 'Refresh access token by refresh cookie' })
+  @ApiCookieAuth('refresh_token')
   async refresh(
     @Req() request: Request,
     @Headers('user-agent') userAgent: string,
@@ -59,6 +67,8 @@ export class AuthController {
   }
 
   @Post('logout')
+  @ApiOperation({ summary: 'Logout and clear refresh cookie' })
+  @ApiCookieAuth('refresh_token')
   async logout(
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
@@ -72,7 +82,7 @@ export class AuthController {
       sameSite: 'strict',
     });
 
-    return { message: 'Logged out successfully' };
+    return { message: 'Ви успішно вийшли з системи' };
   }
 
   private setRefreshTokenCookie(response: Response, refreshToken: string) {

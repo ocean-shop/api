@@ -35,6 +35,9 @@ export class AuthOtp {
   @Column({ type: 'int', default: 0 })
   attempts: number;
 
+  @Column({ type: 'timestamptz', nullable: true, name: 'blocked_until' })
+  blockedUntil: Date | null;
+
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 

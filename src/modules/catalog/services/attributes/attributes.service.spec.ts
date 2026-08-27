@@ -162,7 +162,7 @@ describe('AttributesService', () => {
       }),
     ).rejects.toThrow(
       new BadRequestException(
-        'Attribute with this name and value already exists for this shop',
+        'Атрибут із такою назвою та значенням уже існує для цього магазину.',
       ),
     );
   });
@@ -176,6 +176,6 @@ describe('AttributesService', () => {
 
     expect(attributeRepository.findById).toHaveBeenCalledWith('1');
     expect(attributeRepository.remove).toHaveBeenCalledWith(attribute);
-    expect(result).toEqual({ message: 'Attribute removed successfully' });
+    expect(result).toEqual({ message: 'Атрибут успішно видалено.' });
   });
 });

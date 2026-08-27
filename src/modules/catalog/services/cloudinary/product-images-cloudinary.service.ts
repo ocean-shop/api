@@ -27,8 +27,8 @@ export class ProductImagesCloudinaryService {
       const details = this.extractUploadErrorDetails(error);
       throw new BadRequestException(
         details
-          ? `Failed to upload image to Cloudinary: ${details}`
-          : 'Failed to upload image to Cloudinary',
+          ? `Не вдалося завантажити зображення до Cloudinary: ${details}`
+          : 'Не вдалося завантажити зображення до Cloudinary',
       );
     }
   }
@@ -48,7 +48,7 @@ export class ProductImagesCloudinaryService {
 
   private toSecureUrl(response: UploadApiResponse): string {
     if (!response.secure_url) {
-      throw new BadRequestException('Cloudinary did not return a secure URL');
+      throw new BadRequestException('Cloudinary не повернув безпечний URL');
     }
 
     return response.secure_url;

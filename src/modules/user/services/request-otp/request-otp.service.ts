@@ -1,19 +1,19 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { User } from '../../entities/user.entity';
 import { RequestOtpDto } from '../../dto/request-otp.dto';
 import { OtpPurpose } from '../../entities/enums/auth-otp.enum';
 import { AuthService } from '../auth/auth.service';
 import { EmailService } from '../email/email.service';
+import { SmsService } from '../sms/sms.service';
 import { UserRepository } from '../../repositories/user/user.repository';
 
 @Injectable()
 export class RequestOtpService {
-  private readonly logger = new Logger(RequestOtpService.name);
-
   constructor(
     private readonly userRepository: UserRepository,
     private readonly authService: AuthService,
     private readonly emailService: EmailService,
+    private readonly smsService: SmsService,
   ) {}
 
   async requestAdminOtp(dto: RequestOtpDto) {
@@ -24,12 +24,12 @@ export class RequestOtpService {
     );
     await this.validateAdminAccess(user, dto.email, dto.phone);
     await this.handleExistingUserOtp(user, dto.email, dto.phone);
-    return { message: 'OTP sent successfully' };
+    return { message: 'OTP-код успішно надіслано' };
   }
 
   private validateContactInfo(email?: string, phone?: string): void {
     if (!email && !phone) {
-      throw new BadRequestException('Email or phone must be provided');
+      throw new BadRequestException('Потрібно вказати email або телефон');
     }
   }
 
@@ -39,11 +39,11 @@ export class RequestOtpService {
     phone?: string,
   ): Promise<void> {
     if (user.role?.name !== 'admin' && user.role?.name !== 'super') {
-      throw new BadRequestException('Access denied');
+      throw new BadRequestException('Доступ заборонено');
     }
     await this.authService.checkActiveOtpRequest(user.id);
     if (!this.authService.isUserVerified(user, email, phone)) {
-      throw new BadRequestException('User not found');
+      throw new BadRequestException('Користувача не знайдено');
     }
   }
 
@@ -70,7 +70,10 @@ export class RequestOtpService {
       return;
     }
 
-    // No SMS provider yet: keep logging the code for the phone channel.
-    this.logger.log(`Generated OTP code for ${phone}: ${code}`);
+    if (!phone) {
+      throw new BadRequestException('Потрібно вказати email або телефон');
+    }
+
+    await this.smsService.sendOtpSms(phone, code);
   }
 }

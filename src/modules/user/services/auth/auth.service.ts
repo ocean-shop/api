@@ -10,6 +10,10 @@ import { AuthOtpRepository } from '../../repositories/auth-otp/auth-otp.reposito
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+  private static readonly OTP_ATTEMPTS_LIMIT = 5;
+  private static readonly OTP_BLOCK_WINDOW_MS = 5 * 60 * 1000;
+  private static readonly OTP_BLOCKED_MESSAGE =
+    'Забагато спроб. Спробуйте знову через 5 хвилин.';
 
   constructor(
     private readonly userRepository: UserRepository,
@@ -61,7 +65,7 @@ export class AuthService {
 
     if (activeOtp) {
       throw new BadRequestException(
-        'You have already sent a request. Please wait until it expires.',
+        'Ви вже надіслали запит. Будь ласка, зачекайте, доки він завершиться.',
       );
     }
   }
@@ -70,23 +74,54 @@ export class AuthService {
     const latestOtp = await this.authOtpRepository.findLatestOtp(userId);
 
     if (!latestOtp) {
-      throw new BadRequestException('No active OTP found');
+      throw new BadRequestException('Активний OTP-код не знайдено');
     }
 
     if (latestOtp.expiresAt < new Date()) {
-      throw new BadRequestException('OTP has expired');
+      throw new BadRequestException('Термін дії OTP-коду минув');
     }
 
     return latestOtp;
   }
 
   async validateOtpCode(code: string, latestOtp: AuthOtp) {
+    await this.resetOtpAttemptsIfBlockExpired(latestOtp);
+
+    if (latestOtp.blockedUntil && latestOtp.blockedUntil > new Date()) {
+      throw new BadRequestException(AuthService.OTP_BLOCKED_MESSAGE);
+    }
+
     const isValid = await bcrypt.compare(code, latestOtp.codeHash);
     if (!isValid) {
       latestOtp.attempts += 1;
+
+      if (latestOtp.attempts >= AuthService.OTP_ATTEMPTS_LIMIT) {
+        latestOtp.blockedUntil = new Date(
+          Date.now() + AuthService.OTP_BLOCK_WINDOW_MS,
+        );
+        await this.authOtpRepository.save(latestOtp);
+        throw new BadRequestException(AuthService.OTP_BLOCKED_MESSAGE);
+      }
+
       await this.authOtpRepository.save(latestOtp);
-      throw new BadRequestException('Invalid OTP code');
+      throw new BadRequestException('Неправильний OTP-код');
     }
+  }
+
+  private async resetOtpAttemptsIfBlockExpired(
+    latestOtp: AuthOtp,
+  ): Promise<void> {
+    if (!latestOtp.blockedUntil) {
+      return;
+    }
+
+    if (latestOtp.blockedUntil > new Date()) {
+      return;
+    }
+
+    latestOtp.attempts = 0;
+    latestOtp.blockedUntil = null;
+    await this.authOtpRepository.save(latestOtp);
   }
 
   async verifyUserIfRegistered(

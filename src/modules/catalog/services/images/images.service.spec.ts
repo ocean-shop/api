@@ -1,6 +1,6 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ChangeProductImageSortDto } from '../../dto/change-product-image-sort.dto';
+import { ChangeProductImageSortDto } from '../../dto/images/change-product-image-sort.dto';
 import { ProductRepository } from '../../repositories/product/product.repository';
 import { ImagesService } from './images.service';
 
@@ -111,7 +111,7 @@ describe('ImagesService', () => {
 
     expect(productRepository.findImageById).toHaveBeenCalledWith('image-id');
     expect(productRepository.removeImage).toHaveBeenCalledWith(image);
-    expect(result).toEqual({ message: 'Image removed successfully' });
+    expect(result).toEqual({ message: 'Зображення успішно видалено' });
   });
 
   it('should propagate not found when removing image', async () => {

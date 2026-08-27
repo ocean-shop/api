@@ -1,13 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtAuthGuard } from '../../../user/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../user/guards/roles.guard';
-import { AssignProductAttributeDto } from '../../dto/assign-product-attribute.dto';
-import { AssignProductCategoryDto } from '../../dto/assign-product-category.dto';
-import { AssignProductImagesDto } from '../../dto/assign-product-images.dto';
-import { AssignProductTagDto } from '../../dto/assign-product-tag.dto';
-import { ProductVariationDto } from '../../dto/product-variation.dto';
-import { CreateProductDto } from '../../dto/create-product.dto';
-import { UpdateProductDto } from '../../dto/update-product.dto';
+import { AssignProductAttributeDto } from '../../dto/attributes/assign-product-attribute.dto';
+import { AssignProductCategoryDto } from '../../dto/products/assign-product-category.dto';
+import { AssignProductImagesDto } from '../../dto/products/assign-product-images.dto';
+import { AssignProductTagDto } from '../../dto/products/assign-product-tag.dto';
+import { ProductVariationDto } from '../../dto/products/product-variation.dto';
+import { CreateProductDto } from '../../dto/products/create-product.dto';
+import { UpdateProductDto } from '../../dto/products/update-product.dto';
 import { ProductStatus } from '../../entities/enums/product.enum';
 import { ProductsService } from '../../services/products/products.service';
 import { ProductsController } from './products.controller';
@@ -166,7 +166,7 @@ describe('ProductsController', () => {
 
   it('should remove product', async () => {
     const id = '98f21967-fce6-4ceb-af61-304913f593a7';
-    const expected = { message: 'Product removed successfully' };
+    const expected = { message: 'Продукт успішно видалено' };
     jest.mocked(productsService.removeProduct).mockResolvedValue(expected);
 
     const result = await controller.removeProduct(id);

@@ -172,7 +172,11 @@ describe('AuthService', () => {
   describe('validateOtpCode', () => {
     it('should throw BadRequestException and increment attempts if invalid', async () => {
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
-      const otp = { codeHash: 'hash1', attempts: 0 } as AuthOtp;
+      const otp = {
+        codeHash: 'hash1',
+        attempts: 0,
+        blockedUntil: null,
+      } as AuthOtp;
 
       await expect(service.validateOtpCode('1234', otp)).rejects.toThrow(
         BadRequestException,
@@ -181,9 +185,60 @@ describe('AuthService', () => {
       expect(authOtpRepository.save).toHaveBeenCalledWith(otp);
     });
 
+    it('should block user on the 5th invalid attempt', async () => {
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+      const otp = {
+        codeHash: 'hash1',
+        attempts: 4,
+        blockedUntil: null,
+      } as AuthOtp;
+
+      await expect(service.validateOtpCode('1234', otp)).rejects.toThrow(
+        'Забагато спроб. Спробуйте знову через 5 хвилин.',
+      );
+      expect(otp.attempts).toBe(5);
+      expect(otp.blockedUntil).toBeInstanceOf(Date);
+      expect(authOtpRepository.save).toHaveBeenCalledWith(otp);
+    });
+
+    it('should return blocked message when OTP is currently blocked', async () => {
+      const otp = {
+        codeHash: 'hash1',
+        attempts: 5,
+        blockedUntil: new Date(Date.now() + 60 * 1000),
+      } as AuthOtp;
+
+      await expect(service.validateOtpCode('1234', otp)).rejects.toThrow(
+        'Забагато спроб. Спробуйте знову через 5 хвилин.',
+      );
+      expect(bcrypt.compare).not.toHaveBeenCalled();
+      expect(authOtpRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('should reset attempts when block is expired and continue validation flow', async () => {
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+      const otp = {
+        codeHash: 'hash1',
+        attempts: 5,
+        blockedUntil: new Date(Date.now() - 60 * 1000),
+      } as AuthOtp;
+
+      await expect(service.validateOtpCode('1234', otp)).rejects.toThrow(
+        'Неправильний OTP-код',
+      );
+      expect(otp.attempts).toBe(1);
+      expect(otp.blockedUntil).toBeNull();
+      expect(authOtpRepository.save).toHaveBeenCalledTimes(2);
+      expect(authOtpRepository.save).toHaveBeenCalledWith(otp);
+    });
+
     it('should not throw if valid', async () => {
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      const otp = { codeHash: 'hash1', attempts: 0 } as AuthOtp;
+      const otp = {
+        codeHash: 'hash1',
+        attempts: 0,
+        blockedUntil: null,
+      } as AuthOtp;
 
       await expect(service.validateOtpCode('1234', otp)).resolves.not.toThrow();
       expect(otp.attempts).toBe(0);

@@ -116,6 +116,6 @@ describe('ShopsService', () => {
 
     expect(shopRepository.findById).toHaveBeenCalledWith('1');
     expect(shopRepository.remove).toHaveBeenCalledWith(shop);
-    expect(result).toEqual({ message: 'Shop removed successfully' });
+    expect(result).toEqual({ message: 'Магазин успішно видалено' });
   });
 });

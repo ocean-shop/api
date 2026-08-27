@@ -42,7 +42,7 @@ export class CategoryRepository {
     const category = await this.repository.findOne({ where: { id } });
 
     if (!category) {
-      throw new NotFoundException('Category not found');
+      throw new NotFoundException('Категорію не знайдено');
     }
 
     return category;

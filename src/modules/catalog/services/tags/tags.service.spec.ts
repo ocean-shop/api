@@ -199,6 +199,6 @@ describe('TagsService', () => {
 
     expect(tagRepository.findById).toHaveBeenCalledWith('1');
     expect(tagRepository.remove).toHaveBeenCalledWith(tag);
-    expect(result).toEqual({ message: 'Tag removed successfully' });
+    expect(result).toEqual({ message: 'Тег успішно видалено' });
   });
 });

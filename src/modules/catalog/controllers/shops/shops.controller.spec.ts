@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtAuthGuard } from '../../../user/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../user/guards/roles.guard';
-import { CreateShopDto } from '../../dto/create-shop.dto';
-import { UpdateShopDto } from '../../dto/update-shop.dto';
+import { CreateShopDto } from '../../dto/shops/create-shop.dto';
+import { UpdateShopDto } from '../../dto/shops/update-shop.dto';
 import { ShopsService } from '../../services/shops/shops.service';
 import { ShopsController } from './shops.controller';
 
@@ -88,7 +88,7 @@ describe('ShopsController', () => {
 
   it('should remove shop', async () => {
     const id = '98f21967-fce6-4ceb-af61-304913f593a7';
-    const expected = { message: 'Shop removed successfully' };
+    const expected = { message: 'Магазин успішно видалено' };
     jest.mocked(shopsService.removeShop).mockResolvedValue(expected);
 
     const result = await controller.removeShop(id);

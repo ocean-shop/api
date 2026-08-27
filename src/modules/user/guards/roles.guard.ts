@@ -25,13 +25,15 @@ export class RolesGuard implements CanActivate {
     const user = request.user;
 
     if (!user || !user.role) {
-      throw new ForbiddenException('User role information not found');
+      throw new ForbiddenException(
+        'Інформацію про роль користувача не знайдено',
+      );
     }
 
     const hasRole = requiredRoles.includes(user.role);
     if (!hasRole) {
       throw new ForbiddenException(
-        `This action requires one of the following roles: ${requiredRoles.join(', ')}`,
+        `Для цієї дії потрібна одна з ролей: ${requiredRoles.join(', ')}`,
       );
     }
 

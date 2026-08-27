@@ -10,21 +10,26 @@ import { OauthAccount } from './entities/oauth-account.entity';
 import { AuthOtp } from './entities/auth-otp.entity';
 import { UserSettings } from './entities/user-settings.entity';
 import { Shop } from '../catalog/entities/shop.entity';
+import { Order } from '../orders/entities/order.entity';
 import { AuthController } from './controllers/auth/auth.controller';
 import { SettingsController } from './controllers/settings/settings.controller';
 import { AdminsController } from './controllers/admins/admins.controller';
+import { UsersController } from './controllers/users/users.controller';
 import { UserRepository } from './repositories/user/user.repository';
 import { AuthOtpRepository } from './repositories/auth-otp/auth-otp.repository';
 import { UserSessionRepository } from './repositories/user-session/user-session.repository';
 import { SettingsRepository } from './repositories/settings/settings.repository';
+import { UsersRepository } from './repositories/users/users.repository';
 import { AuthService } from './services/auth/auth.service';
 import { RequestOtpService } from './services/request-otp/request-otp.service';
 import { VerifyOtpService } from './services/verify-otp/verify-otp.service';
 import { RefreshTokenService } from './services/refresh-token/refresh-token.service';
 import { LogoutService } from './services/logout/logout.service';
 import { EmailService } from './services/email/email.service';
+import { SmsService } from './services/sms/sms.service';
 import { SettingsService } from './services/settings/settings.service';
 import { AdminsService } from './services/admins/admins.service';
+import { UsersService } from './services/users/users.service';
 import { EmailProcessor } from './processors/email.processor';
 import { isEmailQueueEnabled } from '../../core/queue/helpers/queue.helpers';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -41,6 +46,7 @@ import { RolesGuard } from './guards/roles.guard';
       AuthOtp,
       UserSettings,
       Shop,
+      Order,
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -50,20 +56,28 @@ import { RolesGuard } from './guards/roles.guard';
       inject: [ConfigService],
     }),
   ],
-  controllers: [AuthController, SettingsController, AdminsController],
+  controllers: [
+    AuthController,
+    SettingsController,
+    AdminsController,
+    UsersController,
+  ],
   providers: [
     UserRepository,
     AuthOtpRepository,
     UserSessionRepository,
     SettingsRepository,
+    UsersRepository,
     AuthService,
     RequestOtpService,
     VerifyOtpService,
     RefreshTokenService,
     LogoutService,
     EmailService,
+    SmsService,
     SettingsService,
     AdminsService,
+    UsersService,
     JwtAuthGuard,
     RolesGuard,
     // The processor only runs when the BullMQ queue is enabled.
@@ -82,6 +96,8 @@ import { RolesGuard } from './guards/roles.guard';
     LogoutService,
     SettingsService,
     AdminsService,
+    UsersRepository,
+    UsersService,
   ],
 })
 export class UserModule {}

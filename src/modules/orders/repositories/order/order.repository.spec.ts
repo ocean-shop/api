@@ -219,6 +219,6 @@ describe('OrderRepository', () => {
 
     await expect(
       repository.validateProductsForShop('shop-id', ['p1', 'p2']),
-    ).rejects.toThrow('Unknown product IDs for this shop: p2');
+    ).rejects.toThrow('Невідомі ID продуктів для цього магазину: p2');
   });
 });

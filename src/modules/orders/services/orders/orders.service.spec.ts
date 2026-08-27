@@ -157,7 +157,7 @@ describe('OrdersService', () => {
 
     expect(orderRepository.findById).toHaveBeenCalledWith('order-id');
     expect(orderRepository.remove).toHaveBeenCalledWith(order);
-    expect(result).toEqual({ message: 'Order removed successfully' });
+    expect(result).toEqual({ message: 'Замовлення успішно видалено' });
   });
 
   it('should update payment status', async () => {

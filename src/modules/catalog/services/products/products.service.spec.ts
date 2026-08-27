@@ -436,7 +436,7 @@ describe('ProductsService', () => {
     const result = await service.removeProduct('1');
 
     expect(productRepository.remove).toHaveBeenCalledWith(product);
-    expect(result).toEqual({ message: 'Product removed successfully' });
+    expect(result).toEqual({ message: 'Продукт успішно видалено' });
   });
 
   it('should assign category when shops match', async () => {

@@ -14,7 +14,7 @@ export class AttributeRepository {
     const attribute = await this.repository.findOne({ where: { id } });
 
     if (!attribute) {
-      throw new NotFoundException('Attribute not found');
+      throw new NotFoundException('Атрибут не знайдено');
     }
 
     return attribute;
