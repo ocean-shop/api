@@ -1,7 +1,7 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
-import { MailerService } from '@nestjs-modules/mailer';
 import { Queue } from 'bullmq';
+import { MailService } from '../../../../core/mail/mail.service';
 import {
   EMAIL_QUEUE,
   SEND_OTP_EMAIL_JOB,
@@ -18,7 +18,7 @@ export class EmailService {
   private readonly logger = new Logger(EmailService.name);
 
   constructor(
-    private readonly mailerService: MailerService,
+    private readonly mailService: MailService,
     // Optional: the queue provider only exists when EMAIL_QUEUE_ENABLED=true.
     @Optional()
     @InjectQueue(EMAIL_QUEUE)
@@ -36,7 +36,7 @@ export class EmailService {
   }
 
   async sendOtpEmailNow(email: string, code: string): Promise<void> {
-    await this.mailerService.sendMail({
+    await this.mailService.sendMail({
       to: email,
       subject: 'Ваш код підтвердження',
       template: 'otp-code',

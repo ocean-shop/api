@@ -1,21 +1,21 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getQueueToken } from '@nestjs/bullmq';
-import { MailerService } from '@nestjs-modules/mailer';
 
 import { EmailService } from './email.service';
+import { MailService } from '../../../../core/mail/mail.service';
 import {
   EMAIL_QUEUE,
   SEND_OTP_EMAIL_JOB,
 } from '../../../../core/queue/constants/queue.constants';
 
 describe('EmailService', () => {
-  let mailerService: any;
+  let mailService: any;
   let emailQueue: any;
 
   const createService = async (withQueue: boolean): Promise<EmailService> => {
     const providers: any[] = [
       EmailService,
-      { provide: MailerService, useValue: mailerService },
+      { provide: MailService, useValue: mailService },
     ];
 
     if (withQueue) {
@@ -33,7 +33,7 @@ describe('EmailService', () => {
   };
 
   beforeEach(() => {
-    mailerService = {
+    mailService = {
       sendMail: jest.fn().mockResolvedValue(undefined),
     };
     emailQueue = {
@@ -56,7 +56,7 @@ describe('EmailService', () => {
       await service.sendOtpEmail('test@example.com', '2110');
 
       expect(emailQueue.add).not.toHaveBeenCalled();
-      expect(mailerService.sendMail).toHaveBeenCalledWith({
+      expect(mailService.sendMail).toHaveBeenCalledWith({
         to: 'test@example.com',
         subject: 'Ваш код підтвердження',
         template: 'otp-code',
@@ -74,7 +74,7 @@ describe('EmailService', () => {
         email: 'test@example.com',
         code: '2110',
       });
-      expect(mailerService.sendMail).not.toHaveBeenCalled();
+      expect(mailService.sendMail).not.toHaveBeenCalled();
     });
 
     it('should fall back to direct send when enabled but no queue is registered', async () => {
@@ -83,16 +83,16 @@ describe('EmailService', () => {
 
       await service.sendOtpEmail('test@example.com', '2110');
 
-      expect(mailerService.sendMail).toHaveBeenCalled();
+      expect(mailService.sendMail).toHaveBeenCalled();
     });
 
     it('should propagate mailer errors', async () => {
-      mailerService.sendMail.mockRejectedValue(new Error('SMTP down'));
+      mailService.sendMail.mockRejectedValue(new Error('Resend down'));
       const service = await createService(false);
 
       await expect(
         service.sendOtpEmail('test@example.com', '2110'),
-      ).rejects.toThrow('SMTP down');
+      ).rejects.toThrow('Resend down');
     });
   });
 
@@ -103,7 +103,7 @@ describe('EmailService', () => {
 
       await service.sendOtpEmailNow('test@example.com', '2110');
 
-      expect(mailerService.sendMail).toHaveBeenCalledWith(
+      expect(mailService.sendMail).toHaveBeenCalledWith(
         expect.objectContaining({
           context: { code: '2110', expiresInMinutes: 2 },
         }),
