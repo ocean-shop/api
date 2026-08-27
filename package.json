@@ -24,7 +24,10 @@
     "typeorm": "typeorm-ts-node-commonjs -d src/core/db/data-source.ts",
     "migration:run": "npm run typeorm -- migration:run",
     "migration:revert": "npm run typeorm -- migration:revert",
-    "seed": "ts-node -r tsconfig-paths/register src/core/db/seeders/seed.ts"
+    "migration:run:prod": "typeorm migration:run -d dist/core/db/data-source.js",
+    "migration:revert:prod": "typeorm migration:revert -d dist/core/db/data-source.js",
+    "seed": "ts-node -r tsconfig-paths/register src/core/db/seeders/seed.ts",
+    "seed:prod": "node dist/core/db/seeders/seed.js"
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^2.3.6",
