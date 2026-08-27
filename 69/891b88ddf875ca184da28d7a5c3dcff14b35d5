@@ -1,0 +1,25 @@
+src/main.ts
+  s_bcb7fcd3075158::t_d98c58f29da93a 50-51
+  s_bcb7fcd3075158::t_02efb209925394 27-30,48-49,52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "69891b88ddf875ca184da28d7a5c3dcff14b35d5",
+  "prompts": {},
+  "humans": {
+    "h_eee5bfb8805eb8": {
+      "author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  },
+  "sessions": {
+    "s_bcb7fcd3075158": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "a2f0efe7-9632-4c9a-9659-e3ff22230029",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  }
+}
