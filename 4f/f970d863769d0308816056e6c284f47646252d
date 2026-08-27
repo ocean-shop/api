@@ -1,0 +1,77 @@
+src/modules/user/controllers/users/users.controller.ts
+  s_65a5ef42d174ab::t_f7e6a8d26cd5dc 9-15,24-25,31-34,41-42
+package.json
+  s_65a5ef42d174ab::t_3315f14141fe05 39,53
+src/modules/user/controllers/settings/settings.controller.ts
+  s_65a5ef42d174ab::t_f72c11b1688e95 10-16,25-26,32-33,40-41
+src/modules/statistic/controllers/statistic/statistic.controller.ts
+  s_65a5ef42d174ab::t_fb3f8bc010dfd8 2-7
+  s_65a5ef42d174ab::t_09df08686f73dc 16-17,23-24
+src/modules/orders/controllers/orders/orders.controller.ts
+  s_65a5ef42d174ab::t_4f3e04678dc601 13-20,33-34,40-43,50-54,61-62,69-70,77-78,85-87,97-99
+src/modules/catalog/dto/products/create-product.dto.ts
+  s_65a5ef42d174ab::t_e9c8482f8fbcda 2,17,22,27,33,38,43,48,53,59,66
+src/main.ts
+  s_65a5ef42d174ab::t_2ab21c282a9f3e 3,23-46
+src/modules/catalog/dto/products/assign-product-images.dto.ts
+  s_65a5ef42d174ab::t_1f60a7ecadd1ba 2,21-24,48,57
+src/modules/user/controllers/admins/admins.controller.ts
+  s_65a5ef42d174ab::t_77b8e4b7eafca2 14-21,33-34,40-43,50-51,58-59,66-68,79-80
+src/modules/user/controllers/auth/auth.controller.ts
+  s_65a5ef42d174ab::t_0967e34fa4c4e3 2,12,22-23,29-30,49-50,70-71
+src/modules/orders/dto/create-order.dto.ts
+  s_65a5ef42d174ab::t_80a9679bb65486 2,24,29,34,40,46,52,58,64,68,73,77,82
+src/modules/user/dto/update-settings.dto.ts
+  s_65a5ef42d174ab::t_3f56c56772de00 1,6,10
+src/modules/catalog/controllers/categories/categories.controller.ts
+  s_65a5ef42d174ab::t_ee4b95a2aee54c 13-20,32-33,39-42,49-50,57-58,65-67,77-79,89-90
+src/modules/catalog/controllers/attributes/attributes.controller.ts
+  s_65a5ef42d174ab::t_630d15d7fca2dd 12-19,29-30,36-39,46-47,54-55
+src/modules/orders/dto/create-order-item.dto.ts
+  s_65a5ef42d174ab::t_d63b65553f6b6f 2,6,11,17
+src/modules/catalog/controllers/images/images.controller.ts
+  s_65a5ef42d174ab::t_a972125c5de793 10-16,25-26,32-34,44-45
+src/modules/catalog/dto/products/product-variation.dto.ts
+  s_65a5ef42d174ab::t_ff7cbd06ab9a46 2,18,24,30,36,42,48,55,59,63,69
+src/modules/user/dto/verify-otp.dto.ts
+  s_65a5ef42d174ab::t_c4a72c0e06908a 10,13,18-21,30
+src/modules/catalog/controllers/products/products.controller.ts
+  s_65a5ef42d174ab::t_bc7e2aa5c3cb9b 14-21,37-38,44-47,54-55,65-66,76-77,90-91,98-99,106-108,118-119,126-128,138-140,150-152,162-164,174-176,186-189
+.env.example
+  s_65a5ef42d174ab::t_18a644e007fb1d 7-10
+src/modules/catalog/controllers/shops/shops.controller.ts
+  s_65a5ef42d174ab::t_aec68ed15d3358 13-20,31-32,38-40,47-48,55-56,63-65,75-76
+src/modules/orders/dto/update-order-payment-status.dto.ts
+  s_65a5ef42d174ab::t_e11ced37a4c7ed 1,6
+src/modules/catalog/controllers/tags/tags.controller.ts
+  s_65a5ef42d174ab::t_a60094af75ba6a 13-20,31-32,38-41,48-49,56-57,64-66,76-77
+src/modules/user/dto/request-otp.dto.ts
+  s_65a5ef42d174ab::t_6fc727ee3082ba 8,11,16-19
+src/modules/orders/dto/update-order-status.dto.ts
+  s_65a5ef42d174ab::t_2f46e784e4c57e 1,6
+src/modules/catalog/dto/products/update-product.dto.ts
+  s_65a5ef42d174ab::t_b917710b355e0b 2,16,21,28,33,38,43,48,54,61
+package-lock.json
+  s_65a5ef42d174ab::t_b88cfe6501acdc 18,32,2136-2141,2637-2656,2782-2836,2925-2931,9936-9959
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "4ff970d863769d0308816056e6c284f47646252d",
+  "prompts": {},
+  "humans": {
+    "h_eee5bfb8805eb8": {
+      "author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  },
+  "sessions": {
+    "s_65a5ef42d174ab": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e57ccd79-8199-4f73-b375-5d5704e533cd",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "tkuku <taras.kukuliak@aravo.com>"
+    }
+  }
+}
