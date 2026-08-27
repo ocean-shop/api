@@ -24,7 +24,10 @@ async function bootstrap() {
   const swaggerEnabled =
     (process.env.SWAGGER_ENABLED ?? 'true').toLowerCase() === 'true';
   if (swaggerEnabled) {
-    const swaggerPath = process.env.SWAGGER_PATH ?? 'docs';
+    const swaggerPath = (process.env.SWAGGER_PATH ?? 'docs').replace(
+      /^\/+|\/+$/g,
+      '',
+    );
     const swaggerConfig = new DocumentBuilder()
       .setTitle('Ocean Shop API')
       .setDescription('API documentation for Ocean Shop backend services')
@@ -42,6 +45,11 @@ async function bootstrap() {
 
     const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
     SwaggerModule.setup(swaggerPath, app, swaggerDocument);
+
+    if (swaggerPath.length > 0) {
+      // Also expose Swagger UI at root so opening the site shows docs.
+      SwaggerModule.setup('', app, swaggerDocument);
+    }
   }
 
   await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
