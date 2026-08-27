@@ -1,4 +1,5 @@
 import { Type } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
   IsInt,
@@ -17,6 +18,10 @@ export class ProductImageItemDto {
   private static readonly BASE64_IMAGE_DATA_URI_REGEX =
     /^data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+$/;
 
+  @ApiProperty({
+    description: 'Image URL or base64 data URI',
+    example: 'https://cdn.example.com/products/image-1.jpg',
+  })
   @IsString()
   @IsNotEmpty()
   @MaxLength(10_000_000)
@@ -40,6 +45,7 @@ export class ProductImageItemDto {
   )
   readonly image: string;
 
+  @ApiPropertyOptional({ type: Number, minimum: 0 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -48,6 +54,7 @@ export class ProductImageItemDto {
 }
 
 export class AssignProductImagesDto {
+  @ApiProperty({ type: () => [ProductImageItemDto] })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ProductImageItemDto)

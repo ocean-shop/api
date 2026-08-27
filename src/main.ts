@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
@@ -19,6 +20,30 @@ async function bootstrap() {
 
   app.use(cookieParser());
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+
+  const swaggerEnabled =
+    (process.env.SWAGGER_ENABLED ?? 'true').toLowerCase() === 'true';
+  if (swaggerEnabled) {
+    const swaggerPath = process.env.SWAGGER_PATH ?? 'docs';
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('Ocean Shop API')
+      .setDescription('API documentation for Ocean Shop backend services')
+      .setVersion(process.env.npm_package_version ?? '0.0.1')
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: 'Provide access token as: Bearer <token>',
+        },
+        'access-token',
+      )
+      .build();
+
+    const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup(swaggerPath, app, swaggerDocument);
+  }
+
   await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 }
 void bootstrap();

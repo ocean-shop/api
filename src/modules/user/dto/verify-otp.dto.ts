@@ -7,12 +7,18 @@ import {
   Matches,
   ValidateIf,
 } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class VerifyOtpDto {
+  @ApiPropertyOptional({ example: 'admin@shop.com' })
   @IsOptional()
   @IsEmail()
   readonly email?: string;
 
+  @ApiPropertyOptional({
+    example: '+380991234567',
+    description: 'Required when email is not provided',
+  })
   @ValidateIf((o: VerifyOtpDto) => !o.email)
   @IsString()
   @Matches(/^(\+380|380|0)\d{9}$/, {
@@ -21,6 +27,7 @@ export class VerifyOtpDto {
   })
   readonly phone?: string;
 
+  @ApiProperty({ example: '1234', minLength: 4, maxLength: 4 })
   @IsString()
   @IsNotEmpty()
   @Length(4, 4)
