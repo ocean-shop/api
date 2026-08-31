@@ -17,9 +17,11 @@ describe('CategoriesService', () => {
       getMaxSort: jest.fn().mockResolvedValue(-1),
       findAdjacentSibling: jest.fn(),
       swapSort: jest.fn(),
+      findByParentId: jest.fn(),
       create: jest.fn(),
       save: jest.fn((category) => Promise.resolve(category)),
       remove: jest.fn(),
+      removeByIds: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -402,12 +404,40 @@ describe('CategoriesService', () => {
   it('should remove a category', async () => {
     const category = { id: '1', name: 'Accessories' } as any;
     jest.mocked(categoryRepository.findById).mockResolvedValue(category);
-    jest.mocked(categoryRepository.remove).mockResolvedValue(category);
+    jest.mocked(categoryRepository.findByParentId).mockResolvedValue([]);
+    jest.mocked(categoryRepository.removeByIds).mockResolvedValue(undefined);
 
     const result = await service.removeCategory('1');
 
     expect(categoryRepository.findById).toHaveBeenCalledWith('1');
-    expect(categoryRepository.remove).toHaveBeenCalledWith(category);
+    expect(categoryRepository.findByParentId).toHaveBeenCalledWith('1');
+    expect(categoryRepository.removeByIds).toHaveBeenCalledWith(['1']);
     expect(result).toEqual({ message: 'Категорію успішно видалено' });
+  });
+
+  it('should remove category with all descendants', async () => {
+    const category = { id: '1', name: 'Parent' } as any;
+    jest.mocked(categoryRepository.findById).mockResolvedValue(category);
+    jest
+      .mocked(categoryRepository.findByParentId)
+      .mockImplementation(async (parentId: string) => {
+        if (parentId === '1') {
+          return [{ id: '2' }, { id: '3' }] as any;
+        }
+        if (parentId === '2') {
+          return [{ id: '4' }] as any;
+        }
+        return [];
+      });
+    jest.mocked(categoryRepository.removeByIds).mockResolvedValue(undefined);
+
+    await service.removeCategory('1');
+
+    expect(categoryRepository.removeByIds).toHaveBeenCalledWith([
+      '1',
+      '2',
+      '4',
+      '3',
+    ]);
   });
 });

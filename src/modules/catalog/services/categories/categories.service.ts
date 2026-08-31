@@ -141,8 +141,25 @@ export class CategoriesService {
 
   async removeCategory(id: string): Promise<{ message: string }> {
     const category = await this.categoryRepository.findById(id);
-    await this.categoryRepository.remove(category);
+    const descendantIds = await this.collectDescendantIds(category.id);
+    await this.categoryRepository.removeByIds([category.id, ...descendantIds]);
     return { message: 'Категорію успішно видалено' };
+  }
+
+  private async collectDescendantIds(parentId: string): Promise<string[]> {
+    const children = await this.categoryRepository.findByParentId(parentId);
+    if (children.length === 0) {
+      return [];
+    }
+
+    const descendantIds: string[] = [];
+    for (const child of children) {
+      descendantIds.push(child.id);
+      const nestedDescendantIds = await this.collectDescendantIds(child.id);
+      descendantIds.push(...nestedDescendantIds);
+    }
+
+    return descendantIds;
   }
 
   private async getNextSort(
