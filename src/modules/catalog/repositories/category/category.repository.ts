@@ -62,7 +62,7 @@ export class CategoryRepository {
   async findByParentId(parentId: string): Promise<Category[]> {
     return this.repository.find({
       where: { parentId },
-      select: ['id'],
+      select: { id: true },
     });
   }
 

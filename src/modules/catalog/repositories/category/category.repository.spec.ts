@@ -145,7 +145,7 @@ describe('CategoryRepository', () => {
 
     expect(typeOrmRepository.find).toHaveBeenCalledWith({
       where: { parentId: 'parent-id' },
-      select: ['id'],
+      select: { id: true },
     });
     expect(result).toEqual(children);
   });
