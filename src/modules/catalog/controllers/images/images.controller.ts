@@ -3,7 +3,6 @@ import {
   Controller,
   Delete,
   Param,
-  ParseUUIDPipe,
   Patch,
   UseGuards,
 } from '@nestjs/common';
@@ -30,10 +29,14 @@ export class ImagesController {
   @Patch(':id/sort')
   @Roles('admin', 'super')
   @ApiOperation({ summary: 'Change product image sort order' })
-  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'Image UUID or image URL/filename identifier',
+  })
   @ApiBody({ type: ChangeProductImageSortDto })
   async changeImageSort(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id') id: string,
     @Body() dto: ChangeProductImageSortDto,
   ) {
     return this.imagesService.changeImageSort(id, dto);
@@ -42,8 +45,12 @@ export class ImagesController {
   @Delete(':id')
   @Roles('admin', 'super')
   @ApiOperation({ summary: 'Delete image by id' })
-  @ApiParam({ name: 'id', type: String, format: 'uuid' })
-  async removeImage(@Param('id', ParseUUIDPipe) id: string) {
+  @ApiParam({
+    name: 'id',
+    type: String,
+    description: 'Image UUID or image URL/filename identifier',
+  })
+  async removeImage(@Param('id') id: string) {
     return this.imagesService.removeImage(id);
   }
 }

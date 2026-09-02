@@ -1,7 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { IsNull, LessThan, MoreThan } from 'typeorm';
+import { In, IsNull, LessThan, MoreThan } from 'typeorm';
 import { Category } from '../../entities/category.entity';
 import { CategoryRepository } from './category.repository';
 
@@ -26,9 +26,11 @@ describe('CategoryRepository', () => {
     typeOrmRepository = {
       createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
       findOne: jest.fn(),
+      find: jest.fn(),
       create: jest.fn(),
       save: jest.fn(),
       remove: jest.fn(),
+      delete: jest.fn(),
       manager: {
         transaction: jest.fn(),
       },
@@ -133,6 +135,19 @@ describe('CategoryRepository', () => {
       where: { shopId: 'shop-id', slug: 'accessories' },
     });
     expect(result).toEqual(category);
+  });
+
+  it('should find categories by parent id', async () => {
+    const children = [{ id: '1' }, { id: '2' }] as Category[];
+    typeOrmRepository.find.mockResolvedValue(children);
+
+    const result = await repository.findByParentId('parent-id');
+
+    expect(typeOrmRepository.find).toHaveBeenCalledWith({
+      where: { parentId: 'parent-id' },
+      select: { id: true },
+    });
+    expect(result).toEqual(children);
   });
 
   it('should get max sort for root siblings', async () => {
@@ -261,5 +276,21 @@ describe('CategoryRepository', () => {
 
     expect(typeOrmRepository.remove).toHaveBeenCalledWith(category);
     expect(result).toEqual(category);
+  });
+
+  it('should remove categories by ids', async () => {
+    typeOrmRepository.delete.mockResolvedValue({ affected: 2 });
+
+    await repository.removeByIds(['1', '2']);
+
+    expect(typeOrmRepository.delete).toHaveBeenCalledWith({
+      id: In(['1', '2']),
+    });
+  });
+
+  it('should skip remove by ids for empty list', async () => {
+    await repository.removeByIds([]);
+
+    expect(typeOrmRepository.delete).not.toHaveBeenCalled();
   });
 });

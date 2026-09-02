@@ -297,13 +297,34 @@ export class ProductRepository {
   }
 
   async findImageById(id: string): Promise<ProductImage> {
-    const image = await this.imageRepository.findOne({ where: { id } });
+    const normalizedId = decodeURIComponent(id);
+    const image = this.isUuid(normalizedId)
+      ? await this.imageRepository.findOne({ where: { id: normalizedId } })
+      : null;
 
-    if (!image) {
+    if (image) {
+      return image;
+    }
+
+    const byUrl = await this.imageRepository
+      .createQueryBuilder('image')
+      .where('image.url = :identifier', { identifier: normalizedId })
+      .orWhere('image.url LIKE :suffixIdentifier', {
+        suffixIdentifier: `%/${normalizedId}`,
+      })
+      .getOne();
+
+    if (!byUrl) {
       throw new NotFoundException('Зображення продукта не знайдено');
     }
 
-    return image;
+    return byUrl;
+  }
+
+  private isUuid(value: string): boolean {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value,
+    );
   }
 
   async findAdjacentImageSibling(

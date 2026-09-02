@@ -11,10 +11,21 @@ async function bootstrap() {
   app.use(urlencoded({ limit: '20mb', extended: true }));
 
   const corsOrigin = process.env.CORS_ORIGIN;
+  const defaultCorsOrigins = [
+    'http://localhost:3001',
+    'https://admin-production-90ee.up.railway.app',
+  ];
+  const allowedCorsOrigins = corsOrigin
+    ? [
+        ...new Set([
+          ...corsOrigin.split(',').map((origin) => origin.trim()),
+          ...defaultCorsOrigins,
+        ]),
+      ]
+    : defaultCorsOrigins;
+
   app.enableCors({
-    origin: corsOrigin
-      ? corsOrigin.split(',').map((origin) => origin.trim())
-      : 'http://localhost:3001',
+    origin: allowedCorsOrigins,
     credentials: true,
   });
 

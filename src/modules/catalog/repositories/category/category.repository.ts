@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, LessThan, MoreThan, Repository } from 'typeorm';
+import { In, IsNull, LessThan, MoreThan, Repository } from 'typeorm';
 import { Category } from '../../entities/category.entity';
 import { CategoryFilters } from '../../models/category.models';
 
@@ -57,6 +57,13 @@ export class CategoryRepository {
     slug: string,
   ): Promise<Category | null> {
     return this.repository.findOne({ where: { shopId, slug } });
+  }
+
+  async findByParentId(parentId: string): Promise<Category[]> {
+    return this.repository.find({
+      where: { parentId },
+      select: { id: true },
+    });
   }
 
   async getMaxSort(shopId: string, parentId: string | null): Promise<number> {
@@ -119,5 +126,13 @@ export class CategoryRepository {
 
   async remove(category: Category): Promise<Category> {
     return this.repository.remove(category);
+  }
+
+  async removeByIds(ids: string[]): Promise<void> {
+    if (ids.length === 0) {
+      return;
+    }
+
+    await this.repository.delete({ id: In(ids) });
   }
 }
