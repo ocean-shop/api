@@ -13,7 +13,9 @@ async function bootstrap() {
   const corsOrigin = process.env.CORS_ORIGIN;
   const defaultCorsOrigins = [
     'http://localhost:3001',
+    'http://localhost:3000/',
     'https://admin-production-90ee.up.railway.app',
+    'https://client-production-cf61c.up.railway.app',
   ];
   const allowedCorsOrigins = corsOrigin
     ? [
