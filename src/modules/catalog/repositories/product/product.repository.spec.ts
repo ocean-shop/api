@@ -180,6 +180,10 @@ describe('ProductRepository', () => {
       'product.isPopular = :isPopular',
       { isPopular: true },
     );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'product.status = :status',
+      { status: ProductStatus.ACTIVE },
+    );
     expect(queryBuilder.offset).toHaveBeenCalledWith(0);
     expect(queryBuilder.limit).toHaveBeenCalledWith(6);
     expect(result).toEqual(products);
@@ -197,6 +201,10 @@ describe('ProductRepository', () => {
     expect(queryBuilder.andWhere).toHaveBeenCalledWith(
       'product.isPopular = :isPopular',
       { isPopular: true },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'product.status = :status',
+      { status: ProductStatus.ACTIVE },
     );
     expect(queryBuilder.andWhere).toHaveBeenCalledWith(
       'product.shopId = :shopId',
