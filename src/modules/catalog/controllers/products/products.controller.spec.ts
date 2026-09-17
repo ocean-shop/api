@@ -19,6 +19,7 @@ describe('ProductsController', () => {
   beforeEach(async () => {
     const productsServiceMock = {
       listProducts: jest.fn(),
+      listPopularProducts: jest.fn(),
       listProductsByCategoryId: jest.fn(),
       listProductsByTagId: jest.fn(),
       listProductsByAttributeTypeId: jest.fn(),
@@ -60,6 +61,18 @@ describe('ProductsController', () => {
     const result = await controller.listProducts(query);
 
     expect(productsService.listProducts).toHaveBeenCalledWith(query);
+    expect(result).toEqual(expected);
+  });
+
+  it('should list popular products', async () => {
+    const expected = [{ id: '1', name: 'Ocean Tee', isPopular: true }];
+    jest
+      .mocked(productsService.listPopularProducts)
+      .mockResolvedValue(expected as any);
+
+    const result = await controller.listPopularProducts();
+
+    expect(productsService.listPopularProducts).toHaveBeenCalledWith();
     expect(result).toEqual(expected);
   });
 

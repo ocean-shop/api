@@ -168,6 +168,23 @@ describe('ProductRepository', () => {
     expect(result).toEqual({ items: [], total: 0 });
   });
 
+  it('should find popular products limited to the requested amount', async () => {
+    const products = [{ id: '1', isPopular: true }] as Product[];
+    queryBuilder.getCount.mockResolvedValue(1);
+    queryBuilder.getRawMany.mockResolvedValue([{ id: '1' }]);
+    typeOrmRepository.find.mockResolvedValue(products);
+
+    const result = await repository.findPopular(6);
+
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'product.isPopular = :isPopular',
+      { isPopular: true },
+    );
+    expect(queryBuilder.offset).toHaveBeenCalledWith(0);
+    expect(queryBuilder.limit).toHaveBeenCalledWith(6);
+    expect(result).toEqual(products);
+  });
+
   it('should find products by category id', async () => {
     const products = [{ id: '1' }] as Product[];
     queryBuilder.getCount.mockResolvedValue(1);

@@ -18,7 +18,10 @@ import { ProductRepository } from '../../repositories/product/product.repository
 import { ProductVariationRepository } from '../../repositories/product-variation/product-variation.repository';
 import { ShopRepository } from '../../repositories/shop/shop.repository';
 import { TagRepository } from '../../repositories/tag/tag.repository';
-import { PAGINATION_MAX } from '../../constants/pagination.constants';
+import {
+  PAGINATION_MAX,
+  POPULAR_PRODUCTS_LIMIT,
+} from '../../constants/pagination.constants';
 import { ProductImagesCloudinaryService } from '../cloudinary/product-images-cloudinary.service';
 
 @Injectable()
@@ -111,6 +114,10 @@ export class ProductsService {
       );
 
     return this.toListResponse(items, total, page, limit);
+  }
+
+  async listPopularProducts(): Promise<Product[]> {
+    return this.productRepository.findPopular(POPULAR_PRODUCTS_LIMIT);
   }
 
   async getProductById(id: string): Promise<Product> {
