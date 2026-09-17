@@ -45,6 +45,7 @@ export class ProductsService {
         name: query.name,
         sku: query.sku,
         categoryIds: query.categoryIds,
+        isPopular: query.isPopular,
         sortBy: query.sortBy,
         sortOrder: query.sortOrder,
       },
@@ -69,6 +70,7 @@ export class ProductsService {
         limit,
         query.sortBy,
         query.sortOrder,
+        query.isPopular,
       );
 
     return this.toListResponse(items, total, page, limit);
@@ -134,6 +136,7 @@ export class ProductsService {
       landing: dto.landing ?? null,
       status: dto.status ?? ProductStatus.DRAFT,
       available: dto.available ?? true,
+      isPopular: dto.isPopular ?? false,
       sku: dto.sku ?? null,
       price: this.toNumericString(price),
       oldPrice: oldPrice === null ? null : this.toNumericString(oldPrice),
@@ -178,6 +181,9 @@ export class ProductsService {
     }
     if (dto.available !== undefined) {
       product.available = dto.available;
+    }
+    if (dto.isPopular !== undefined) {
+      product.isPopular = dto.isPopular;
     }
     if (dto.sku !== undefined && dto.sku !== product.sku) {
       if (dto.sku) {

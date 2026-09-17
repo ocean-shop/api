@@ -45,6 +45,11 @@ export class UpdateProductDto {
   @IsBoolean()
   readonly available?: boolean;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  readonly isPopular?: boolean;
+
   @ApiPropertyOptional({ maxLength: 100, nullable: true })
   @IsOptional()
   @IsString()

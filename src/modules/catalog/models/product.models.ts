@@ -17,6 +17,7 @@ export type ProductFilters = {
   name?: string;
   sku?: string;
   categoryIds?: string[];
+  isPopular?: boolean;
   sortBy?: ProductSortBy;
   sortOrder?: ProductSortOrder;
 };

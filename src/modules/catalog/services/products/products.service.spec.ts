@@ -114,6 +114,7 @@ describe('ProductsService', () => {
       sku: 'SKU',
       categoryIds: ['11111111-1111-4111-8111-111111111111'],
       status: ProductStatus.ACTIVE,
+      isPopular: true,
       sortBy: ProductSortBy.CREATED_AT,
       sortOrder: ProductSortOrder.DESC,
     });
@@ -125,6 +126,7 @@ describe('ProductsService', () => {
         name: 'ocean',
         sku: 'SKU',
         categoryIds: ['11111111-1111-4111-8111-111111111111'],
+        isPopular: true,
         sortBy: ProductSortBy.CREATED_AT,
         sortOrder: ProductSortOrder.DESC,
       },
@@ -154,8 +156,33 @@ describe('ProductsService', () => {
       20,
       undefined,
       undefined,
+      undefined,
     );
     expect(result.total).toBe(0);
+  });
+
+  it('should list products by category id filtered by isPopular', async () => {
+    jest.mocked(categoryRepository.findById).mockResolvedValue({
+      id: 'category-id',
+    } as any);
+    jest
+      .mocked(productRepository.findByCategoryIdPaginated)
+      .mockResolvedValue({ items: [], total: 0 });
+
+    await service.listProductsByCategoryId('category-id', {
+      page: 1,
+      limit: 20,
+      isPopular: true,
+    });
+
+    expect(productRepository.findByCategoryIdPaginated).toHaveBeenCalledWith(
+      'category-id',
+      0,
+      20,
+      undefined,
+      undefined,
+      true,
+    );
   });
 
   it('should list products by tag id', async () => {
@@ -239,11 +266,41 @@ describe('ProductsService', () => {
       landing: null,
       status: ProductStatus.DRAFT,
       available: true,
+      isPopular: false,
       sku: null,
       price: '19.99',
       oldPrice: null,
     });
     expect(result).toEqual(payload);
+  });
+
+  it('should create product marked as popular', async () => {
+    const payload = {
+      id: '1',
+      shopId: 'shop-id',
+      name: 'Ocean Tee',
+      price: '19.99',
+      oldPrice: null,
+      isPopular: true,
+    } as any;
+
+    jest.mocked(shopRepository.findById).mockResolvedValue({
+      id: 'shop-id',
+    } as any);
+    jest.mocked(productRepository.create).mockReturnValue(payload);
+    jest.mocked(productRepository.save).mockResolvedValue(payload);
+    jest.mocked(productRepository.findById).mockResolvedValue(payload);
+
+    await service.createProduct({
+      shopId: 'shop-id',
+      name: 'Ocean Tee',
+      price: 19.99,
+      isPopular: true,
+    });
+
+    expect(productRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ isPopular: true }),
+    );
   });
 
   it('should throw when oldPrice is less than price on create', async () => {
@@ -367,6 +424,29 @@ describe('ProductsService', () => {
         price: '12.00',
         status: ProductStatus.ACTIVE,
       }),
+    );
+    expect(result).toEqual(updated);
+  });
+
+  it('should update isPopular flag on a product', async () => {
+    const existing = {
+      id: '1',
+      shopId: 'shop-id',
+      name: 'Ocean Tee',
+      price: '10.00',
+      oldPrice: null,
+      isPopular: false,
+    } as any;
+    const updated = { ...existing, isPopular: true };
+
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(existing);
+    jest.mocked(productRepository.save).mockResolvedValue(updated);
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(updated);
+
+    const result = await service.updateProduct('1', { isPopular: true });
+
+    expect(productRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({ isPopular: true }),
     );
     expect(result).toEqual(updated);
   });

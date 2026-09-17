@@ -124,6 +124,7 @@ describe('ProductRepository', () => {
         name: 'ocean',
         sku: 'SKU',
         categoryIds: ['category-1', 'category-2'],
+        isPopular: true,
       },
       20,
       20,
@@ -158,6 +159,11 @@ describe('ProductRepository', () => {
       'filteredCategory.id IN (:...categoryIds)',
       { categoryIds: ['category-1', 'category-2'] },
     );
+    expect(queryBuilder.andWhere).toHaveBeenNthCalledWith(
+      6,
+      'product.isPopular = :isPopular',
+      { isPopular: true },
+    );
     expect(typeOrmRepository.find).not.toHaveBeenCalled();
     expect(result).toEqual({ items: [], total: 0 });
   });
@@ -183,6 +189,25 @@ describe('ProductRepository', () => {
       { categoryId: 'category-id' },
     );
     expect(result).toEqual({ items: products, total: 1 });
+  });
+
+  it('should find products by category id filtered by isPopular', async () => {
+    queryBuilder.getCount.mockResolvedValue(0);
+    queryBuilder.getRawMany.mockResolvedValue([]);
+
+    await repository.findByCategoryIdPaginated(
+      'category-id',
+      0,
+      20,
+      undefined,
+      undefined,
+      true,
+    );
+
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'product.isPopular = :isPopular',
+      { isPopular: true },
+    );
   });
 
   it('should find products by tag id', async () => {

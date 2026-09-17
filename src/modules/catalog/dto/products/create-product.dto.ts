@@ -50,6 +50,11 @@ export class CreateProductDto {
   @IsBoolean()
   readonly available?: boolean;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  readonly isPopular?: boolean;
+
   @ApiPropertyOptional({ maxLength: 100 })
   @IsOptional()
   @IsString()

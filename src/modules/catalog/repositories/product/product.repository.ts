@@ -56,6 +56,12 @@ export class ProductRepository {
               categoryIds: filters.categoryIds,
             });
         }
+
+        if (filters.isPopular !== undefined) {
+          query.andWhere('product.isPopular = :isPopular', {
+            isPopular: filters.isPopular,
+          });
+        }
       },
       skip,
       take,
@@ -70,12 +76,17 @@ export class ProductRepository {
     take: number,
     sortBy?: ProductSortBy,
     sortOrder?: ProductSortOrder,
+    isPopular?: boolean,
   ): Promise<{ items: Product[]; total: number }> {
     return this.findPaginatedWithRelations(
       (query) => {
         query
           .innerJoin('product.categories', 'category')
           .andWhere('category.id = :categoryId', { categoryId });
+
+        if (isPopular !== undefined) {
+          query.andWhere('product.isPopular = :isPopular', { isPopular });
+        }
       },
       skip,
       take,
