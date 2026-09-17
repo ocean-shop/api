@@ -185,6 +185,26 @@ describe('ProductRepository', () => {
     expect(result).toEqual(products);
   });
 
+  it('should find popular products filtered by shop id', async () => {
+    const shopId = '98f21967-fce6-4ceb-af61-304913f593a7';
+    const products = [{ id: '1', isPopular: true }] as Product[];
+    queryBuilder.getCount.mockResolvedValue(1);
+    queryBuilder.getRawMany.mockResolvedValue([{ id: '1' }]);
+    typeOrmRepository.find.mockResolvedValue(products);
+
+    const result = await repository.findPopular(6, shopId);
+
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'product.isPopular = :isPopular',
+      { isPopular: true },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'product.shopId = :shopId',
+      { shopId },
+    );
+    expect(result).toEqual(products);
+  });
+
   it('should find products by category id', async () => {
     const products = [{ id: '1' }] as Product[];
     queryBuilder.getCount.mockResolvedValue(1);

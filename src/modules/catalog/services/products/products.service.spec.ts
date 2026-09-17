@@ -148,6 +148,23 @@ describe('ProductsService', () => {
 
     expect(productRepository.findPopular).toHaveBeenCalledWith(
       POPULAR_PRODUCTS_LIMIT,
+      undefined,
+    );
+    expect(result).toEqual(popularProducts);
+  });
+
+  it('should list popular products filtered by shop id', async () => {
+    const shopId = '98f21967-fce6-4ceb-af61-304913f593a7';
+    const popularProducts = [{ id: '1', isPopular: true }] as any;
+    jest
+      .mocked(productRepository.findPopular)
+      .mockResolvedValue(popularProducts);
+
+    const result = await service.listPopularProducts(shopId);
+
+    expect(productRepository.findPopular).toHaveBeenCalledWith(
+      POPULAR_PRODUCTS_LIMIT,
+      shopId,
     );
     expect(result).toEqual(popularProducts);
   });

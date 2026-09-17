@@ -135,10 +135,14 @@ export class ProductRepository {
     );
   }
 
-  async findPopular(take: number): Promise<Product[]> {
+  async findPopular(take: number, shopId?: string): Promise<Product[]> {
     const { items } = await this.findPaginatedWithRelations(
       (query) => {
         query.andWhere('product.isPopular = :isPopular', { isPopular: true });
+
+        if (shopId) {
+          query.andWhere('product.shopId = :shopId', { shopId });
+        }
       },
       0,
       take,

@@ -116,8 +116,8 @@ export class ProductsService {
     return this.toListResponse(items, total, page, limit);
   }
 
-  async listPopularProducts(): Promise<Product[]> {
-    return this.productRepository.findPopular(POPULAR_PRODUCTS_LIMIT);
+  async listPopularProducts(shopId?: string): Promise<Product[]> {
+    return this.productRepository.findPopular(POPULAR_PRODUCTS_LIMIT, shopId);
   }
 
   async getProductById(id: string): Promise<Product> {
