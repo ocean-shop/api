@@ -2,6 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Attribute } from '../../entities/attribute.entity';
+import { ProductStatus } from '../../entities/enums/product.enum';
 import { AttributeRepository } from './attribute.repository';
 
 describe('AttributeRepository', () => {
@@ -141,6 +142,30 @@ describe('AttributeRepository', () => {
       { shopId: 'shop-id' },
     );
     expect(result).toEqual({ items: attributes, total: 1 });
+  });
+
+  it('should find category filter options', async () => {
+    const options = [{ name: 'Color', value: 'Red' }];
+    const queryBuilder = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      distinct: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      addOrderBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue(options),
+    };
+    typeOrmRepository.createQueryBuilder.mockReturnValue(queryBuilder);
+
+    const result = await repository.findCategoryFilterOptions('category-id');
+
+    expect(queryBuilder.distinct).toHaveBeenCalledWith(true);
+    expect(queryBuilder.where).toHaveBeenCalledWith(expect.any(String), {
+      categoryId: 'category-id',
+      status: ProductStatus.ACTIVE,
+    });
+    expect(result).toEqual(options);
   });
 
   it('should save attribute entity', async () => {

@@ -60,6 +60,7 @@ describe('ProductsService', () => {
 
     const attributeRepositoryMock = {
       findById: jest.fn(),
+      findCategoryFilterOptions: jest.fn(),
     };
 
     const productImagesCloudinaryServiceMock = {
@@ -151,6 +152,29 @@ describe('ProductsService', () => {
       undefined,
     );
     expect(result).toEqual(popularProducts);
+  });
+
+  it('should group category filters by attribute name', async () => {
+    const categoryId = '11111111-1111-4111-8111-111111111111';
+    jest.mocked(categoryRepository.findById).mockResolvedValue({} as any);
+    jest
+      .mocked(attributeRepository.findCategoryFilterOptions)
+      .mockResolvedValue([
+        { name: 'Color', value: 'Blue' },
+        { name: 'Color', value: 'Red' },
+        { name: 'Size', value: 'M' },
+      ]);
+
+    const result = await service.getFiltersByCategoryId(categoryId);
+
+    expect(categoryRepository.findById).toHaveBeenCalledWith(categoryId);
+    expect(attributeRepository.findCategoryFilterOptions).toHaveBeenCalledWith(
+      categoryId,
+    );
+    expect(result).toEqual([
+      { name: 'Color', values: ['Blue', 'Red'] },
+      { name: 'Size', values: ['M'] },
+    ]);
   });
 
   it('should list popular products filtered by shop id', async () => {

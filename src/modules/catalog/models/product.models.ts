@@ -22,6 +22,11 @@ export type ProductFilters = {
   sortOrder?: ProductSortOrder;
 };
 
+export type CatalogFilter = {
+  name: string;
+  values: string[];
+};
+
 export type ProductListResponse = {
   items: Product[];
   total: number;

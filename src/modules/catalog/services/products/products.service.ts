@@ -11,7 +11,10 @@ import { UpdateProductDto } from '../../dto/products/update-product.dto';
 import { ProductStatus, ProductType } from '../../entities/enums/product.enum';
 import { ProductVariation } from '../../entities/product-variation.entity';
 import { Product } from '../../entities/product.entity';
-import { ProductListResponse } from '../../models/product.models';
+import {
+  CatalogFilter,
+  ProductListResponse,
+} from '../../models/product.models';
 import { AttributeRepository } from '../../repositories/attribute/attribute.repository';
 import { CategoryRepository } from '../../repositories/category/category.repository';
 import { ProductRepository } from '../../repositories/product/product.repository';
@@ -114,6 +117,15 @@ export class ProductsService {
       );
 
     return this.toListResponse(items, total, page, limit);
+  }
+
+  async getFiltersByCategoryId(categoryId: string): Promise<CatalogFilter[]> {
+    await this.categoryRepository.findById(categoryId);
+
+    const options =
+      await this.attributeRepository.findCategoryFilterOptions(categoryId);
+
+    return this.toCatalogFilters(options);
   }
 
   async listPopularProducts(shopId?: string): Promise<Product[]> {
@@ -292,6 +304,25 @@ export class ProductsService {
     dto: ProductVariationDto,
   ): Promise<Product> {
     return this.upsertVariation(id, dto, variationId);
+  }
+
+  private toCatalogFilters(
+    options: Array<{ name: string; value: string }>,
+  ): CatalogFilter[] {
+    const valuesByName = new Map<string, string[]>();
+
+    for (const { name, value } of options) {
+      const values = valuesByName.get(name);
+
+      if (values) {
+        values.push(value);
+        continue;
+      }
+
+      valuesByName.set(name, [value]);
+    }
+
+    return Array.from(valuesByName, ([name, values]) => ({ name, values }));
   }
 
   private toListResponse(
