@@ -35,6 +35,8 @@ import { ProductsService } from '../../services/products/products.service';
 @Controller('catalog/products')
 @ApiTags('Catalog Products')
 @ApiBearerAuth('access-token')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin', 'super')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
@@ -97,8 +99,6 @@ export class ProductsController {
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'super')
   @ApiOperation({ summary: 'Create product' })
   @ApiBody({ type: CreateProductDto })
   async createProduct(@Body() dto: CreateProductDto) {
@@ -106,8 +106,6 @@ export class ProductsController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'super')
   @ApiOperation({ summary: 'Update product' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiBody({ type: UpdateProductDto })
@@ -119,8 +117,6 @@ export class ProductsController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'super')
   @ApiOperation({ summary: 'Delete product by id' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   async removeProduct(@Param('id', ParseUUIDPipe) id: string) {
@@ -128,8 +124,6 @@ export class ProductsController {
   }
 
   @Post(':id/categories')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'super')
   @ApiOperation({ summary: 'Assign category to product' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiBody({ type: AssignProductCategoryDto })
@@ -141,8 +135,6 @@ export class ProductsController {
   }
 
   @Post(':id/tags')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'super')
   @ApiOperation({ summary: 'Assign tag to product' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiBody({ type: AssignProductTagDto })
@@ -154,8 +146,6 @@ export class ProductsController {
   }
 
   @Post(':id/attributes')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'super')
   @ApiOperation({ summary: 'Assign attribute to product' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiBody({ type: AssignProductAttributeDto })
@@ -167,8 +157,6 @@ export class ProductsController {
   }
 
   @Put(':id/images')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'super')
   @ApiOperation({ summary: 'Assign image list to product' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiBody({ type: AssignProductImagesDto })
@@ -180,8 +168,6 @@ export class ProductsController {
   }
 
   @Post(':id/variations')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'super')
   @ApiOperation({ summary: 'Create product variation' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiBody({ type: ProductVariationDto })
@@ -193,8 +179,6 @@ export class ProductsController {
   }
 
   @Patch(':id/variations/:variation_id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'super')
   @ApiOperation({ summary: 'Update product variation' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiParam({ name: 'variation_id', type: String, format: 'uuid' })

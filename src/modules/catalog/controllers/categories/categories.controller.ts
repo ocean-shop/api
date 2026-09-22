@@ -30,6 +30,8 @@ import { CategoriesService } from '../../services/categories/categories.service'
 @Controller('catalog/categories')
 @ApiTags('Catalog Categories')
 @ApiBearerAuth('access-token')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin', 'super')
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
@@ -43,7 +45,6 @@ export class CategoriesController {
   }
 
   @Get(':id')
-  @Roles('admin', 'super')
   @ApiOperation({ summary: 'Get category details by id' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   async getCategoryById(@Param('id', ParseUUIDPipe) id: string) {
@@ -51,8 +52,6 @@ export class CategoriesController {
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'super')
   @ApiOperation({ summary: 'Create category' })
   @ApiBody({ type: CreateCategoryDto })
   async createCategory(@Body() dto: CreateCategoryDto) {
@@ -60,8 +59,6 @@ export class CategoriesController {
   }
 
   @Patch(':id/sort')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'super')
   @ApiOperation({ summary: 'Change category sort order' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiBody({ type: ChangeCategorySortDto })
@@ -73,8 +70,6 @@ export class CategoriesController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'super')
   @ApiOperation({ summary: 'Update category' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiBody({ type: UpdateCategoryDto })
@@ -86,8 +81,6 @@ export class CategoriesController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('admin', 'super')
   @ApiOperation({ summary: 'Delete category by id' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   async removeCategory(@Param('id', ParseUUIDPipe) id: string) {

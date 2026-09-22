@@ -32,6 +32,8 @@ import { ShopsService } from './services/shops/shops.service';
 import { TagsService } from './services/tags/tags.service';
 import { AttributesService } from './services/attributes/attributes.service';
 import { ImagesService } from './services/images/images.service';
+import { ProductsClientController } from './controllers/products/products-client.controller';
+import { CategoriesClientController } from './controllers/categories/categories-client.controller';
 
 @Module({
   imports: [
@@ -57,9 +59,11 @@ import { ImagesService } from './services/images/images.service';
   controllers: [
     ShopsController,
     CategoriesController,
+    CategoriesClientController,
     TagsController,
     AttributesController,
     ProductsController,
+    ProductsClientController,
     ImagesController,
   ],
   providers: [
