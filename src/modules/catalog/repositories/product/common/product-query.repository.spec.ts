@@ -230,9 +230,33 @@ describe('ProductQueryRepository', () => {
           attributes: true,
           images: true,
         },
-        order: { images: { sort: 'ASC' } },
+        relationLoadStrategy: 'query',
       });
       expect(items.map((item) => item.id)).toEqual(['2', '1']);
+    });
+
+    it('should sort product images by their sort value', async () => {
+      typeOrmRepository.find.mockResolvedValue([
+        {
+          id: '1',
+          images: [
+            { id: 'b', sort: 2 },
+            { id: 'a', sort: 1 },
+          ],
+        },
+      ] as Product[]);
+
+      const items = await repository.findInOrder(['1']);
+
+      expect(items[0].images.map((image) => image.id)).toEqual(['a', 'b']);
+    });
+
+    it('should tolerate products loaded without images', async () => {
+      typeOrmRepository.find.mockResolvedValue([{ id: '1' }] as Product[]);
+
+      await expect(repository.findInOrder(['1'])).resolves.toEqual([
+        { id: '1' },
+      ]);
     });
 
     it('should skip ids that no longer resolve to a product', async () => {

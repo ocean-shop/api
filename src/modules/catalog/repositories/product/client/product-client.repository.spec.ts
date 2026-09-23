@@ -91,7 +91,7 @@ describe('ProductClientRepository', () => {
         attributes: true,
         images: true,
       },
-      order: { images: { sort: 'ASC' } },
+      relationLoadStrategy: 'query',
     });
     expect(result).toEqual({ items: products, total: 1 });
   });

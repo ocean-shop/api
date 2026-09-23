@@ -92,8 +92,14 @@ export abstract class ProductQueryRepository {
         attributes: true,
         images: true,
       },
-      order: { images: { sort: 'ASC' } },
+      // One query per collection instead of a single multi-join, whose rows
+      // multiply out as products × categories × tags × attributes × images.
+      relationLoadStrategy: 'query',
     });
+
+    // Ordering images through `order` would join product_images back into the
+    // main query and bring the row multiplication back, so sort them here.
+    items.forEach((item) => item.images?.sort((a, b) => a.sort - b.sort));
 
     const itemsById = new Map(items.map((item) => [item.id, item]));
 

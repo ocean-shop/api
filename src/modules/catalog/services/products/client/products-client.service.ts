@@ -33,7 +33,8 @@ export class ProductsClientService {
     categoryId: string,
     query: ListCatalogProductsQueryDto,
   ): Promise<ProductListResponse> {
-    await this.categoryRepository.findById(categoryId);
+    // No category existence check here: it costs a round trip on every catalog
+    // request to turn an already empty page into a 404.
     this.assertPriceRangeValid(query.priceFrom, query.priceTo);
 
     const { page, limit, skip } = resolvePagination(query);

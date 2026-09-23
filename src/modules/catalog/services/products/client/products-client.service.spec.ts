@@ -83,9 +83,6 @@ describe('ProductsClientService', () => {
   });
 
   it('should list catalog products with filters, sorting and pagination', async () => {
-    jest.mocked(categoryRepository.findById).mockResolvedValue({
-      id: 'category-id',
-    } as any);
     jest
       .mocked(productClientRepository.findCatalogPaginated)
       .mockResolvedValue({ items: [{ id: '1' }] as any, total: 1 });
@@ -103,7 +100,6 @@ describe('ProductsClientService', () => {
       sort: CatalogProductSort.CHEAPER,
     });
 
-    expect(categoryRepository.findById).toHaveBeenCalledWith('category-id');
     expect(productClientRepository.findCatalogPaginated).toHaveBeenCalledWith(
       {
         categoryId: 'category-id',
@@ -129,9 +125,6 @@ describe('ProductsClientService', () => {
   });
 
   it('should list catalog products without filters', async () => {
-    jest.mocked(categoryRepository.findById).mockResolvedValue({
-      id: 'category-id',
-    } as any);
     jest
       .mocked(productClientRepository.findCatalogPaginated)
       .mockResolvedValue({ items: [], total: 0 });
@@ -157,10 +150,6 @@ describe('ProductsClientService', () => {
   });
 
   it('should reject catalog price range when priceFrom is greater than priceTo', async () => {
-    jest.mocked(categoryRepository.findById).mockResolvedValue({
-      id: 'category-id',
-    } as any);
-
     await expect(
       service.listCatalogProducts('category-id', {
         page: 1,
@@ -173,16 +162,19 @@ describe('ProductsClientService', () => {
     expect(productClientRepository.findCatalogPaginated).not.toHaveBeenCalled();
   });
 
-  it('should bubble up not found when category is missing', async () => {
+  it('should return an empty page for an unknown category without looking it up', async () => {
     jest
-      .mocked(categoryRepository.findById)
-      .mockRejectedValue(new Error('Категорію не знайдено'));
+      .mocked(productClientRepository.findCatalogPaginated)
+      .mockResolvedValue({ items: [], total: 0 });
 
-    await expect(
-      service.listCatalogProducts('missing-id', { page: 1, limit: 20 }),
-    ).rejects.toThrow('Категорію не знайдено');
+    const result = await service.listCatalogProducts('missing-id', {
+      page: 1,
+      limit: 20,
+    });
 
-    expect(productClientRepository.findCatalogPaginated).not.toHaveBeenCalled();
+    expect(categoryRepository.findById).not.toHaveBeenCalled();
+    expect(result.items).toEqual([]);
+    expect(result.total).toBe(0);
   });
 
   it('should group category filters by attribute name', async () => {
