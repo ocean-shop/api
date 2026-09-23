@@ -1,7 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { QueryFailedError } from 'typeorm';
-import { POPULAR_PRODUCTS_LIMIT } from '../../../constants/pagination.constants';
 import {
   ProductSortBy,
   ProductSortOrder,
@@ -32,7 +31,6 @@ describe('ProductsService', () => {
   beforeEach(async () => {
     const productRepositoryMock = {
       findAllPaginated: jest.fn(),
-      findPopular: jest.fn(),
       findByCategoryIdPaginated: jest.fn(),
       findByTagIdPaginated: jest.fn(),
       findByAttributeTypeIdPaginated: jest.fn(),
@@ -142,37 +140,6 @@ describe('ProductsService', () => {
       20,
     );
     expect(result.totalPages).toBe(1);
-  });
-
-  it('should list popular products', async () => {
-    const popularProducts = [{ id: '1', isPopular: true }] as any;
-    jest
-      .mocked(productRepository.findPopular)
-      .mockResolvedValue(popularProducts);
-
-    const result = await service.listPopularProducts();
-
-    expect(productRepository.findPopular).toHaveBeenCalledWith(
-      POPULAR_PRODUCTS_LIMIT,
-      undefined,
-    );
-    expect(result).toEqual(popularProducts);
-  });
-
-  it('should list popular products filtered by shop id', async () => {
-    const shopId = '98f21967-fce6-4ceb-af61-304913f593a7';
-    const popularProducts = [{ id: '1', isPopular: true }] as any;
-    jest
-      .mocked(productRepository.findPopular)
-      .mockResolvedValue(popularProducts);
-
-    const result = await service.listPopularProducts(shopId);
-
-    expect(productRepository.findPopular).toHaveBeenCalledWith(
-      POPULAR_PRODUCTS_LIMIT,
-      shopId,
-    );
-    expect(result).toEqual(popularProducts);
   });
 
   it('should list products by category id', async () => {

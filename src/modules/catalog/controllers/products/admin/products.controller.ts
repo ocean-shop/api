@@ -49,15 +49,6 @@ export class ProductsController {
     return this.productsService.listProducts(query);
   }
 
-  @Get('popular')
-  @ApiOperation({ summary: 'List first 6 popular products' })
-  @ApiQuery({ name: 'shopId', required: false, type: String, format: 'uuid' })
-  async listPopularProducts(
-    @Query('shopId', new ParseUUIDPipe({ optional: true })) shopId?: string,
-  ) {
-    return this.productsService.listPopularProducts(shopId);
-  }
-
   @Get('by-category/:categoryId')
   @ApiOperation({ summary: 'List products by category id' })
   @ApiParam({ name: 'categoryId', type: String, format: 'uuid' })

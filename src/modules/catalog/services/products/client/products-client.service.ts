@@ -1,5 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { POPULAR_PRODUCTS_LIMIT } from '../../../constants/pagination.constants';
 import { ListCatalogProductsQueryDto } from '../../../dto/products/list-catalog-products-query.dto';
+import { Product } from '../../../entities/product.entity';
 import {
   resolvePagination,
   toListResponse,
@@ -19,6 +21,13 @@ export class ProductsClientService {
     private readonly categoryRepository: CategoryRepository,
     private readonly attributeRepository: AttributeRepository,
   ) {}
+
+  async listPopularProducts(shopId?: string): Promise<Product[]> {
+    return this.productClientRepository.findPopular(
+      POPULAR_PRODUCTS_LIMIT,
+      shopId,
+    );
+  }
 
   async listCatalogProducts(
     categoryId: string,

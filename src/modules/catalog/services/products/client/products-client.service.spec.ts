@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { POPULAR_PRODUCTS_LIMIT } from '../../../constants/pagination.constants';
 import { CatalogProductSort } from '../../../models/product.models';
 import { AttributeRepository } from '../../../repositories/attribute/attribute.repository';
 import { CategoryRepository } from '../../../repositories/category/admin/category.repository';
@@ -15,6 +16,7 @@ describe('ProductsClientService', () => {
   beforeEach(async () => {
     const productClientRepositoryMock = {
       findCatalogPaginated: jest.fn(),
+      findPopular: jest.fn(),
     };
 
     const categoryRepositoryMock = {
@@ -47,6 +49,37 @@ describe('ProductsClientService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  it('should list popular products', async () => {
+    const popularProducts = [{ id: '1', isPopular: true }] as any;
+    jest
+      .mocked(productClientRepository.findPopular)
+      .mockResolvedValue(popularProducts);
+
+    const result = await service.listPopularProducts();
+
+    expect(productClientRepository.findPopular).toHaveBeenCalledWith(
+      POPULAR_PRODUCTS_LIMIT,
+      undefined,
+    );
+    expect(result).toEqual(popularProducts);
+  });
+
+  it('should list popular products filtered by shop id', async () => {
+    const shopId = '98f21967-fce6-4ceb-af61-304913f593a7';
+    const popularProducts = [{ id: '1', isPopular: true }] as any;
+    jest
+      .mocked(productClientRepository.findPopular)
+      .mockResolvedValue(popularProducts);
+
+    const result = await service.listPopularProducts(shopId);
+
+    expect(productClientRepository.findPopular).toHaveBeenCalledWith(
+      POPULAR_PRODUCTS_LIMIT,
+      shopId,
+    );
+    expect(result).toEqual(popularProducts);
   });
 
   it('should list catalog products with filters, sorting and pagination', async () => {

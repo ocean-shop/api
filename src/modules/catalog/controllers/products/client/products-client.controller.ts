@@ -1,16 +1,12 @@
 import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { ProductsService } from '../../../services/products/admin/products.service';
 import { ProductsClientService } from '../../../services/products/client/products-client.service';
 import { ListCatalogProductsQueryDto } from '../../../dto/products/list-catalog-products-query.dto';
 
 @Controller('catalog/products-client')
 @ApiTags('Catalog Products')
 export class ProductsClientController {
-  constructor(
-    private readonly productsService: ProductsService,
-    private readonly productsClientService: ProductsClientService,
-  ) {}
+  constructor(private readonly productsClientService: ProductsClientService) {}
 
   @Get('popular')
   @ApiOperation({ summary: 'List first 6 popular products' })
@@ -18,7 +14,7 @@ export class ProductsClientController {
   async listPopularProducts(
     @Query('shopId', new ParseUUIDPipe({ optional: true })) shopId?: string,
   ) {
-    return this.productsService.listPopularProducts(shopId);
+    return this.productsClientService.listPopularProducts(shopId);
   }
 
   @Get('by-category/:categoryId')

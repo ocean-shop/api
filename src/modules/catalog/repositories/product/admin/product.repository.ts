@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ProductImage } from '../../../entities/product-image.entity';
 import { Product } from '../../../entities/product.entity';
-import { ProductStatus } from '../../../entities/enums/product.enum';
 import {
   ProductFilters,
   ProductSortBy,
@@ -133,26 +132,6 @@ export class ProductRepository extends ProductQueryRepository {
       take,
       this.resolveSortOptions(sortBy, sortOrder),
     );
-  }
-
-  async findPopular(take: number, shopId?: string): Promise<Product[]> {
-    const { items } = await this.findPaginatedWithRelations(
-      (query) => {
-        query
-          .andWhere('product.isPopular = :isPopular', { isPopular: true })
-          .andWhere('product.status = :status', {
-            status: ProductStatus.ACTIVE,
-          });
-
-        if (shopId) {
-          query.andWhere('product.shopId = :shopId', { shopId });
-        }
-      },
-      0,
-      take,
-    );
-
-    return items;
   }
 
   async findById(id: string): Promise<Product> {

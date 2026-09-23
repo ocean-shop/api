@@ -65,6 +65,26 @@ export class ProductClientRepository extends ProductQueryRepository {
     );
   }
 
+  async findPopular(take: number, shopId?: string): Promise<Product[]> {
+    const { items } = await this.findPaginatedWithRelations(
+      (query) => {
+        query
+          .andWhere('product.isPopular = :isPopular', { isPopular: true })
+          .andWhere('product.status = :status', {
+            status: ProductStatus.ACTIVE,
+          });
+
+        if (shopId) {
+          query.andWhere('product.shopId = :shopId', { shopId });
+        }
+      },
+      0,
+      take,
+    );
+
+    return items;
+  }
+
   private applyAttributeFilter(
     query: SelectQueryBuilder<Product>,
     attribute: CatalogFilter,

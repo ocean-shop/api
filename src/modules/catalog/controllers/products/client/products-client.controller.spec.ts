@@ -1,20 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CatalogProductSort } from '../../../models/product.models';
 import { ProductsClientService } from '../../../services/products/client/products-client.service';
-import { ProductsService } from '../../../services/products/admin/products.service';
 import { ProductsClientController } from './products-client.controller';
 
 describe('ProductsClientController', () => {
   let controller: ProductsClientController;
-  let productsService: ProductsService;
   let productsClientService: ProductsClientService;
 
   beforeEach(async () => {
-    const productsServiceMock = {
-      listPopularProducts: jest.fn(),
-    };
-
     const productsClientServiceMock = {
+      listPopularProducts: jest.fn(),
       listCatalogProducts: jest.fn(),
       getFiltersByCategoryId: jest.fn(),
     };
@@ -22,13 +17,11 @@ describe('ProductsClientController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ProductsClientController],
       providers: [
-        { provide: ProductsService, useValue: productsServiceMock },
         { provide: ProductsClientService, useValue: productsClientServiceMock },
       ],
     }).compile();
 
     controller = module.get<ProductsClientController>(ProductsClientController);
-    productsService = module.get<ProductsService>(ProductsService);
     productsClientService = module.get<ProductsClientService>(
       ProductsClientService,
     );
@@ -41,12 +34,14 @@ describe('ProductsClientController', () => {
   it('should list popular products', async () => {
     const expected = [{ id: '1', name: 'Ocean Tee', isPopular: true }];
     jest
-      .mocked(productsService.listPopularProducts)
+      .mocked(productsClientService.listPopularProducts)
       .mockResolvedValue(expected as any);
 
     const result = await controller.listPopularProducts();
 
-    expect(productsService.listPopularProducts).toHaveBeenCalledWith(undefined);
+    expect(productsClientService.listPopularProducts).toHaveBeenCalledWith(
+      undefined,
+    );
     expect(result).toEqual(expected);
   });
 
@@ -54,12 +49,14 @@ describe('ProductsClientController', () => {
     const shopId = '98f21967-fce6-4ceb-af61-304913f593a7';
     const expected = [{ id: '1', name: 'Ocean Tee', isPopular: true }];
     jest
-      .mocked(productsService.listPopularProducts)
+      .mocked(productsClientService.listPopularProducts)
       .mockResolvedValue(expected as any);
 
     const result = await controller.listPopularProducts(shopId);
 
-    expect(productsService.listPopularProducts).toHaveBeenCalledWith(shopId);
+    expect(productsClientService.listPopularProducts).toHaveBeenCalledWith(
+      shopId,
+    );
     expect(result).toEqual(expected);
   });
 

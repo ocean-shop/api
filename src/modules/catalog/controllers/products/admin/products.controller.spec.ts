@@ -19,7 +19,6 @@ describe('ProductsController', () => {
   beforeEach(async () => {
     const productsServiceMock = {
       listProducts: jest.fn(),
-      listPopularProducts: jest.fn(),
       listProductsByCategoryId: jest.fn(),
       listProductsByTagId: jest.fn(),
       listProductsByAttributeTypeId: jest.fn(),
@@ -61,31 +60,6 @@ describe('ProductsController', () => {
     const result = await controller.listProducts(query);
 
     expect(productsService.listProducts).toHaveBeenCalledWith(query);
-    expect(result).toEqual(expected);
-  });
-
-  it('should list popular products', async () => {
-    const expected = [{ id: '1', name: 'Ocean Tee', isPopular: true }];
-    jest
-      .mocked(productsService.listPopularProducts)
-      .mockResolvedValue(expected as any);
-
-    const result = await controller.listPopularProducts();
-
-    expect(productsService.listPopularProducts).toHaveBeenCalledWith(undefined);
-    expect(result).toEqual(expected);
-  });
-
-  it('should list popular products filtered by shop id', async () => {
-    const shopId = '98f21967-fce6-4ceb-af61-304913f593a7';
-    const expected = [{ id: '1', name: 'Ocean Tee', isPopular: true }];
-    jest
-      .mocked(productsService.listPopularProducts)
-      .mockResolvedValue(expected as any);
-
-    const result = await controller.listPopularProducts(shopId);
-
-    expect(productsService.listPopularProducts).toHaveBeenCalledWith(shopId);
     expect(result).toEqual(expected);
   });
 
