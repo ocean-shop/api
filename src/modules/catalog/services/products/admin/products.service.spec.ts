@@ -1,20 +1,22 @@
 import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { QueryFailedError } from 'typeorm';
-import { POPULAR_PRODUCTS_LIMIT } from '../../constants/pagination.constants';
+import { POPULAR_PRODUCTS_LIMIT } from '../../../constants/pagination.constants';
 import {
-  CatalogProductSort,
   ProductSortBy,
   ProductSortOrder,
-} from '../../models/product.models';
-import { ProductStatus, ProductType } from '../../entities/enums/product.enum';
-import { AttributeRepository } from '../../repositories/attribute/attribute.repository';
-import { CategoryRepository } from '../../repositories/category/category.repository';
-import { ProductRepository } from '../../repositories/product/product.repository';
-import { ProductVariationRepository } from '../../repositories/product-variation/product-variation.repository';
-import { ShopRepository } from '../../repositories/shop/shop.repository';
-import { TagRepository } from '../../repositories/tag/tag.repository';
-import { ProductImagesCloudinaryService } from '../cloudinary/product-images-cloudinary.service';
+} from '../../../models/product.models';
+import {
+  ProductStatus,
+  ProductType,
+} from '../../../entities/enums/product.enum';
+import { AttributeRepository } from '../../../repositories/attribute/attribute.repository';
+import { CategoryRepository } from '../../../repositories/category/admin/category.repository';
+import { ProductRepository } from '../../../repositories/product/admin/product.repository';
+import { ProductVariationRepository } from '../../../repositories/product-variation/product-variation.repository';
+import { ShopRepository } from '../../../repositories/shop/shop.repository';
+import { TagRepository } from '../../../repositories/tag/tag.repository';
+import { ProductImagesCloudinaryService } from '../../cloudinary/product-images-cloudinary.service';
 import { ProductsService } from './products.service';
 
 describe('ProductsService', () => {
@@ -32,7 +34,6 @@ describe('ProductsService', () => {
       findAllPaginated: jest.fn(),
       findPopular: jest.fn(),
       findByCategoryIdPaginated: jest.fn(),
-      findCatalogPaginated: jest.fn(),
       findByTagIdPaginated: jest.fn(),
       findByAttributeTypeIdPaginated: jest.fn(),
       findById: jest.fn(),
@@ -65,7 +66,6 @@ describe('ProductsService', () => {
 
     const attributeRepositoryMock = {
       findById: jest.fn(),
-      findCategoryFilterOptions: jest.fn(),
     };
 
     const productImagesCloudinaryServiceMock = {
@@ -159,29 +159,6 @@ describe('ProductsService', () => {
     expect(result).toEqual(popularProducts);
   });
 
-  it('should group category filters by attribute name', async () => {
-    const categoryId = '11111111-1111-4111-8111-111111111111';
-    jest.mocked(categoryRepository.findById).mockResolvedValue({} as any);
-    jest
-      .mocked(attributeRepository.findCategoryFilterOptions)
-      .mockResolvedValue([
-        { name: 'Color', value: 'Blue' },
-        { name: 'Color', value: 'Red' },
-        { name: 'Size', value: 'M' },
-      ]);
-
-    const result = await service.getFiltersByCategoryId(categoryId);
-
-    expect(categoryRepository.findById).toHaveBeenCalledWith(categoryId);
-    expect(attributeRepository.findCategoryFilterOptions).toHaveBeenCalledWith(
-      categoryId,
-    );
-    expect(result).toEqual([
-      { name: 'Color', values: ['Blue', 'Red'] },
-      { name: 'Size', values: ['M'] },
-    ]);
-  });
-
   it('should list popular products filtered by shop id', async () => {
     const shopId = '98f21967-fce6-4ceb-af61-304913f593a7';
     const popularProducts = [{ id: '1', isPopular: true }] as any;
@@ -196,97 +173,6 @@ describe('ProductsService', () => {
       shopId,
     );
     expect(result).toEqual(popularProducts);
-  });
-
-  it('should list catalog products with filters, sorting and pagination', async () => {
-    jest.mocked(categoryRepository.findById).mockResolvedValue({
-      id: 'category-id',
-    } as any);
-    jest
-      .mocked(productRepository.findCatalogPaginated)
-      .mockResolvedValue({ items: [{ id: '1' }] as any, total: 1 });
-
-    const result = await service.listCatalogProducts('category-id', {
-      page: 2,
-      limit: 20,
-      attributes: [
-        { name: 'color', values: ['Red'] },
-        { name: 'screen', values: ['6'] },
-      ],
-      priceFrom: 60,
-      priceTo: 6000,
-      available: true,
-      sort: CatalogProductSort.CHEAPER,
-    });
-
-    expect(categoryRepository.findById).toHaveBeenCalledWith('category-id');
-    expect(productRepository.findCatalogPaginated).toHaveBeenCalledWith(
-      {
-        categoryId: 'category-id',
-        attributes: [
-          { name: 'color', values: ['Red'] },
-          { name: 'screen', values: ['6'] },
-        ],
-        priceFrom: 60,
-        priceTo: 6000,
-        available: true,
-        sort: CatalogProductSort.CHEAPER,
-      },
-      20,
-      20,
-    );
-    expect(result).toEqual({
-      items: [{ id: '1' }],
-      total: 1,
-      page: 2,
-      limit: 20,
-      totalPages: 1,
-    });
-  });
-
-  it('should list catalog products without filters', async () => {
-    jest.mocked(categoryRepository.findById).mockResolvedValue({
-      id: 'category-id',
-    } as any);
-    jest
-      .mocked(productRepository.findCatalogPaginated)
-      .mockResolvedValue({ items: [], total: 0 });
-
-    const result = await service.listCatalogProducts('category-id', {
-      page: 1,
-      limit: 20,
-    });
-
-    expect(productRepository.findCatalogPaginated).toHaveBeenCalledWith(
-      {
-        categoryId: 'category-id',
-        attributes: undefined,
-        priceFrom: undefined,
-        priceTo: undefined,
-        available: undefined,
-        sort: undefined,
-      },
-      0,
-      20,
-    );
-    expect(result.totalPages).toBe(0);
-  });
-
-  it('should reject catalog price range when priceFrom is greater than priceTo', async () => {
-    jest.mocked(categoryRepository.findById).mockResolvedValue({
-      id: 'category-id',
-    } as any);
-
-    await expect(
-      service.listCatalogProducts('category-id', {
-        page: 1,
-        limit: 20,
-        priceFrom: 6000,
-        priceTo: 60,
-      }),
-    ).rejects.toThrow(BadRequestException);
-
-    expect(productRepository.findCatalogPaginated).not.toHaveBeenCalled();
   });
 
   it('should list products by category id', async () => {

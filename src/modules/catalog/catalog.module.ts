@@ -2,8 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { CategoriesController } from './controllers/categories/categories.controller';
-import { ProductsController } from './controllers/products/products.controller';
+import { CategoriesController } from './controllers/categories/admin/categories.controller';
+import { ProductsController } from './controllers/products/admin/products.controller';
 import { ShopsController } from './controllers/shops/shops.controller';
 import { TagsController } from './controllers/tags/tags.controller';
 import { AttributesController } from './controllers/attributes/attributes.controller';
@@ -18,22 +18,26 @@ import { ProductVariation } from './entities/product-variation.entity';
 import { VariationAttribute } from './entities/variation-attribute.entity';
 import { VariationImage } from './entities/variation-image.entity';
 import { AttributeRepository } from './repositories/attribute/attribute.repository';
-import { CategoryRepository } from './repositories/category/category.repository';
-import { ProductRepository } from './repositories/product/product.repository';
+import { CategoryRepository } from './repositories/category/admin/category.repository';
+import { CategoryClientRepository } from './repositories/category/client/category-client.repository';
+import { ProductRepository } from './repositories/product/admin/product.repository';
+import { ProductClientRepository } from './repositories/product/client/product-client.repository';
 import { ProductVariationRepository } from './repositories/product-variation/product-variation.repository';
 import { ShopRepository } from './repositories/shop/shop.repository';
 import { TagRepository } from './repositories/tag/tag.repository';
 import { JwtAuthGuard } from '../user/guards/jwt-auth.guard';
 import { RolesGuard } from '../user/guards/roles.guard';
-import { CategoriesService } from './services/categories/categories.service';
+import { CategoriesService } from './services/categories/admin/categories.service';
+import { CategoriesClientService } from './services/categories/client/categories-client.service';
 import { ProductImagesCloudinaryService } from './services/cloudinary/product-images-cloudinary.service';
-import { ProductsService } from './services/products/products.service';
+import { ProductsService } from './services/products/admin/products.service';
+import { ProductsClientService } from './services/products/client/products-client.service';
 import { ShopsService } from './services/shops/shops.service';
 import { TagsService } from './services/tags/tags.service';
 import { AttributesService } from './services/attributes/attributes.service';
 import { ImagesService } from './services/images/images.service';
-import { ProductsClientController } from './controllers/products/products-client.controller';
-import { CategoriesClientController } from './controllers/categories/categories-client.controller';
+import { ProductsClientController } from './controllers/products/client/products-client.controller';
+import { CategoriesClientController } from './controllers/categories/client/categories-client.controller';
 
 @Module({
   imports: [
@@ -69,16 +73,20 @@ import { CategoriesClientController } from './controllers/categories/categories-
   providers: [
     ShopsService,
     CategoriesService,
+    CategoriesClientService,
     TagsService,
     AttributesService,
     ProductsService,
+    ProductsClientService,
     ImagesService,
     ProductImagesCloudinaryService,
     ShopRepository,
     CategoryRepository,
+    CategoryClientRepository,
     TagRepository,
     AttributeRepository,
     ProductRepository,
+    ProductClientRepository,
     ProductVariationRepository,
     JwtAuthGuard,
     RolesGuard,

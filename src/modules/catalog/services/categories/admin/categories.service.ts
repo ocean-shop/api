@@ -3,15 +3,18 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { matchesQueryFailedError } from '../../../../core/db/helpers/query-failed-error.helpers';
-import { Category } from '../../entities/category.entity';
-import { CategoryListResponse } from '../../models/category.models';
-import { CategoryRepository } from '../../repositories/category/category.repository';
-import { ChangeCategorySortDto } from '../../dto/categories/change-category-sort.dto';
-import { CreateCategoryDto } from '../../dto/categories/create-category.dto';
-import { UpdateCategoryDto } from '../../dto/categories/update-category.dto';
-import { ListCategoriesQueryDto } from '../../dto/categories/list-categories-query.dto';
-import { PAGINATION_MAX } from '../../constants/pagination.constants';
+import { matchesQueryFailedError } from '../../../../../core/db/helpers/query-failed-error.helpers';
+import { Category } from '../../../entities/category.entity';
+import { CategoryListResponse } from '../../../models/category.models';
+import { CategoryRepository } from '../../../repositories/category/admin/category.repository';
+import { ChangeCategorySortDto } from '../../../dto/categories/change-category-sort.dto';
+import { CreateCategoryDto } from '../../../dto/categories/create-category.dto';
+import { UpdateCategoryDto } from '../../../dto/categories/update-category.dto';
+import { ListCategoriesQueryDto } from '../../../dto/categories/list-categories-query.dto';
+import {
+  resolvePagination,
+  toListResponse,
+} from '../../../helpers/list-response.helpers';
 
 @Injectable()
 export class CategoriesService {
@@ -25,9 +28,7 @@ export class CategoriesService {
   async listCategories(
     query: ListCategoriesQueryDto,
   ): Promise<CategoryListResponse> {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? PAGINATION_MAX;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = resolvePagination(query);
 
     const { items, total } = await this.categoryRepository.findAllPaginated(
       { shopId: query.shopId, parentId: query.parentId },
@@ -35,13 +36,7 @@ export class CategoriesService {
       limit,
     );
 
-    return {
-      items,
-      total,
-      page,
-      limit,
-      totalPages: total > 0 ? Math.ceil(total / limit) : 0,
-    };
+    return toListResponse(items, total, page, limit);
   }
 
   async getCategoryById(id: string): Promise<Category> {

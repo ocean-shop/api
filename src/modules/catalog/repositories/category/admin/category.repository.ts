@@ -1,41 +1,25 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, IsNull, LessThan, MoreThan, Repository } from 'typeorm';
-import { Category } from '../../entities/category.entity';
-import { CategoryFilters } from '../../models/category.models';
+import { Category } from '../../../entities/category.entity';
+import { CategoryFilters } from '../../../models/category.models';
+import { CategoryQueryRepository } from '../common/category-query.repository';
 
 @Injectable()
-export class CategoryRepository {
+export class CategoryRepository extends CategoryQueryRepository {
   constructor(
     @InjectRepository(Category)
-    private readonly repository: Repository<Category>,
-  ) {}
+    repository: Repository<Category>,
+  ) {
+    super(repository);
+  }
 
   async findAllPaginated(
     filters: CategoryFilters,
     skip: number,
     take: number,
   ): Promise<{ items: Category[]; total: number }> {
-    const query = this.repository
-      .createQueryBuilder('category')
-      .orderBy('category.sort', 'ASC')
-      .addOrderBy('category.createdAt', 'ASC')
-      .skip(skip)
-      .take(take);
-
-    if (filters.shopId) {
-      query.andWhere('category.shopId = :shopId', { shopId: filters.shopId });
-    }
-
-    if (filters.parentId) {
-      query.andWhere('category.parentId = :parentId', {
-        parentId: filters.parentId,
-      });
-    }
-
-    const [items, total] = await query.getManyAndCount();
-
-    return { items, total };
+    return this.findPaginated(filters, skip, take);
   }
 
   async findById(id: string): Promise<Category> {

@@ -1,28 +1,26 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository, SelectQueryBuilder } from 'typeorm';
-import { ProductImage } from '../../entities/product-image.entity';
-import { Product } from '../../entities/product.entity';
-import { ProductStatus } from '../../entities/enums/product.enum';
+import { Repository } from 'typeorm';
+import { ProductImage } from '../../../entities/product-image.entity';
+import { Product } from '../../../entities/product.entity';
+import { ProductStatus } from '../../../entities/enums/product.enum';
 import {
-  CatalogFilter,
-  CatalogProductFilters,
-  CatalogProductSort,
   ProductFilters,
-  ProductOrdering,
   ProductSortBy,
   ProductSortOrder,
-} from '../../models/product.models';
-import { EFFECTIVE_PRICE_EXPRESSION } from '../../constants/product-query.constants';
+} from '../../../models/product.models';
+import { ProductQueryRepository } from '../common/product-query.repository';
 
 @Injectable()
-export class ProductRepository {
+export class ProductRepository extends ProductQueryRepository {
   constructor(
     @InjectRepository(Product)
-    private readonly repository: Repository<Product>,
+    repository: Repository<Product>,
     @InjectRepository(ProductImage)
     private readonly imageRepository: Repository<ProductImage>,
-  ) {}
+  ) {
+    super(repository);
+  }
 
   async findAllPaginated(
     filters: ProductFilters,
@@ -96,50 +94,6 @@ export class ProductRepository {
       skip,
       take,
       this.resolveSortOptions(sortBy, sortOrder),
-    );
-  }
-
-  async findCatalogPaginated(
-    filters: CatalogProductFilters,
-    skip: number,
-    take: number,
-  ): Promise<{ items: Product[]; total: number }> {
-    return this.findPaginatedWithRelations(
-      (query) => {
-        query
-          .innerJoin('product.categories', 'category')
-          .andWhere('category.id = :categoryId', {
-            categoryId: filters.categoryId,
-          })
-          .andWhere('product.status = :status', {
-            status: ProductStatus.ACTIVE,
-          });
-
-        if (filters.available !== undefined) {
-          query.andWhere('product.available = :available', {
-            available: filters.available,
-          });
-        }
-
-        if (filters.priceFrom !== undefined) {
-          query.andWhere(`${EFFECTIVE_PRICE_EXPRESSION} >= :priceFrom`, {
-            priceFrom: filters.priceFrom,
-          });
-        }
-
-        if (filters.priceTo !== undefined) {
-          query.andWhere(`${EFFECTIVE_PRICE_EXPRESSION} <= :priceTo`, {
-            priceTo: filters.priceTo,
-          });
-        }
-
-        filters.attributes?.forEach((attribute, index) => {
-          this.applyAttributeFilter(query, attribute, index);
-        });
-      },
-      skip,
-      take,
-      this.resolveCatalogOrderings(filters.sort),
     );
   }
 
@@ -230,155 +184,6 @@ export class ProductRepository {
     }
 
     return product;
-  }
-
-  private applyAttributeFilter(
-    query: SelectQueryBuilder<Product>,
-    attribute: CatalogFilter,
-    index: number,
-  ): void {
-    const nameParameter = `attributeName${index}`;
-    const valuesParameter = `attributeValues${index}`;
-
-    query.andWhere(
-      `EXISTS (
-        SELECT 1
-        FROM attribute_types filtered_attribute
-        WHERE filtered_attribute.name = :${nameParameter}
-          AND filtered_attribute.value IN (:...${valuesParameter})
-          AND (
-            EXISTS (
-              SELECT 1
-              FROM products_attributes product_attribute
-              WHERE product_attribute.product_id = product.id
-                AND product_attribute.attribute_type_id = filtered_attribute.id
-            )
-            OR EXISTS (
-              SELECT 1
-              FROM product_variations filtered_variation
-              INNER JOIN variations_attributes variation_attribute
-                ON variation_attribute.variation_id = filtered_variation.id
-              WHERE filtered_variation.product_id = product.id
-                AND variation_attribute.attribute_type_id = filtered_attribute.id
-            )
-          )
-      )`,
-      {
-        [nameParameter]: attribute.name,
-        [valuesParameter]: attribute.values,
-      },
-    );
-  }
-
-  private async findPaginatedWithRelations(
-    applyFilters: (query: SelectQueryBuilder<Product>) => void,
-    skip: number,
-    take: number,
-    orderings?: ProductOrdering[],
-  ): Promise<{ items: Product[]; total: number }> {
-    const baseQuery = this.buildBasePaginatedQuery();
-    applyFilters(baseQuery);
-
-    const total = await this.countPaginatedResults(baseQuery);
-    const ids = await this.findPageIds(baseQuery, skip, take, orderings);
-    if (ids.length === 0) {
-      return { items: [], total };
-    }
-
-    return {
-      items: await this.findProductsWithRelationsInOrder(ids),
-      total,
-    };
-  }
-
-  private buildBasePaginatedQuery(): SelectQueryBuilder<Product> {
-    return this.repository.createQueryBuilder('product').distinct(true);
-  }
-
-  private async countPaginatedResults(
-    query: SelectQueryBuilder<Product>,
-  ): Promise<number> {
-    return query.clone().getCount();
-  }
-
-  private async findPageIds(
-    query: SelectQueryBuilder<Product>,
-    skip: number,
-    take: number,
-    orderings?: ProductOrdering[],
-  ): Promise<string[]> {
-    const pageQuery = query.clone().select('product.id', 'id');
-
-    (orderings ?? this.resolveSortOptions()).forEach((ordering, index) => {
-      pageQuery.addSelect(ordering.expression, `sortValue${index}`);
-
-      if (index === 0) {
-        pageQuery.orderBy(ordering.expression, ordering.direction);
-        return;
-      }
-
-      pageQuery.addOrderBy(ordering.expression, ordering.direction);
-    });
-
-    const idRows = await pageQuery
-      .addOrderBy('product.id', 'ASC')
-      .offset(skip)
-      .limit(take)
-      .getRawMany<{ id: string }>();
-
-    return idRows.map((row) => row.id);
-  }
-
-  private resolveSortOptions(
-    sortBy?: ProductSortBy,
-    sortOrder?: ProductSortOrder,
-  ): ProductOrdering[] {
-    return [
-      {
-        expression:
-          sortBy === ProductSortBy.NAME ? 'product.name' : 'product.createdAt',
-        direction: sortOrder === ProductSortOrder.ASC ? 'ASC' : 'DESC',
-      },
-    ];
-  }
-
-  private resolveCatalogOrderings(
-    sort?: CatalogProductSort,
-  ): ProductOrdering[] {
-    switch (sort) {
-      case CatalogProductSort.POPULAR:
-        return [
-          { expression: 'product.isPopular', direction: 'DESC' },
-          { expression: 'product.createdAt', direction: 'DESC' },
-        ];
-      case CatalogProductSort.CHEAPER:
-        return [{ expression: EFFECTIVE_PRICE_EXPRESSION, direction: 'ASC' }];
-      case CatalogProductSort.EXPENSIVE:
-        return [{ expression: EFFECTIVE_PRICE_EXPRESSION, direction: 'DESC' }];
-      default:
-        return [{ expression: 'product.createdAt', direction: 'DESC' }];
-    }
-  }
-
-  private async findProductsWithRelationsInOrder(
-    ids: string[],
-  ): Promise<Product[]> {
-    const items = await this.repository.find({
-      where: { id: In(ids) },
-      relations: {
-        categories: true,
-        tags: true,
-        attributes: true,
-        images: true,
-      },
-      order: { images: { sort: 'ASC' } },
-    });
-
-    const itemsById = new Map(items.map((item) => [item.id, item]));
-
-    return ids
-      .map((id) => itemsById.get(id))
-      .filter((item): item is Product => item !== undefined);
   }
 
   async findOneById(id: string): Promise<Product | null> {

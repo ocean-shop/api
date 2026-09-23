@@ -1,15 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { JwtAuthGuard } from '../../../user/guards/jwt-auth.guard';
-import { RolesGuard } from '../../../user/guards/roles.guard';
-import { AssignProductAttributeDto } from '../../dto/attributes/assign-product-attribute.dto';
-import { AssignProductCategoryDto } from '../../dto/products/assign-product-category.dto';
-import { AssignProductImagesDto } from '../../dto/products/assign-product-images.dto';
-import { AssignProductTagDto } from '../../dto/products/assign-product-tag.dto';
-import { ProductVariationDto } from '../../dto/products/product-variation.dto';
-import { CreateProductDto } from '../../dto/products/create-product.dto';
-import { UpdateProductDto } from '../../dto/products/update-product.dto';
-import { ProductStatus } from '../../entities/enums/product.enum';
-import { ProductsService } from '../../services/products/products.service';
+import { JwtAuthGuard } from '../../../../user/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../../user/guards/roles.guard';
+import { AssignProductAttributeDto } from '../../../dto/attributes/assign-product-attribute.dto';
+import { AssignProductCategoryDto } from '../../../dto/products/assign-product-category.dto';
+import { AssignProductImagesDto } from '../../../dto/products/assign-product-images.dto';
+import { AssignProductTagDto } from '../../../dto/products/assign-product-tag.dto';
+import { ProductVariationDto } from '../../../dto/products/product-variation.dto';
+import { CreateProductDto } from '../../../dto/products/create-product.dto';
+import { UpdateProductDto } from '../../../dto/products/update-product.dto';
+import { ProductStatus } from '../../../entities/enums/product.enum';
+import { ProductsService } from '../../../services/products/admin/products.service';
 import { ProductsController } from './products.controller';
 
 describe('ProductsController', () => {

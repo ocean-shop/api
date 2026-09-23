@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { JwtAuthGuard } from '../../../user/guards/jwt-auth.guard';
-import { RolesGuard } from '../../../user/guards/roles.guard';
-import { ChangeCategorySortDto } from '../../dto/categories/change-category-sort.dto';
-import { CreateCategoryDto } from '../../dto/categories/create-category.dto';
-import { UpdateCategoryDto } from '../../dto/categories/update-category.dto';
-import { CategoriesService } from '../../services/categories/categories.service';
+import { JwtAuthGuard } from '../../../../user/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../../user/guards/roles.guard';
+import { ChangeCategorySortDto } from '../../../dto/categories/change-category-sort.dto';
+import { CreateCategoryDto } from '../../../dto/categories/create-category.dto';
+import { UpdateCategoryDto } from '../../../dto/categories/update-category.dto';
+import { CategoriesService } from '../../../services/categories/admin/categories.service';
 import { CategoriesController } from './categories.controller';
 
 describe('CategoriesController', () => {

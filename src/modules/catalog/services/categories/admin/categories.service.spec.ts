@@ -1,7 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { QueryFailedError } from 'typeorm';
-import { CategoryRepository } from '../../repositories/category/category.repository';
+import { CategoryRepository } from '../../../repositories/category/admin/category.repository';
 import { CategoriesService } from './categories.service';
 
 describe('CategoriesService', () => {

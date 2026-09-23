@@ -2,7 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { In, IsNull, LessThan, MoreThan } from 'typeorm';
-import { Category } from '../../entities/category.entity';
+import { Category } from '../../../entities/category.entity';
 import { CategoryRepository } from './category.repository';
 
 describe('CategoryRepository', () => {

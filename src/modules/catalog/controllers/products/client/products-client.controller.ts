@@ -1,12 +1,16 @@
 import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { ProductsService } from '../../services/products/products.service';
-import { ListCatalogProductsQueryDto } from '../../dto/products/list-catalog-products-query.dto';
+import { ProductsService } from '../../../services/products/admin/products.service';
+import { ProductsClientService } from '../../../services/products/client/products-client.service';
+import { ListCatalogProductsQueryDto } from '../../../dto/products/list-catalog-products-query.dto';
 
 @Controller('catalog/products-client')
 @ApiTags('Catalog Products')
 export class ProductsClientController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(
+    private readonly productsService: ProductsService,
+    private readonly productsClientService: ProductsClientService,
+  ) {}
 
   @Get('popular')
   @ApiOperation({ summary: 'List first 6 popular products' })
@@ -27,7 +31,7 @@ export class ProductsClientController {
     @Param('categoryId', ParseUUIDPipe) categoryId: string,
     @Query() query: ListCatalogProductsQueryDto,
   ) {
-    return this.productsService.listCatalogProducts(categoryId, query);
+    return this.productsClientService.listCatalogProducts(categoryId, query);
   }
 
   @Get('filters/by-category/:categoryId')
@@ -38,6 +42,6 @@ export class ProductsClientController {
   async getFiltersByCategoryId(
     @Param('categoryId', ParseUUIDPipe) categoryId: string,
   ) {
-    return this.productsService.getFiltersByCategoryId(categoryId);
+    return this.productsClientService.getFiltersByCategoryId(categoryId);
   }
 }

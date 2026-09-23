@@ -1,32 +1,32 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { matchesQueryFailedError } from '../../../../core/db/helpers/query-failed-error.helpers';
-import { AssignProductAttributeDto } from '../../dto/attributes/assign-product-attribute.dto';
-import { AssignProductCategoryDto } from '../../dto/products/assign-product-category.dto';
-import { AssignProductImagesDto } from '../../dto/products/assign-product-images.dto';
-import { AssignProductTagDto } from '../../dto/products/assign-product-tag.dto';
-import { ProductVariationDto } from '../../dto/products/product-variation.dto';
-import { CreateProductDto } from '../../dto/products/create-product.dto';
-import { ListCatalogProductsQueryDto } from '../../dto/products/list-catalog-products-query.dto';
-import { ListProductsQueryDto } from '../../dto/products/list-products-query.dto';
-import { UpdateProductDto } from '../../dto/products/update-product.dto';
-import { ProductStatus, ProductType } from '../../entities/enums/product.enum';
-import { ProductVariation } from '../../entities/product-variation.entity';
-import { Product } from '../../entities/product.entity';
+import { matchesQueryFailedError } from '../../../../../core/db/helpers/query-failed-error.helpers';
+import { AssignProductAttributeDto } from '../../../dto/attributes/assign-product-attribute.dto';
+import { AssignProductCategoryDto } from '../../../dto/products/assign-product-category.dto';
+import { AssignProductImagesDto } from '../../../dto/products/assign-product-images.dto';
+import { AssignProductTagDto } from '../../../dto/products/assign-product-tag.dto';
+import { ProductVariationDto } from '../../../dto/products/product-variation.dto';
+import { CreateProductDto } from '../../../dto/products/create-product.dto';
+import { ListProductsQueryDto } from '../../../dto/products/list-products-query.dto';
+import { UpdateProductDto } from '../../../dto/products/update-product.dto';
 import {
-  CatalogFilter,
-  ProductListResponse,
-} from '../../models/product.models';
-import { AttributeRepository } from '../../repositories/attribute/attribute.repository';
-import { CategoryRepository } from '../../repositories/category/category.repository';
-import { ProductRepository } from '../../repositories/product/product.repository';
-import { ProductVariationRepository } from '../../repositories/product-variation/product-variation.repository';
-import { ShopRepository } from '../../repositories/shop/shop.repository';
-import { TagRepository } from '../../repositories/tag/tag.repository';
+  ProductStatus,
+  ProductType,
+} from '../../../entities/enums/product.enum';
+import { ProductVariation } from '../../../entities/product-variation.entity';
+import { Product } from '../../../entities/product.entity';
 import {
-  PAGINATION_MAX,
-  POPULAR_PRODUCTS_LIMIT,
-} from '../../constants/pagination.constants';
-import { ProductImagesCloudinaryService } from '../cloudinary/product-images-cloudinary.service';
+  resolvePagination,
+  toListResponse,
+} from '../../../helpers/list-response.helpers';
+import { ProductListResponse } from '../../../models/product.models';
+import { AttributeRepository } from '../../../repositories/attribute/attribute.repository';
+import { CategoryRepository } from '../../../repositories/category/admin/category.repository';
+import { ProductRepository } from '../../../repositories/product/admin/product.repository';
+import { ProductVariationRepository } from '../../../repositories/product-variation/product-variation.repository';
+import { ShopRepository } from '../../../repositories/shop/shop.repository';
+import { TagRepository } from '../../../repositories/tag/tag.repository';
+import { POPULAR_PRODUCTS_LIMIT } from '../../../constants/pagination.constants';
+import { ProductImagesCloudinaryService } from '../../cloudinary/product-images-cloudinary.service';
 
 @Injectable()
 export class ProductsService {
@@ -43,7 +43,7 @@ export class ProductsService {
   async listProducts(
     query: ListProductsQueryDto,
   ): Promise<ProductListResponse> {
-    const { page, limit, skip } = this.resolvePagination(query);
+    const { page, limit, skip } = resolvePagination(query);
 
     const { items, total } = await this.productRepository.findAllPaginated(
       {
@@ -60,7 +60,7 @@ export class ProductsService {
       limit,
     );
 
-    return this.toListResponse(items, total, page, limit);
+    return toListResponse(items, total, page, limit);
   }
 
   async listProductsByCategoryId(
@@ -68,7 +68,7 @@ export class ProductsService {
     query: ListProductsQueryDto,
   ): Promise<ProductListResponse> {
     await this.categoryRepository.findById(categoryId);
-    const { page, limit, skip } = this.resolvePagination(query);
+    const { page, limit, skip } = resolvePagination(query);
 
     const { items, total } =
       await this.productRepository.findByCategoryIdPaginated(
@@ -80,32 +80,7 @@ export class ProductsService {
         query.isPopular,
       );
 
-    return this.toListResponse(items, total, page, limit);
-  }
-
-  async listCatalogProducts(
-    categoryId: string,
-    query: ListCatalogProductsQueryDto,
-  ): Promise<ProductListResponse> {
-    await this.categoryRepository.findById(categoryId);
-    this.assertPriceRangeValid(query.priceFrom, query.priceTo);
-
-    const { page, limit, skip } = this.resolvePagination(query);
-
-    const { items, total } = await this.productRepository.findCatalogPaginated(
-      {
-        categoryId,
-        attributes: query.attributes,
-        priceFrom: query.priceFrom,
-        priceTo: query.priceTo,
-        available: query.available,
-        sort: query.sort,
-      },
-      skip,
-      limit,
-    );
-
-    return this.toListResponse(items, total, page, limit);
+    return toListResponse(items, total, page, limit);
   }
 
   async listProductsByTagId(
@@ -113,7 +88,7 @@ export class ProductsService {
     query: ListProductsQueryDto,
   ): Promise<ProductListResponse> {
     await this.tagRepository.findById(tagId);
-    const { page, limit, skip } = this.resolvePagination(query);
+    const { page, limit, skip } = resolvePagination(query);
 
     const { items, total } = await this.productRepository.findByTagIdPaginated(
       tagId,
@@ -123,7 +98,7 @@ export class ProductsService {
       query.sortOrder,
     );
 
-    return this.toListResponse(items, total, page, limit);
+    return toListResponse(items, total, page, limit);
   }
 
   async listProductsByAttributeTypeId(
@@ -131,7 +106,7 @@ export class ProductsService {
     query: ListProductsQueryDto,
   ): Promise<ProductListResponse> {
     await this.attributeRepository.findById(attributeTypeId);
-    const { page, limit, skip } = this.resolvePagination(query);
+    const { page, limit, skip } = resolvePagination(query);
 
     const { items, total } =
       await this.productRepository.findByAttributeTypeIdPaginated(
@@ -142,16 +117,7 @@ export class ProductsService {
         query.sortOrder,
       );
 
-    return this.toListResponse(items, total, page, limit);
-  }
-
-  async getFiltersByCategoryId(categoryId: string): Promise<CatalogFilter[]> {
-    await this.categoryRepository.findById(categoryId);
-
-    const options =
-      await this.attributeRepository.findCategoryFilterOptions(categoryId);
-
-    return this.toCatalogFilters(options);
+    return toListResponse(items, total, page, limit);
   }
 
   async listPopularProducts(shopId?: string): Promise<Product[]> {
@@ -332,51 +298,6 @@ export class ProductsService {
     return this.upsertVariation(id, dto, variationId);
   }
 
-  private toCatalogFilters(
-    options: Array<{ name: string; value: string }>,
-  ): CatalogFilter[] {
-    const valuesByName = new Map<string, string[]>();
-
-    for (const { name, value } of options) {
-      const values = valuesByName.get(name);
-
-      if (values) {
-        values.push(value);
-        continue;
-      }
-
-      valuesByName.set(name, [value]);
-    }
-
-    return Array.from(valuesByName, ([name, values]) => ({ name, values }));
-  }
-
-  private toListResponse(
-    items: Product[],
-    total: number,
-    page: number,
-    limit: number,
-  ): ProductListResponse {
-    return {
-      items,
-      total,
-      page,
-      limit,
-      totalPages: total > 0 ? Math.ceil(total / limit) : 0,
-    };
-  }
-
-  private resolvePagination(query: { page?: number; limit?: number }): {
-    page: number;
-    limit: number;
-    skip: number;
-  } {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? PAGINATION_MAX;
-    const skip = (page - 1) * limit;
-    return { page, limit, skip };
-  }
-
   private async assignProductRelation<
     TEntity extends { id: string; shopId: string },
   >({
@@ -432,18 +353,6 @@ export class ProductsService {
     if (existing && existing.id !== excludeProductId) {
       throw new BadRequestException(
         'SKU продукту вже існує для цього магазину',
-      );
-    }
-  }
-
-  private assertPriceRangeValid(priceFrom?: number, priceTo?: number): void {
-    if (
-      priceFrom !== undefined &&
-      priceTo !== undefined &&
-      priceFrom > priceTo
-    ) {
-      throw new BadRequestException(
-        'priceFrom має бути меншим або дорівнювати priceTo',
       );
     }
   }

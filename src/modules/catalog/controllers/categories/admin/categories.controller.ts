@@ -18,14 +18,14 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { Roles } from '../../../user/decorators/roles.decorator';
-import { JwtAuthGuard } from '../../../user/guards/jwt-auth.guard';
-import { RolesGuard } from '../../../user/guards/roles.guard';
-import { ChangeCategorySortDto } from '../../dto/categories/change-category-sort.dto';
-import { CreateCategoryDto } from '../../dto/categories/create-category.dto';
-import { ListCategoriesQueryDto } from '../../dto/categories/list-categories-query.dto';
-import { UpdateCategoryDto } from '../../dto/categories/update-category.dto';
-import { CategoriesService } from '../../services/categories/categories.service';
+import { Roles } from '../../../../user/decorators/roles.decorator';
+import { JwtAuthGuard } from '../../../../user/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../../user/guards/roles.guard';
+import { ChangeCategorySortDto } from '../../../dto/categories/change-category-sort.dto';
+import { CreateCategoryDto } from '../../../dto/categories/create-category.dto';
+import { ListCategoriesQueryDto } from '../../../dto/categories/list-categories-query.dto';
+import { UpdateCategoryDto } from '../../../dto/categories/update-category.dto';
+import { CategoriesService } from '../../../services/categories/admin/categories.service';
 
 @Controller('catalog/categories')
 @ApiTags('Catalog Categories')

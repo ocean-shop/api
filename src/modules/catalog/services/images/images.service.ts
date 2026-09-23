@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { ChangeProductImageSortDto } from '../../dto/images/change-product-image-sort.dto';
 import { ProductImage } from '../../entities/product-image.entity';
-import { ProductRepository } from '../../repositories/product/product.repository';
+import { ProductRepository } from '../../repositories/product/admin/product.repository';
 
 @Injectable()
 export class ImagesService {
