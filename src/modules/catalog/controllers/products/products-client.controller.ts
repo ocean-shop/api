@@ -1,7 +1,7 @@
 import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ProductsService } from '../../services/products/products.service';
-import { ListProductsQueryDto } from '../../dto/products/list-products-query.dto';
+import { ListCatalogProductsQueryDto } from '../../dto/products/list-catalog-products-query.dto';
 
 @Controller('catalog/products-client')
 @ApiTags('Catalog Products')
@@ -18,13 +18,16 @@ export class ProductsClientController {
   }
 
   @Get('by-category/:categoryId')
-  @ApiOperation({ summary: 'List products by category id' })
+  @ApiOperation({
+    summary:
+      'List active catalog products of a category with filters, sorting and pagination',
+  })
   @ApiParam({ name: 'categoryId', type: String, format: 'uuid' })
-  async listProductsByCategoryId(
+  async listCatalogProducts(
     @Param('categoryId', ParseUUIDPipe) categoryId: string,
-    @Query() query: ListProductsQueryDto,
+    @Query() query: ListCatalogProductsQueryDto,
   ) {
-    return this.productsService.listProductsByCategoryId(categoryId, query);
+    return this.productsService.listCatalogProducts(categoryId, query);
   }
 
   @Get('filters/by-category/:categoryId')

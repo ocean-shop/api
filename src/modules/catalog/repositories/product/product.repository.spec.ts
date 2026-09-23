@@ -5,7 +5,11 @@ import { In } from 'typeorm';
 import { ProductStatus } from '../../entities/enums/product.enum';
 import { ProductImage } from '../../entities/product-image.entity';
 import { Product } from '../../entities/product.entity';
-import { ProductSortBy, ProductSortOrder } from '../../models/product.models';
+import {
+  CatalogProductSort,
+  ProductSortBy,
+  ProductSortOrder,
+} from '../../models/product.models';
 import { ProductRepository } from './product.repository';
 
 describe('ProductRepository', () => {
@@ -23,6 +27,7 @@ describe('ProductRepository', () => {
       select: jest.fn().mockReturnThis(),
       addSelect: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
+      addOrderBy: jest.fn().mockReturnThis(),
       offset: jest.fn().mockReturnThis(),
       limit: jest.fn().mockReturnThis(),
       getCount: jest.fn(),
@@ -252,6 +257,139 @@ describe('ProductRepository', () => {
     expect(queryBuilder.andWhere).toHaveBeenCalledWith(
       'product.isPopular = :isPopular',
       { isPopular: true },
+    );
+  });
+
+  it('should find catalog products restricted to active status', async () => {
+    const products = [{ id: '1' }] as Product[];
+    queryBuilder.getCount.mockResolvedValue(1);
+    queryBuilder.getRawMany.mockResolvedValue([{ id: '1' }]);
+    typeOrmRepository.find.mockResolvedValue(products);
+
+    const result = await repository.findCatalogPaginated(
+      { categoryId: 'category-id' },
+      0,
+      20,
+    );
+
+    expect(queryBuilder.innerJoin).toHaveBeenCalledWith(
+      'product.categories',
+      'category',
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'category.id = :categoryId',
+      { categoryId: 'category-id' },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'product.status = :status',
+      { status: ProductStatus.ACTIVE },
+    );
+    expect(queryBuilder.orderBy).toHaveBeenCalledWith(
+      'product.createdAt',
+      'DESC',
+    );
+    expect(result).toEqual({ items: products, total: 1 });
+  });
+
+  it('should filter catalog products by availability and price range', async () => {
+    queryBuilder.getCount.mockResolvedValue(0);
+    queryBuilder.getRawMany.mockResolvedValue([]);
+
+    await repository.findCatalogPaginated(
+      {
+        categoryId: 'category-id',
+        available: true,
+        priceFrom: 60,
+        priceTo: 6000,
+      },
+      0,
+      20,
+    );
+
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'product.available = :available',
+      { available: true },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      expect.stringContaining('>= :priceFrom'),
+      { priceFrom: 60 },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      expect.stringContaining('<= :priceTo'),
+      { priceTo: 6000 },
+    );
+  });
+
+  it('should filter catalog products by each attribute group', async () => {
+    queryBuilder.getCount.mockResolvedValue(0);
+    queryBuilder.getRawMany.mockResolvedValue([]);
+
+    await repository.findCatalogPaginated(
+      {
+        categoryId: 'category-id',
+        attributes: [
+          { name: 'color', values: ['Red', 'Blue'] },
+          { name: 'screen', values: ['6'] },
+        ],
+      },
+      0,
+      20,
+    );
+
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      expect.stringContaining(':attributeName0'),
+      { attributeName0: 'color', attributeValues0: ['Red', 'Blue'] },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      expect.stringContaining(':attributeName1'),
+      { attributeName1: 'screen', attributeValues1: ['6'] },
+    );
+  });
+
+  it('should sort catalog products by popularity', async () => {
+    queryBuilder.getCount.mockResolvedValue(0);
+    queryBuilder.getRawMany.mockResolvedValue([]);
+
+    await repository.findCatalogPaginated(
+      { categoryId: 'category-id', sort: CatalogProductSort.POPULAR },
+      0,
+      20,
+    );
+
+    expect(queryBuilder.orderBy).toHaveBeenCalledWith(
+      'product.isPopular',
+      'DESC',
+    );
+    expect(queryBuilder.addOrderBy).toHaveBeenCalledWith(
+      'product.createdAt',
+      'DESC',
+    );
+  });
+
+  it('should sort catalog products by price', async () => {
+    queryBuilder.getCount.mockResolvedValue(0);
+    queryBuilder.getRawMany.mockResolvedValue([]);
+
+    await repository.findCatalogPaginated(
+      { categoryId: 'category-id', sort: CatalogProductSort.CHEAPER },
+      0,
+      20,
+    );
+
+    expect(queryBuilder.orderBy).toHaveBeenCalledWith(
+      expect.stringContaining('MIN(catalog_variation.price)'),
+      'ASC',
+    );
+
+    await repository.findCatalogPaginated(
+      { categoryId: 'category-id', sort: CatalogProductSort.EXPENSIVE },
+      0,
+      20,
+    );
+
+    expect(queryBuilder.orderBy).toHaveBeenCalledWith(
+      expect.stringContaining('MIN(catalog_variation.price)'),
+      'DESC',
     );
   });
 

@@ -6,6 +6,7 @@ import { AssignProductImagesDto } from '../../dto/products/assign-product-images
 import { AssignProductTagDto } from '../../dto/products/assign-product-tag.dto';
 import { ProductVariationDto } from '../../dto/products/product-variation.dto';
 import { CreateProductDto } from '../../dto/products/create-product.dto';
+import { ListCatalogProductsQueryDto } from '../../dto/products/list-catalog-products-query.dto';
 import { ListProductsQueryDto } from '../../dto/products/list-products-query.dto';
 import { UpdateProductDto } from '../../dto/products/update-product.dto';
 import { ProductStatus, ProductType } from '../../entities/enums/product.enum';
@@ -78,6 +79,31 @@ export class ProductsService {
         query.sortOrder,
         query.isPopular,
       );
+
+    return this.toListResponse(items, total, page, limit);
+  }
+
+  async listCatalogProducts(
+    categoryId: string,
+    query: ListCatalogProductsQueryDto,
+  ): Promise<ProductListResponse> {
+    await this.categoryRepository.findById(categoryId);
+    this.assertPriceRangeValid(query.priceFrom, query.priceTo);
+
+    const { page, limit, skip } = this.resolvePagination(query);
+
+    const { items, total } = await this.productRepository.findCatalogPaginated(
+      {
+        categoryId,
+        attributes: query.attributes,
+        priceFrom: query.priceFrom,
+        priceTo: query.priceTo,
+        available: query.available,
+        sort: query.sort,
+      },
+      skip,
+      limit,
+    );
 
     return this.toListResponse(items, total, page, limit);
   }
@@ -340,7 +366,7 @@ export class ProductsService {
     };
   }
 
-  private resolvePagination(query: ListProductsQueryDto): {
+  private resolvePagination(query: { page?: number; limit?: number }): {
     page: number;
     limit: number;
     skip: number;
@@ -406,6 +432,18 @@ export class ProductsService {
     if (existing && existing.id !== excludeProductId) {
       throw new BadRequestException(
         'SKU продукту вже існує для цього магазину',
+      );
+    }
+  }
+
+  private assertPriceRangeValid(priceFrom?: number, priceTo?: number): void {
+    if (
+      priceFrom !== undefined &&
+      priceTo !== undefined &&
+      priceFrom > priceTo
+    ) {
+      throw new BadRequestException(
+        'priceFrom має бути меншим або дорівнювати priceTo',
       );
     }
   }

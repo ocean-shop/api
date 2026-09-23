@@ -2,7 +2,11 @@ import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { QueryFailedError } from 'typeorm';
 import { POPULAR_PRODUCTS_LIMIT } from '../../constants/pagination.constants';
-import { ProductSortBy, ProductSortOrder } from '../../models/product.models';
+import {
+  CatalogProductSort,
+  ProductSortBy,
+  ProductSortOrder,
+} from '../../models/product.models';
 import { ProductStatus, ProductType } from '../../entities/enums/product.enum';
 import { AttributeRepository } from '../../repositories/attribute/attribute.repository';
 import { CategoryRepository } from '../../repositories/category/category.repository';
@@ -28,6 +32,7 @@ describe('ProductsService', () => {
       findAllPaginated: jest.fn(),
       findPopular: jest.fn(),
       findByCategoryIdPaginated: jest.fn(),
+      findCatalogPaginated: jest.fn(),
       findByTagIdPaginated: jest.fn(),
       findByAttributeTypeIdPaginated: jest.fn(),
       findById: jest.fn(),
@@ -191,6 +196,97 @@ describe('ProductsService', () => {
       shopId,
     );
     expect(result).toEqual(popularProducts);
+  });
+
+  it('should list catalog products with filters, sorting and pagination', async () => {
+    jest.mocked(categoryRepository.findById).mockResolvedValue({
+      id: 'category-id',
+    } as any);
+    jest
+      .mocked(productRepository.findCatalogPaginated)
+      .mockResolvedValue({ items: [{ id: '1' }] as any, total: 1 });
+
+    const result = await service.listCatalogProducts('category-id', {
+      page: 2,
+      limit: 20,
+      attributes: [
+        { name: 'color', values: ['Red'] },
+        { name: 'screen', values: ['6'] },
+      ],
+      priceFrom: 60,
+      priceTo: 6000,
+      available: true,
+      sort: CatalogProductSort.CHEAPER,
+    });
+
+    expect(categoryRepository.findById).toHaveBeenCalledWith('category-id');
+    expect(productRepository.findCatalogPaginated).toHaveBeenCalledWith(
+      {
+        categoryId: 'category-id',
+        attributes: [
+          { name: 'color', values: ['Red'] },
+          { name: 'screen', values: ['6'] },
+        ],
+        priceFrom: 60,
+        priceTo: 6000,
+        available: true,
+        sort: CatalogProductSort.CHEAPER,
+      },
+      20,
+      20,
+    );
+    expect(result).toEqual({
+      items: [{ id: '1' }],
+      total: 1,
+      page: 2,
+      limit: 20,
+      totalPages: 1,
+    });
+  });
+
+  it('should list catalog products without filters', async () => {
+    jest.mocked(categoryRepository.findById).mockResolvedValue({
+      id: 'category-id',
+    } as any);
+    jest
+      .mocked(productRepository.findCatalogPaginated)
+      .mockResolvedValue({ items: [], total: 0 });
+
+    const result = await service.listCatalogProducts('category-id', {
+      page: 1,
+      limit: 20,
+    });
+
+    expect(productRepository.findCatalogPaginated).toHaveBeenCalledWith(
+      {
+        categoryId: 'category-id',
+        attributes: undefined,
+        priceFrom: undefined,
+        priceTo: undefined,
+        available: undefined,
+        sort: undefined,
+      },
+      0,
+      20,
+    );
+    expect(result.totalPages).toBe(0);
+  });
+
+  it('should reject catalog price range when priceFrom is greater than priceTo', async () => {
+    jest.mocked(categoryRepository.findById).mockResolvedValue({
+      id: 'category-id',
+    } as any);
+
+    await expect(
+      service.listCatalogProducts('category-id', {
+        page: 1,
+        limit: 20,
+        priceFrom: 6000,
+        priceTo: 60,
+      }),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(productRepository.findCatalogPaginated).not.toHaveBeenCalled();
   });
 
   it('should list products by category id', async () => {

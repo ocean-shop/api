@@ -22,9 +22,30 @@ export type ProductFilters = {
   sortOrder?: ProductSortOrder;
 };
 
+export enum CatalogProductSort {
+  POPULAR = 'popular',
+  CHEAPER = 'cheaper',
+  EXPENSIVE = 'expensive',
+  NEW = 'new',
+}
+
 export type CatalogFilter = {
   name: string;
   values: string[];
+};
+
+export type CatalogProductFilters = {
+  categoryId: string;
+  attributes?: CatalogFilter[];
+  priceFrom?: number;
+  priceTo?: number;
+  available?: boolean;
+  sort?: CatalogProductSort;
+};
+
+export type ProductOrdering = {
+  expression: string;
+  direction: 'ASC' | 'DESC';
 };
 
 export type ProductListResponse = {
