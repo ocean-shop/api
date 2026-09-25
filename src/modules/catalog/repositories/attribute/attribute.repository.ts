@@ -3,6 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Attribute } from '../../entities/attribute.entity';
 import { ProductStatus } from '../../entities/enums/product.enum';
+import {
+  CATEGORY_SUBTREE_CTE,
+  CATEGORY_SUBTREE_IDS,
+} from '../../constants/category-query.constants';
 
 @Injectable()
 export class AttributeRepository {
@@ -56,18 +60,19 @@ export class AttributeRepository {
       .distinct(true)
       .where(
         `attribute.id IN (
+          ${CATEGORY_SUBTREE_CTE}
           SELECT pa.attribute_type_id
           FROM products_categories pc
           INNER JOIN products p ON p.id = pc.product_id
           INNER JOIN products_attributes pa ON pa.product_id = p.id
-          WHERE pc.category_id = :categoryId AND p.status = :status
+          WHERE pc.category_id IN (${CATEGORY_SUBTREE_IDS}) AND p.status = :status
           UNION
           SELECT va.attribute_type_id
           FROM products_categories pc
           INNER JOIN products p ON p.id = pc.product_id
           INNER JOIN product_variations pv ON pv.product_id = p.id
           INNER JOIN variations_attributes va ON va.variation_id = pv.id
-          WHERE pc.category_id = :categoryId AND p.status = :status
+          WHERE pc.category_id IN (${CATEGORY_SUBTREE_IDS}) AND p.status = :status
         )`,
         { categoryId, status: ProductStatus.ACTIVE },
       )

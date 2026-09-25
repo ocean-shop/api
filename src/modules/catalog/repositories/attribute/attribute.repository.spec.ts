@@ -161,10 +161,17 @@ describe('AttributeRepository', () => {
     const result = await repository.findCategoryFilterOptions('category-id');
 
     expect(queryBuilder.distinct).toHaveBeenCalledWith(true);
-    expect(queryBuilder.where).toHaveBeenCalledWith(expect.any(String), {
-      categoryId: 'category-id',
-      status: ProductStatus.ACTIVE,
-    });
+    expect(queryBuilder.where).toHaveBeenCalledWith(
+      expect.stringContaining('WITH RECURSIVE category_subtree'),
+      {
+        categoryId: 'category-id',
+        status: ProductStatus.ACTIVE,
+      },
+    );
+    expect(queryBuilder.where).toHaveBeenCalledWith(
+      expect.stringContaining('pc.category_id IN (SELECT id FROM'),
+      expect.anything(),
+    );
     expect(result).toEqual(options);
   });
 

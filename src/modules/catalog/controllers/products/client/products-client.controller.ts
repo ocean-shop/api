@@ -20,7 +20,7 @@ export class ProductsClientController {
   @Get('by-category/:categoryId')
   @ApiOperation({
     summary:
-      'List active catalog products of a category with filters, sorting and pagination',
+      'List active catalog products of a category and its subcategories with filters, sorting and pagination',
   })
   @ApiParam({ name: 'categoryId', type: String, format: 'uuid' })
   async listCatalogProducts(
@@ -32,7 +32,8 @@ export class ProductsClientController {
 
   @Get('filters/by-category/:categoryId')
   @ApiOperation({
-    summary: 'List catalog filters available for products of a category',
+    summary:
+      'List catalog filters available for products of a category and its subcategories',
   })
   @ApiParam({ name: 'categoryId', type: String, format: 'uuid' })
   async getFiltersByCategoryId(

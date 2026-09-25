@@ -70,7 +70,7 @@ describe('ProductClientRepository', () => {
       'category',
     );
     expect(queryBuilder.andWhere).toHaveBeenCalledWith(
-      'category.id = :categoryId',
+      expect.stringContaining('category.id IN ('),
       { categoryId: 'category-id' },
     );
     expect(queryBuilder.andWhere).toHaveBeenCalledWith(
@@ -94,6 +94,20 @@ describe('ProductClientRepository', () => {
       relationLoadStrategy: 'query',
     });
     expect(result).toEqual({ items: products, total: 1 });
+  });
+
+  it('should include products of nested categories', async () => {
+    queryBuilder.getCount.mockResolvedValue(0);
+    queryBuilder.getRawMany.mockResolvedValue([]);
+
+    await repository.findCatalogPaginated({ categoryId: 'parent-id' }, 0, 20);
+
+    const [condition] = queryBuilder.andWhere.mock.calls.find(
+      ([sql]: [string]) => sql.includes('category.id IN ('),
+    );
+
+    expect(condition).toContain('WITH RECURSIVE category_subtree');
+    expect(condition).toContain('child.parent_id = parent.id');
   });
 
   it('should filter catalog products by availability and price range', async () => {

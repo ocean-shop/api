@@ -9,6 +9,7 @@ import {
   CatalogProductSort,
   ProductOrdering,
 } from '../../../models/product.models';
+import { CATEGORY_SUBTREE_IDS_SUBQUERY } from '../../../constants/category-query.constants';
 import { EFFECTIVE_PRICE_EXPRESSION } from '../../../constants/product-query.constants';
 import { ProductQueryRepository } from '../common/product-query.repository';
 
@@ -30,7 +31,7 @@ export class ProductClientRepository extends ProductQueryRepository {
       (query) => {
         query
           .innerJoin('product.categories', 'category')
-          .andWhere('category.id = :categoryId', {
+          .andWhere(`category.id IN (${CATEGORY_SUBTREE_IDS_SUBQUERY})`, {
             categoryId: filters.categoryId,
           })
           .andWhere('product.status = :status', {
