@@ -46,6 +46,7 @@
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.4.2",
     "handlebars": "^4.7.9",
+    "ioredis": "^5.10.1",
     "pg": "^8.21.0",
     "reflect-metadata": "^0.2.2",
     "resend": "^6.24.0",

@@ -1,5 +1,10 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import {
+  CacheDescriptor,
+  CacheService,
+} from '../../../../../core/cache/cache.service';
+import { CACHE_SCOPE_ALL } from '../../../../../core/cache/constants/cache.constants';
 import { POPULAR_PRODUCTS_LIMIT } from '../../../constants/pagination.constants';
 import { CatalogProductSort } from '../../../models/product.models';
 import { AttributeRepository } from '../../../repositories/attribute/attribute.repository';
@@ -12,6 +17,7 @@ describe('ProductsClientService', () => {
   let productClientRepository: ProductClientRepository;
   let categoryRepository: CategoryRepository;
   let attributeRepository: AttributeRepository;
+  let cacheService: CacheService;
 
   beforeEach(async () => {
     const productClientRepositoryMock = {
@@ -27,6 +33,16 @@ describe('ProductsClientService', () => {
       findCategoryFilterOptions: jest.fn(),
     };
 
+    // Stands in for a permanent cache miss, so the existing expectations keep
+    // describing what the repositories are asked for.
+    const cacheServiceMock = {
+      wrap: jest.fn(
+        <TValue>(_descriptor: CacheDescriptor, load: () => Promise<TValue>) =>
+          load(),
+      ),
+      invalidate: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ProductsClientService,
@@ -36,6 +52,7 @@ describe('ProductsClientService', () => {
         },
         { provide: CategoryRepository, useValue: categoryRepositoryMock },
         { provide: AttributeRepository, useValue: attributeRepositoryMock },
+        { provide: CacheService, useValue: cacheServiceMock },
       ],
     }).compile();
 
@@ -45,6 +62,7 @@ describe('ProductsClientService', () => {
     );
     categoryRepository = module.get<CategoryRepository>(CategoryRepository);
     attributeRepository = module.get<AttributeRepository>(AttributeRepository);
+    cacheService = module.get<CacheService>(CacheService);
   });
 
   it('should be defined', () => {
@@ -236,5 +254,105 @@ describe('ProductsClientService', () => {
     expect(
       attributeRepository.findCategoryFilterOptions,
     ).not.toHaveBeenCalled();
+  });
+
+  it('should cache popular products under the shop scope', async () => {
+    jest.mocked(productClientRepository.findPopular).mockResolvedValue([]);
+
+    await service.listPopularProducts('shop-id');
+
+    expect(cacheService.wrap).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scope: 'shop-id',
+        segments: ['popular', 'shop-id'],
+      }),
+      expect.any(Function),
+    );
+  });
+
+  it('should cache popular products of all shops under the cross-shop scope', async () => {
+    jest.mocked(productClientRepository.findPopular).mockResolvedValue([]);
+
+    await service.listPopularProducts();
+
+    expect(cacheService.wrap).toHaveBeenCalledWith(
+      expect.objectContaining({ scope: CACHE_SCOPE_ALL }),
+      expect.any(Function),
+    );
+  });
+
+  it('should cache category filters under the shop scope', async () => {
+    jest
+      .mocked(categoryRepository.findById)
+      .mockResolvedValue({ shopId: 'shop-id' } as any);
+    jest
+      .mocked(attributeRepository.findCategoryFilterOptions)
+      .mockResolvedValue([]);
+
+    await service.getFiltersByCategoryId('category-id', 'shop-id');
+
+    expect(cacheService.wrap).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scope: 'shop-id',
+        segments: ['filters', 'category-id'],
+      }),
+      expect.any(Function),
+    );
+  });
+
+  it('should reuse one catalog cache key for equivalent attribute filters', async () => {
+    jest
+      .mocked(productClientRepository.findCatalogPaginated)
+      .mockResolvedValue({ items: [], total: 0 });
+
+    await service.listCatalogProducts('category-id', {
+      shopId: 'shop-id',
+      page: 1,
+      limit: 20,
+      attributes: [
+        { name: 'screen', values: ['6'] },
+        { name: 'color', values: ['Red', 'Blue'] },
+      ],
+    });
+
+    await service.listCatalogProducts('category-id', {
+      shopId: 'shop-id',
+      page: 1,
+      limit: 20,
+      attributes: [
+        { name: 'color', values: ['Blue', 'Red'] },
+        { name: 'screen', values: ['6'] },
+      ],
+    });
+
+    const [first, second] = jest
+      .mocked(cacheService.wrap)
+      .mock.calls.map(([descriptor]) => descriptor.segments);
+
+    expect(first).toEqual(second);
+  });
+
+  it('should cache different catalog pages under different keys', async () => {
+    jest
+      .mocked(productClientRepository.findCatalogPaginated)
+      .mockResolvedValue({ items: [], total: 0 });
+
+    await service.listCatalogProducts('category-id', {
+      shopId: 'shop-id',
+      page: 1,
+      limit: 20,
+    });
+
+    await service.listCatalogProducts('category-id', {
+      shopId: 'shop-id',
+      page: 2,
+      limit: 20,
+    });
+
+    const [first, second] = jest
+      .mocked(cacheService.wrap)
+      .mock.calls.map(([descriptor]) => descriptor.segments);
+
+    expect(first).not.toEqual(second);
   });
 });

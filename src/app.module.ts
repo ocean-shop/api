@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { CacheModule } from './core/cache/cache.module';
 import { MailModule } from './core/mail/mail.module';
 import { QueueModule } from './core/queue/queue.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
@@ -27,6 +28,7 @@ import { UserModule } from './modules/user/user.module';
       }),
       inject: [ConfigService],
     }),
+    CacheModule.register(),
     MailModule,
     QueueModule.register(),
     CatalogModule,

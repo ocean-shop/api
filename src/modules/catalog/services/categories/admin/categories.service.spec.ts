@@ -1,12 +1,14 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { QueryFailedError } from 'typeorm';
+import { CacheService } from '../../../../../core/cache/cache.service';
 import { CategoryRepository } from '../../../repositories/category/admin/category.repository';
 import { CategoriesService } from './categories.service';
 
 describe('CategoriesService', () => {
   let service: CategoriesService;
   let categoryRepository: CategoryRepository;
+  let cacheService: CacheService;
 
   beforeEach(async () => {
     const categoryRepositoryMock = {
@@ -24,15 +26,19 @@ describe('CategoriesService', () => {
       removeByIds: jest.fn(),
     };
 
+    const cacheServiceMock = { wrap: jest.fn(), invalidate: jest.fn() };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CategoriesService,
         { provide: CategoryRepository, useValue: categoryRepositoryMock },
+        { provide: CacheService, useValue: cacheServiceMock },
       ],
     }).compile();
 
     service = module.get<CategoriesService>(CategoriesService);
     categoryRepository = module.get<CategoryRepository>(CategoryRepository);
+    cacheService = module.get<CacheService>(CacheService);
   });
 
   it('should be defined', () => {
@@ -439,5 +445,43 @@ describe('CategoriesService', () => {
       '4',
       '3',
     ]);
+  });
+
+  it('should drop the cached catalog of the shop when a category is saved', async () => {
+    const category = { id: '1', shopId: 'shop-id' } as any;
+    jest.mocked(categoryRepository.create).mockReturnValue(category);
+
+    await service.createCategory({
+      shopId: 'shop-id',
+      name: 'Accessories',
+      slug: 'accessories',
+    });
+
+    expect(cacheService.invalidate).toHaveBeenCalledWith('shop-id');
+  });
+
+  it('should drop the cached catalog of the shop when a category is removed', async () => {
+    jest
+      .mocked(categoryRepository.findById)
+      .mockResolvedValue({ id: '1', shopId: 'shop-id' } as any);
+    jest.mocked(categoryRepository.findByParentId).mockResolvedValue([]);
+    jest.mocked(categoryRepository.removeByIds).mockResolvedValue(undefined);
+
+    await service.removeCategory('1');
+
+    expect(cacheService.invalidate).toHaveBeenCalledWith('shop-id');
+  });
+
+  it('should keep the cache intact when only the category order changes', async () => {
+    const category = { id: '1', shopId: 'shop-id', sort: 1 } as any;
+    jest.mocked(categoryRepository.findById).mockResolvedValue(category);
+    jest
+      .mocked(categoryRepository.findAdjacentSibling)
+      .mockResolvedValue({ id: '2', shopId: 'shop-id', sort: 0 } as any);
+    jest.mocked(categoryRepository.swapSort).mockResolvedValue(category);
+
+    await service.changeCategorySort('1', { direction: 'up' });
+
+    expect(cacheService.invalidate).not.toHaveBeenCalled();
   });
 });

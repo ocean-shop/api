@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { QueryFailedError } from 'typeorm';
+import { CacheService } from '../../../../core/cache/cache.service';
 import { CreateAttributeDto } from '../../dto/attributes/create-attribute.dto';
 import { ListAttributesQueryDto } from '../../dto/attributes/list-attributes-query.dto';
 import { Attribute } from '../../entities/attribute.entity';
@@ -13,7 +14,10 @@ export class AttributesService {
     'attribute_types_shop_id_name_value_key',
   ];
 
-  constructor(private readonly attributeRepository: AttributeRepository) {}
+  constructor(
+    private readonly attributeRepository: AttributeRepository,
+    private readonly cacheService: CacheService,
+  ) {}
 
   async getAllAttributes(
     query: ListAttributesQueryDto,
@@ -46,7 +50,9 @@ export class AttributesService {
     });
 
     try {
-      return await this.attributeRepository.save(attribute);
+      const saved = await this.attributeRepository.save(attribute);
+      await this.cacheService.invalidate(dto.shopId);
+      return saved;
     } catch (error) {
       if (this.isDuplicateAttributeError(error)) {
         throw new BadRequestException(
@@ -61,6 +67,7 @@ export class AttributesService {
   async removeAttribute(id: string): Promise<{ message: string }> {
     const attribute = await this.attributeRepository.findById(id);
     await this.attributeRepository.remove(attribute);
+    await this.cacheService.invalidate(attribute.shopId);
     return { message: 'Атрибут успішно видалено.' };
   }
 

@@ -1,12 +1,14 @@
 import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { QueryFailedError } from 'typeorm';
+import { CacheService } from '../../../../core/cache/cache.service';
 import { AttributeRepository } from '../../repositories/attribute/attribute.repository';
 import { AttributesService } from './attributes.service';
 
 describe('AttributesService', () => {
   let service: AttributesService;
   let attributeRepository: AttributeRepository;
+  let cacheService: CacheService;
 
   beforeEach(async () => {
     const attributeRepositoryMock = {
@@ -17,15 +19,19 @@ describe('AttributesService', () => {
       remove: jest.fn(),
     };
 
+    const cacheServiceMock = { wrap: jest.fn(), invalidate: jest.fn() };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AttributesService,
         { provide: AttributeRepository, useValue: attributeRepositoryMock },
+        { provide: CacheService, useValue: cacheServiceMock },
       ],
     }).compile();
 
     service = module.get<AttributesService>(AttributesService);
     attributeRepository = module.get<AttributeRepository>(AttributeRepository);
+    cacheService = module.get<CacheService>(CacheService);
   });
 
   it('should be defined', () => {
@@ -177,5 +183,47 @@ describe('AttributesService', () => {
     expect(attributeRepository.findById).toHaveBeenCalledWith('1');
     expect(attributeRepository.remove).toHaveBeenCalledWith(attribute);
     expect(result).toEqual({ message: 'Атрибут успішно видалено.' });
+  });
+
+  it('should drop the cached catalog of the shop when an attribute is created', async () => {
+    const payload = { id: '1', shopId: 'shop-id' } as any;
+    jest.mocked(attributeRepository.create).mockReturnValue(payload);
+
+    await service.createAttribute({
+      shopId: 'shop-id',
+      name: 'Color',
+      value: 'Red',
+    });
+
+    expect(cacheService.invalidate).toHaveBeenCalledWith('shop-id');
+  });
+
+  it('should drop the cached catalog of the shop when an attribute is removed', async () => {
+    const attribute = { id: '1', shopId: 'shop-id' } as any;
+    jest.mocked(attributeRepository.findById).mockResolvedValue(attribute);
+    jest.mocked(attributeRepository.remove).mockResolvedValue(attribute);
+
+    await service.removeAttribute('1');
+
+    expect(cacheService.invalidate).toHaveBeenCalledWith('shop-id');
+  });
+
+  it('should keep the cache intact when creating an attribute fails', async () => {
+    jest
+      .mocked(attributeRepository.create)
+      .mockReturnValue({ id: '1', shopId: 'shop-id' } as any);
+    jest
+      .mocked(attributeRepository.save)
+      .mockRejectedValue(new Error('constraint'));
+
+    await expect(
+      service.createAttribute({
+        shopId: 'shop-id',
+        name: 'Color',
+        value: 'Red',
+      }),
+    ).rejects.toThrow('constraint');
+
+    expect(cacheService.invalidate).not.toHaveBeenCalled();
   });
 });

@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { CacheService } from '../../../../../core/cache/cache.service';
 import { matchesQueryFailedError } from '../../../../../core/db/helpers/query-failed-error.helpers';
 import { Category } from '../../../entities/category.entity';
 import { CategoryListResponse } from '../../../models/category.models';
@@ -23,7 +24,10 @@ export class CategoriesService {
     'uq_categories_shop_parent_slug',
   ];
 
-  constructor(private readonly categoryRepository: CategoryRepository) {}
+  constructor(
+    private readonly categoryRepository: CategoryRepository,
+    private readonly cacheService: CacheService,
+  ) {}
 
   async listCategories(
     query: ListCategoriesQueryDto,
@@ -131,6 +135,8 @@ export class CategoriesService {
       );
     }
 
+    // No cache bump: `sort` orders the admin category tree and never reaches a
+    // cached catalog payload, so reordering would only throw the cache away.
     return this.categoryRepository.swapSort(category, sibling);
   }
 
@@ -138,6 +144,7 @@ export class CategoriesService {
     const category = await this.categoryRepository.findById(id);
     const descendantIds = await this.collectDescendantIds(category.id);
     await this.categoryRepository.removeByIds([category.id, ...descendantIds]);
+    await this.cacheService.invalidate(category.shopId);
     return { message: 'Категорію успішно видалено' };
   }
 
@@ -167,7 +174,11 @@ export class CategoriesService {
 
   private async saveCategory(category: Category): Promise<Category> {
     try {
-      return await this.categoryRepository.save(category);
+      const saved = await this.categoryRepository.save(category);
+      // Re-parenting a category rewrites the subtree that the catalog and the
+      // filter queries walk, so every cached page for the shop is now suspect.
+      await this.cacheService.invalidate(saved.shopId);
+      return saved;
     } catch (error) {
       if (this.isDuplicateSlugError(error)) {
         throw new BadRequestException(

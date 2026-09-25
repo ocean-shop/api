@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { CacheService } from '../../../../../core/cache/cache.service';
 import { matchesQueryFailedError } from '../../../../../core/db/helpers/query-failed-error.helpers';
 import { AssignProductAttributeDto } from '../../../dto/attributes/assign-product-attribute.dto';
 import { AssignProductCategoryDto } from '../../../dto/products/assign-product-category.dto';
@@ -37,6 +38,7 @@ export class ProductsService {
     private readonly tagRepository: TagRepository,
     private readonly attributeRepository: AttributeRepository,
     private readonly productImagesCloudinaryService: ProductImagesCloudinaryService,
+    private readonly cacheService: CacheService,
   ) {}
 
   async listProducts(
@@ -150,6 +152,7 @@ export class ProductsService {
 
     try {
       const saved = await this.productRepository.save(product);
+      await this.cacheService.invalidate(dto.shopId);
       return this.productRepository.findById(saved.id);
     } catch (error) {
       this.rethrowConstraintError(error);
@@ -207,6 +210,7 @@ export class ProductsService {
 
     try {
       await this.productRepository.save(product);
+      await this.cacheService.invalidate(product.shopId);
       return this.productRepository.findById(id);
     } catch (error) {
       this.rethrowConstraintError(error);
@@ -216,6 +220,7 @@ export class ProductsService {
   async removeProduct(id: string): Promise<{ message: string }> {
     const product = await this.productRepository.findById(id);
     await this.productRepository.remove(product);
+    await this.cacheService.invalidate(product.shopId);
     return { message: 'Продукт успішно видалено' };
   }
 
@@ -264,7 +269,7 @@ export class ProductsService {
     id: string,
     dto: AssignProductImagesDto,
   ): Promise<Product> {
-    await this.productRepository.findById(id);
+    const product = await this.productRepository.findById(id);
 
     const uploadedImages = await Promise.all(
       dto.images.map(async (image, index) => ({
@@ -274,6 +279,7 @@ export class ProductsService {
     );
 
     await this.productRepository.replaceImages(id, uploadedImages);
+    await this.cacheService.invalidate(product.shopId);
 
     return this.productRepository.findById(id);
   }
@@ -323,6 +329,7 @@ export class ProductsService {
     if (assign && !alreadyAssigned) {
       product[relationName] = [...currentRelations, relationEntity] as never;
       await this.productRepository.save(product);
+      await this.cacheService.invalidate(product.shopId);
     }
 
     if (!assign && alreadyAssigned) {
@@ -330,6 +337,7 @@ export class ProductsService {
         (item) => item.id !== relationEntity.id,
       ) as never;
       await this.productRepository.save(product);
+      await this.cacheService.invalidate(product.shopId);
     }
 
     return this.productRepository.findById(productId);
@@ -423,6 +431,10 @@ export class ProductsService {
         validatedAttributes,
         uploadedImages,
       );
+
+      // Variation prices feed the catalog's effective price, so they change
+      // both filtering and sorting of the cached pages.
+      await this.cacheService.invalidate(product.shopId);
 
       return this.productRepository.findById(productId);
     } catch (error) {

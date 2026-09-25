@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { QueryFailedError } from 'typeorm';
+import { CacheService } from '../../../../../core/cache/cache.service';
 import {
   ProductSortBy,
   ProductSortOrder,
@@ -27,6 +28,7 @@ describe('ProductsService', () => {
   let tagRepository: TagRepository;
   let attributeRepository: AttributeRepository;
   let productImagesCloudinaryService: ProductImagesCloudinaryService;
+  let cacheService: CacheService;
 
   beforeEach(async () => {
     const productRepositoryMock = {
@@ -70,6 +72,8 @@ describe('ProductsService', () => {
       uploadBase64Image: jest.fn(),
     };
 
+    const cacheServiceMock = { wrap: jest.fn(), invalidate: jest.fn() };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ProductsService,
@@ -86,6 +90,7 @@ describe('ProductsService', () => {
           provide: ProductImagesCloudinaryService,
           useValue: productImagesCloudinaryServiceMock,
         },
+        { provide: CacheService, useValue: cacheServiceMock },
       ],
     }).compile();
 
@@ -101,6 +106,7 @@ describe('ProductsService', () => {
     productImagesCloudinaryService = module.get<ProductImagesCloudinaryService>(
       ProductImagesCloudinaryService,
     );
+    cacheService = module.get<CacheService>(CacheService);
   });
 
   it('should be defined', () => {
@@ -1269,5 +1275,93 @@ describe('ProductsService', () => {
     ).rejects.toThrow(BadRequestException);
 
     expect(productVariationRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('should drop the cached catalog of the shop when a product is created', async () => {
+    const product = { id: '1', shopId: 'shop-id' } as any;
+    jest.mocked(shopRepository.findById).mockResolvedValue({} as any);
+    jest.mocked(productRepository.create).mockReturnValue(product);
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+
+    await service.createProduct({ shopId: 'shop-id', name: 'Iphone X' });
+
+    expect(cacheService.invalidate).toHaveBeenCalledWith('shop-id');
+  });
+
+  it('should drop the cached catalog of the shop when a product is updated', async () => {
+    const product = { id: '1', shopId: 'shop-id', price: '10.00' } as any;
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+
+    await service.updateProduct('1', { name: 'Iphone XS' });
+
+    expect(cacheService.invalidate).toHaveBeenCalledWith('shop-id');
+  });
+
+  it('should drop the cached catalog of the shop when a product is removed', async () => {
+    const product = { id: '1', shopId: 'shop-id' } as any;
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+    jest.mocked(productRepository.remove).mockResolvedValue(product);
+
+    await service.removeProduct('1');
+
+    expect(cacheService.invalidate).toHaveBeenCalledWith('shop-id');
+  });
+
+  it('should drop the cached catalog of the shop when images are replaced', async () => {
+    const product = { id: '1', shopId: 'shop-id' } as any;
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+
+    await service.assignImages('1', {
+      images: [{ image: 'https://cdn.example.com/a.png', sort: 0 }],
+    });
+
+    expect(cacheService.invalidate).toHaveBeenCalledWith('shop-id');
+  });
+
+  it('should drop the cached catalog of the shop when a category is assigned', async () => {
+    const product = { id: '1', shopId: 'shop-id', categories: [] } as any;
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+    jest
+      .mocked(categoryRepository.findById)
+      .mockResolvedValue({ id: 'category-id', shopId: 'shop-id' } as any);
+
+    await service.assignCategory('1', {
+      categoryId: 'category-id',
+      assign: true,
+    });
+
+    expect(cacheService.invalidate).toHaveBeenCalledWith('shop-id');
+  });
+
+  it('should keep the cache intact when a category assignment is a no-op', async () => {
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      categories: [{ id: 'category-id' }],
+    } as any;
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+    jest
+      .mocked(categoryRepository.findById)
+      .mockResolvedValue({ id: 'category-id', shopId: 'shop-id' } as any);
+
+    await service.assignCategory('1', {
+      categoryId: 'category-id',
+      assign: true,
+    });
+
+    expect(cacheService.invalidate).not.toHaveBeenCalled();
+  });
+
+  it('should keep the cache intact when updating a product fails', async () => {
+    jest
+      .mocked(productRepository.findById)
+      .mockResolvedValue({ id: '1', shopId: 'shop-id', price: '10.00' } as any);
+    jest.mocked(productRepository.save).mockRejectedValue(new Error('boom'));
+
+    await expect(
+      service.updateProduct('1', { name: 'Iphone XS' }),
+    ).rejects.toThrow('boom');
+
+    expect(cacheService.invalidate).not.toHaveBeenCalled();
   });
 });
