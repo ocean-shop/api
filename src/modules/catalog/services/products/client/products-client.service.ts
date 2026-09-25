@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { POPULAR_PRODUCTS_LIMIT } from '../../../constants/pagination.constants';
 import { ListCatalogProductsQueryDto } from '../../../dto/products/list-catalog-products-query.dto';
 import { Product } from '../../../entities/product.entity';
@@ -42,6 +46,7 @@ export class ProductsClientService {
     const { items, total } =
       await this.productClientRepository.findCatalogPaginated(
         {
+          shopId: query.shopId,
           categoryId,
           attributes: query.attributes,
           priceFrom: query.priceFrom,
@@ -56,8 +61,17 @@ export class ProductsClientService {
     return toListResponse(items, total, page, limit);
   }
 
-  async getFiltersByCategoryId(categoryId: string): Promise<CatalogFilter[]> {
-    await this.categoryRepository.findById(categoryId);
+  async getFiltersByCategoryId(
+    categoryId: string,
+    shopId: string,
+  ): Promise<CatalogFilter[]> {
+    const category = await this.categoryRepository.findById(categoryId);
+
+    // A category of another shop is treated as missing rather than forbidden:
+    // the storefront has no business knowing it exists.
+    if (category.shopId !== shopId) {
+      throw new NotFoundException('Категорію не знайдено');
+    }
 
     const options =
       await this.attributeRepository.findCategoryFilterOptions(categoryId);

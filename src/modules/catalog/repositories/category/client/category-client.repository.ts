@@ -21,4 +21,11 @@ export class CategoryClientRepository extends CategoryQueryRepository {
   ): Promise<{ items: Category[]; total: number }> {
     return this.findPaginated(filters, skip, take);
   }
+
+  async findSubCategories(
+    parentId: string,
+    shopId?: string,
+  ): Promise<Category[]> {
+    return this.findByParentId(parentId, shopId);
+  }
 }

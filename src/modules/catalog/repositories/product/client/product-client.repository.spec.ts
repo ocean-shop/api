@@ -56,7 +56,7 @@ describe('ProductClientRepository', () => {
     typeOrmRepository.find.mockResolvedValue(products);
 
     const result = await repository.findCatalogPaginated(
-      { categoryId: 'category-id' },
+      { shopId: 'shop-id', categoryId: 'category-id' },
       0,
       20,
     );
@@ -72,6 +72,10 @@ describe('ProductClientRepository', () => {
     expect(queryBuilder.andWhere).toHaveBeenCalledWith(
       expect.stringContaining('category.id IN ('),
       { categoryId: 'category-id' },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'product.shopId = :shopId',
+      { shopId: 'shop-id' },
     );
     expect(queryBuilder.andWhere).toHaveBeenCalledWith(
       'product.status = :status',
@@ -100,7 +104,11 @@ describe('ProductClientRepository', () => {
     queryBuilder.getCount.mockResolvedValue(0);
     queryBuilder.getRawMany.mockResolvedValue([]);
 
-    await repository.findCatalogPaginated({ categoryId: 'parent-id' }, 0, 20);
+    await repository.findCatalogPaginated(
+      { shopId: 'shop-id', categoryId: 'parent-id' },
+      0,
+      20,
+    );
 
     const [condition] = queryBuilder.andWhere.mock.calls.find(
       ([sql]: [string]) => sql.includes('category.id IN ('),
@@ -116,6 +124,7 @@ describe('ProductClientRepository', () => {
 
     const result = await repository.findCatalogPaginated(
       {
+        shopId: 'shop-id',
         categoryId: 'category-id',
         available: true,
         priceFrom: 60,
@@ -147,6 +156,7 @@ describe('ProductClientRepository', () => {
 
     await repository.findCatalogPaginated(
       {
+        shopId: 'shop-id',
         categoryId: 'category-id',
         attributes: [
           { name: 'color', values: ['Red', 'Blue'] },
@@ -172,7 +182,11 @@ describe('ProductClientRepository', () => {
     queryBuilder.getRawMany.mockResolvedValue([]);
 
     await repository.findCatalogPaginated(
-      { categoryId: 'category-id', sort: CatalogProductSort.POPULAR },
+      {
+        shopId: 'shop-id',
+        categoryId: 'category-id',
+        sort: CatalogProductSort.POPULAR,
+      },
       0,
       20,
     );
@@ -192,7 +206,11 @@ describe('ProductClientRepository', () => {
     queryBuilder.getRawMany.mockResolvedValue([]);
 
     await repository.findCatalogPaginated(
-      { categoryId: 'category-id', sort: CatalogProductSort.CHEAPER },
+      {
+        shopId: 'shop-id',
+        categoryId: 'category-id',
+        sort: CatalogProductSort.CHEAPER,
+      },
       0,
       20,
     );
@@ -203,7 +221,11 @@ describe('ProductClientRepository', () => {
     );
 
     await repository.findCatalogPaginated(
-      { categoryId: 'category-id', sort: CatalogProductSort.EXPENSIVE },
+      {
+        shopId: 'shop-id',
+        categoryId: 'category-id',
+        sort: CatalogProductSort.EXPENSIVE,
+      },
       0,
       20,
     );
@@ -223,7 +245,7 @@ describe('ProductClientRepository', () => {
     ] as Product[]);
 
     const result = await repository.findCatalogPaginated(
-      { categoryId: 'category-id' },
+      { shopId: 'shop-id', categoryId: 'category-id' },
       0,
       20,
     );

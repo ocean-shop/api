@@ -35,6 +35,7 @@ export type CatalogFilter = {
 };
 
 export type CatalogProductFilters = {
+  shopId: string;
   categoryId: string;
   attributes?: CatalogFilter[];
   priceFrom?: number;

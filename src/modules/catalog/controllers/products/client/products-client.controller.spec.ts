@@ -63,6 +63,7 @@ describe('ProductsClientController', () => {
   it('should list catalog products by category id', async () => {
     const categoryId = '98f21967-fce6-4ceb-af61-304913f593a7';
     const query = {
+      shopId: '5d4d8a1f-3a1c-4c0e-8a0b-2f6f1c9d4e7b',
       page: 1,
       limit: 20,
       attributes: [{ name: 'color', values: ['Red'] }],
@@ -87,15 +88,17 @@ describe('ProductsClientController', () => {
 
   it('should get catalog filters by category id', async () => {
     const categoryId = '98f21967-fce6-4ceb-af61-304913f593a7';
+    const shopId = '5d4d8a1f-3a1c-4c0e-8a0b-2f6f1c9d4e7b';
     const expected = [{ name: 'Color', values: ['Blue', 'Red'] }];
     jest
       .mocked(productsClientService.getFiltersByCategoryId)
       .mockResolvedValue(expected);
 
-    const result = await controller.getFiltersByCategoryId(categoryId);
+    const result = await controller.getFiltersByCategoryId(categoryId, shopId);
 
     expect(productsClientService.getFiltersByCategoryId).toHaveBeenCalledWith(
       categoryId,
+      shopId,
     );
     expect(result).toEqual(expected);
   });

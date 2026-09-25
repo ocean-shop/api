@@ -34,6 +34,7 @@ export class ProductClientRepository extends ProductQueryRepository {
           .andWhere(`category.id IN (${CATEGORY_SUBTREE_IDS_SUBQUERY})`, {
             categoryId: filters.categoryId,
           })
+          .andWhere('product.shopId = :shopId', { shopId: filters.shopId })
           .andWhere('product.status = :status', {
             status: ProductStatus.ACTIVE,
           });

@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { POPULAR_PRODUCTS_LIMIT } from '../../../constants/pagination.constants';
 import { CatalogProductSort } from '../../../models/product.models';
@@ -88,6 +88,7 @@ describe('ProductsClientService', () => {
       .mockResolvedValue({ items: [{ id: '1' }] as any, total: 1 });
 
     const result = await service.listCatalogProducts('category-id', {
+      shopId: 'shop-id',
       page: 2,
       limit: 20,
       attributes: [
@@ -102,6 +103,7 @@ describe('ProductsClientService', () => {
 
     expect(productClientRepository.findCatalogPaginated).toHaveBeenCalledWith(
       {
+        shopId: 'shop-id',
         categoryId: 'category-id',
         attributes: [
           { name: 'color', values: ['Red'] },
@@ -130,12 +132,14 @@ describe('ProductsClientService', () => {
       .mockResolvedValue({ items: [], total: 0 });
 
     const result = await service.listCatalogProducts('category-id', {
+      shopId: 'shop-id',
       page: 1,
       limit: 20,
     });
 
     expect(productClientRepository.findCatalogPaginated).toHaveBeenCalledWith(
       {
+        shopId: 'shop-id',
         categoryId: 'category-id',
         attributes: undefined,
         priceFrom: undefined,
@@ -152,6 +156,7 @@ describe('ProductsClientService', () => {
   it('should reject catalog price range when priceFrom is greater than priceTo', async () => {
     await expect(
       service.listCatalogProducts('category-id', {
+        shopId: 'shop-id',
         page: 1,
         limit: 20,
         priceFrom: 6000,
@@ -168,6 +173,7 @@ describe('ProductsClientService', () => {
       .mockResolvedValue({ items: [], total: 0 });
 
     const result = await service.listCatalogProducts('missing-id', {
+      shopId: 'shop-id',
       page: 1,
       limit: 20,
     });
@@ -179,7 +185,9 @@ describe('ProductsClientService', () => {
 
   it('should group category filters by attribute name', async () => {
     const categoryId = '11111111-1111-4111-8111-111111111111';
-    jest.mocked(categoryRepository.findById).mockResolvedValue({} as any);
+    jest
+      .mocked(categoryRepository.findById)
+      .mockResolvedValue({ shopId: 'shop-id' } as any);
     jest
       .mocked(attributeRepository.findCategoryFilterOptions)
       .mockResolvedValue([
@@ -188,7 +196,7 @@ describe('ProductsClientService', () => {
         { name: 'Size', value: 'M' },
       ]);
 
-    const result = await service.getFiltersByCategoryId(categoryId);
+    const result = await service.getFiltersByCategoryId(categoryId, 'shop-id');
 
     expect(categoryRepository.findById).toHaveBeenCalledWith(categoryId);
     expect(attributeRepository.findCategoryFilterOptions).toHaveBeenCalledWith(
@@ -201,13 +209,32 @@ describe('ProductsClientService', () => {
   });
 
   it('should return no filters when category has no attribute options', async () => {
-    jest.mocked(categoryRepository.findById).mockResolvedValue({} as any);
+    jest
+      .mocked(categoryRepository.findById)
+      .mockResolvedValue({ shopId: 'shop-id' } as any);
     jest
       .mocked(attributeRepository.findCategoryFilterOptions)
       .mockResolvedValue([]);
 
-    const result = await service.getFiltersByCategoryId('category-id');
+    const result = await service.getFiltersByCategoryId(
+      'category-id',
+      'shop-id',
+    );
 
     expect(result).toEqual([]);
+  });
+
+  it('should reject category filters when the category belongs to another shop', async () => {
+    jest
+      .mocked(categoryRepository.findById)
+      .mockResolvedValue({ shopId: 'other-shop-id' } as any);
+
+    await expect(
+      service.getFiltersByCategoryId('category-id', 'shop-id'),
+    ).rejects.toThrow(NotFoundException);
+
+    expect(
+      attributeRepository.findCategoryFilterOptions,
+    ).not.toHaveBeenCalled();
   });
 });

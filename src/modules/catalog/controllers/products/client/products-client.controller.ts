@@ -36,9 +36,14 @@ export class ProductsClientController {
       'List catalog filters available for products of a category and its subcategories',
   })
   @ApiParam({ name: 'categoryId', type: String, format: 'uuid' })
+  @ApiQuery({ name: 'shopId', required: true, type: String, format: 'uuid' })
   async getFiltersByCategoryId(
     @Param('categoryId', ParseUUIDPipe) categoryId: string,
+    @Query('shopId', ParseUUIDPipe) shopId: string,
   ) {
-    return this.productsClientService.getFiltersByCategoryId(categoryId);
+    return this.productsClientService.getFiltersByCategoryId(
+      categoryId,
+      shopId,
+    );
   }
 }

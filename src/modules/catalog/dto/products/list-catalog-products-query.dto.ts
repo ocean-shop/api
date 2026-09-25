@@ -1,5 +1,5 @@
 import { Transform, Type } from 'class-transformer';
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
   IsBoolean,
@@ -7,6 +7,7 @@ import {
   IsInt,
   IsNumber,
   IsOptional,
+  IsUUID,
   Max,
   Min,
 } from 'class-validator';
@@ -17,6 +18,10 @@ import {
 import { CatalogFilter, CatalogProductSort } from '../../models/product.models';
 
 export class ListCatalogProductsQueryDto {
+  @ApiProperty({ type: String, format: 'uuid' })
+  @IsUUID()
+  readonly shopId: string;
+
   @ApiPropertyOptional({ type: Number, minimum: 1, default: 1 })
   @Type(() => Number)
   @IsInt()

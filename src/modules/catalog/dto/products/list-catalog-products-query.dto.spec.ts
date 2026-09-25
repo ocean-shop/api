@@ -3,17 +3,27 @@ import { validateSync } from 'class-validator';
 import { CatalogProductSort } from '../../models/product.models';
 import { ListCatalogProductsQueryDto } from './list-catalog-products-query.dto';
 
+const SHOP_ID = '5d4d8a1f-3a1c-4c0e-8a0b-2f6f1c9d4e7b';
+
 const toDto = (query: Record<string, unknown>): ListCatalogProductsQueryDto =>
-  plainToInstance(ListCatalogProductsQueryDto, query);
+  plainToInstance(ListCatalogProductsQueryDto, { shopId: SHOP_ID, ...query });
 
 describe('ListCatalogProductsQueryDto', () => {
   it('should apply pagination defaults', () => {
     const dto = toDto({});
 
     expect(validateSync(dto)).toEqual([]);
+    expect(dto.shopId).toBe(SHOP_ID);
     expect(dto.page).toBe(1);
     expect(dto.limit).toBe(20);
     expect(dto.attributes).toBeUndefined();
+  });
+
+  it('should require a valid shop id', () => {
+    expect(
+      validateSync(plainToInstance(ListCatalogProductsQueryDto, {})),
+    ).not.toEqual([]);
+    expect(validateSync(toDto({ shopId: 'not-a-uuid' }))).not.toEqual([]);
   });
 
   it('should parse attribute groups from a single parameter', () => {

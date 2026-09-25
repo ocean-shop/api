@@ -4,6 +4,7 @@ import {
   resolvePagination,
   toListResponse,
 } from '../../../helpers/list-response.helpers';
+import { Category } from '../../../entities/category.entity';
 import { CategoryListResponse } from '../../../models/category.models';
 import { CategoryClientRepository } from '../../../repositories/category/client/category-client.repository';
 
@@ -26,5 +27,12 @@ export class CategoriesClientService {
       );
 
     return toListResponse(items, total, page, limit);
+  }
+
+  async listSubCategories(
+    parentId: string,
+    shopId?: string,
+  ): Promise<Category[]> {
+    return this.categoryClientRepository.findSubCategories(parentId, shopId);
   }
 }

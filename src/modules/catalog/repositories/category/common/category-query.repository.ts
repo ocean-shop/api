@@ -31,4 +31,21 @@ export abstract class CategoryQueryRepository {
 
     return { items, total };
   }
+
+  protected async findByParentId(
+    parentId: string,
+    shopId?: string,
+  ): Promise<Category[]> {
+    const query = this.repository
+      .createQueryBuilder('category')
+      .where('category.parentId = :parentId', { parentId })
+      .orderBy('category.sort', 'ASC')
+      .addOrderBy('category.createdAt', 'ASC');
+
+    if (shopId) {
+      query.andWhere('category.shopId = :shopId', { shopId });
+    }
+
+    return query.getMany();
+  }
 }
