@@ -7,6 +7,7 @@ import { CacheService } from '../../../../../core/cache/cache.service';
 import { CACHE_SCOPE_ALL } from '../../../../../core/cache/constants/cache.constants';
 import {
   CATALOG_FILTERS_CACHE_TTL_SECONDS,
+  CATALOG_PRODUCT_CACHE_TTL_SECONDS,
   CATALOG_PRODUCTS_CACHE_TTL_SECONDS,
   POPULAR_PRODUCTS_CACHE_TTL_SECONDS,
 } from '../../../constants/catalog-cache.constants';
@@ -87,6 +88,34 @@ export class ProductsClientService {
           );
 
         return toListResponse(items, total, page, limit);
+      },
+    );
+  }
+
+  async getProductById(productId: string, shopId: string): Promise<Product> {
+    // The lookup runs inside the cached section on purpose: only a matching
+    // pair ever gets stored, so a foreign product still hits the database and
+    // still 404s.
+    return this.cacheService.wrap(
+      {
+        scope: shopId,
+        segments: ['product', productId],
+        ttlSeconds: CATALOG_PRODUCT_CACHE_TTL_SECONDS,
+      },
+      async () => {
+        const product =
+          await this.productClientRepository.findActiveByShopIdAndId(
+            shopId,
+            productId,
+          );
+
+        // A draft product, or one of another shop, is treated as missing rather
+        // than forbidden: the storefront has no business knowing it exists.
+        if (!product) {
+          throw new NotFoundException('Продукт не знайдено');
+        }
+
+        return product;
       },
     );
   }

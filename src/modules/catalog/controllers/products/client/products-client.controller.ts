@@ -46,4 +46,18 @@ export class ProductsClientController {
       shopId,
     );
   }
+
+  @Get(':productId')
+  @ApiOperation({
+    summary:
+      'Get an active product of a shop with its images, tags and variations with their images',
+  })
+  @ApiParam({ name: 'productId', type: String, format: 'uuid' })
+  @ApiQuery({ name: 'shopId', required: true, type: String, format: 'uuid' })
+  async getProductById(
+    @Param('productId', ParseUUIDPipe) productId: string,
+    @Query('shopId', ParseUUIDPipe) shopId: string,
+  ) {
+    return this.productsClientService.getProductById(productId, shopId);
+  }
 }

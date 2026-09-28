@@ -23,6 +23,7 @@ describe('ProductsClientService', () => {
     const productClientRepositoryMock = {
       findCatalogPaginated: jest.fn(),
       findPopular: jest.fn(),
+      findActiveByShopIdAndId: jest.fn(),
     };
 
     const categoryRepositoryMock = {
@@ -254,6 +255,51 @@ describe('ProductsClientService', () => {
     expect(
       attributeRepository.findCategoryFilterOptions,
     ).not.toHaveBeenCalled();
+  });
+
+  it('should get a product with its images, tags and variations', async () => {
+    const product = {
+      id: 'product-id',
+      images: [{ id: 'image-id' }],
+      tags: [{ id: 'tag-id' }],
+      variations: [{ id: 'variation-id', images: [{ id: 'variation-image' }] }],
+    } as any;
+    jest
+      .mocked(productClientRepository.findActiveByShopIdAndId)
+      .mockResolvedValue(product);
+
+    const result = await service.getProductById('product-id', 'shop-id');
+
+    expect(
+      productClientRepository.findActiveByShopIdAndId,
+    ).toHaveBeenCalledWith('shop-id', 'product-id');
+    expect(result).toEqual(product);
+  });
+
+  it('should reject a product that is missing, draft or of another shop', async () => {
+    jest
+      .mocked(productClientRepository.findActiveByShopIdAndId)
+      .mockResolvedValue(null);
+
+    await expect(
+      service.getProductById('product-id', 'shop-id'),
+    ).rejects.toThrow(NotFoundException);
+  });
+
+  it('should cache a product under the shop scope', async () => {
+    jest
+      .mocked(productClientRepository.findActiveByShopIdAndId)
+      .mockResolvedValue({ id: 'product-id' } as any);
+
+    await service.getProductById('product-id', 'shop-id');
+
+    expect(cacheService.wrap).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scope: 'shop-id',
+        segments: ['product', 'product-id'],
+      }),
+      expect.any(Function),
+    );
   });
 
   it('should cache popular products under the shop scope', async () => {

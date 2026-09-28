@@ -67,6 +67,46 @@ export class ProductClientRepository extends ProductQueryRepository {
     );
   }
 
+  /**
+   * Loads a storefront product page: the product with its images, tags and
+   * variations with their images. Only active products of the given shop are
+   * visible, so anything else reads as missing.
+   */
+  async findActiveByShopIdAndId(
+    shopId: string,
+    productId: string,
+  ): Promise<Product | null> {
+    const product = await this.repository.findOne({
+      where: { id: productId, shopId, status: ProductStatus.ACTIVE },
+      relations: {
+        tags: true,
+        images: true,
+        variations: {
+          images: true,
+        },
+      },
+      // One query per collection instead of a single multi-join, whose rows
+      // multiply out as tags × images × variations × variation images.
+      relationLoadStrategy: 'query',
+    });
+
+    if (!product) {
+      return null;
+    }
+
+    // Ordering through `order` would join the collections back into the main
+    // query and bring the row multiplication back, so sort them here.
+    product.images?.sort((a, b) => a.sort - b.sort);
+    product.variations?.sort(
+      (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
+    );
+    product.variations?.forEach((variation) =>
+      variation.images?.sort((a, b) => a.sort - b.sort),
+    );
+
+    return product;
+  }
+
   async findPopular(take: number, shopId?: string): Promise<Product[]> {
     const { items } = await this.findPaginatedWithRelations(
       (query) => {

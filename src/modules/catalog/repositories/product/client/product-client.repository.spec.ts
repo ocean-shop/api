@@ -30,6 +30,7 @@ describe('ProductClientRepository', () => {
     typeOrmRepository = {
       createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
       find: jest.fn(),
+      findOne: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -251,6 +252,82 @@ describe('ProductClientRepository', () => {
     );
 
     expect(result.items.map((item) => item.id)).toEqual(['2', '1']);
+  });
+
+  it('should find an active product of a shop with its relations', async () => {
+    typeOrmRepository.findOne.mockResolvedValue({
+      id: 'product-id',
+      images: [],
+      variations: [],
+    });
+
+    const result = await repository.findActiveByShopIdAndId(
+      'shop-id',
+      'product-id',
+    );
+
+    expect(typeOrmRepository.findOne).toHaveBeenCalledWith({
+      where: {
+        id: 'product-id',
+        shopId: 'shop-id',
+        status: ProductStatus.ACTIVE,
+      },
+      relations: {
+        tags: true,
+        images: true,
+        variations: {
+          images: true,
+        },
+      },
+      relationLoadStrategy: 'query',
+    });
+    expect(result).toEqual({ id: 'product-id', images: [], variations: [] });
+  });
+
+  it('should sort product images, variations and variation images', async () => {
+    typeOrmRepository.findOne.mockResolvedValue({
+      id: 'product-id',
+      images: [{ sort: 2 }, { sort: 1 }],
+      variations: [
+        {
+          id: 'second',
+          createdAt: new Date('2024-02-01T00:00:00.000Z'),
+          images: [{ sort: 3 }, { sort: 1 }],
+        },
+        {
+          id: 'first',
+          createdAt: new Date('2024-01-01T00:00:00.000Z'),
+          images: [],
+        },
+      ],
+    });
+
+    const result = await repository.findActiveByShopIdAndId(
+      'shop-id',
+      'product-id',
+    );
+
+    expect(result?.images.map((image) => image.sort)).toEqual([1, 2]);
+    expect(result?.variations.map((variation) => variation.id)).toEqual([
+      'first',
+      'second',
+    ]);
+    expect(
+      result?.variations
+        .find((variation) => variation.id === 'second')
+        ?.images.map((image) => image.sort),
+    ).toEqual([1, 3]);
+  });
+
+  it('should return null for a product that is missing, draft or of another shop', async () => {
+    typeOrmRepository.findOne.mockResolvedValue(null);
+
+    const result = await repository.findActiveByShopIdAndId(
+      'shop-id',
+      'product-id',
+    );
+
+    expect(result).toBeNull();
   });
 
   it('should find popular products limited to the requested amount', async () => {

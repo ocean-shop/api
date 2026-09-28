@@ -15,3 +15,6 @@ export const CATALOG_FILTERS_CACHE_TTL_SECONDS = 300;
  * tight TTL keeps rarely repeated keys from accumulating in Redis.
  */
 export const CATALOG_PRODUCTS_CACHE_TTL_SECONDS = 60;
+
+/** A product page changes only when an admin edits that product. */
+export const CATALOG_PRODUCT_CACHE_TTL_SECONDS = 300;
