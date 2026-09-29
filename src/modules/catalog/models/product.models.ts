@@ -34,14 +34,23 @@ export type CatalogFilter = {
   values: string[];
 };
 
-export type CatalogProductFilters = {
+/** Narrowing shared by every catalog listing, whatever selects the products. */
+export type CommonCatalogProductFilters = {
   shopId: string;
-  categoryId: string;
   attributes?: CatalogFilter[];
   priceFrom?: number;
   priceTo?: number;
   available?: boolean;
   sort?: CatalogProductSort;
+};
+
+export type CatalogProductFilters = CommonCatalogProductFilters & {
+  categoryId: string;
+};
+
+/** The search listing selects by a term where the catalog selects by category. */
+export type CatalogProductSearchFilters = CommonCatalogProductFilters & {
+  term: string;
 };
 
 export type ProductOrdering = {

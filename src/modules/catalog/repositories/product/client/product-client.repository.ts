@@ -6,7 +6,9 @@ import { ProductStatus } from '../../../entities/enums/product.enum';
 import {
   CatalogFilter,
   CatalogProductFilters,
+  CatalogProductSearchFilters,
   CatalogProductSort,
+  CommonCatalogProductFilters,
   ProductOrdering,
   ProductSearchItem,
   ProductSearchResponse,
@@ -14,7 +16,9 @@ import {
 import { CATEGORY_SUBTREE_IDS_SUBQUERY } from '../../../constants/category-query.constants';
 import {
   EFFECTIVE_PRICE_EXPRESSION,
+  PRODUCT_NAME_MATCH_CONDITION,
   PRODUCT_SEARCH_QUERY,
+  PRODUCT_SEARCH_RELEVANCE_EXPRESSION,
 } from '../../../constants/product-query.constants';
 import { escapeLikeWildcards } from '../../../helpers/catalog-query.helpers';
 import { ProductQueryRepository } from '../common/product-query.repository';
@@ -42,37 +46,41 @@ export class ProductClientRepository extends ProductQueryRepository {
           .innerJoin('product.categories', 'category')
           .andWhere(`category.id IN (${CATEGORY_SUBTREE_IDS_SUBQUERY})`, {
             categoryId: filters.categoryId,
-          })
-          .andWhere('product.shopId = :shopId', { shopId: filters.shopId })
-          .andWhere('product.status = :status', {
-            status: ProductStatus.ACTIVE,
           });
 
-        if (filters.available !== undefined) {
-          query.andWhere('product.available = :available', {
-            available: filters.available,
-          });
-        }
-
-        if (filters.priceFrom !== undefined) {
-          query.andWhere(`${EFFECTIVE_PRICE_EXPRESSION} >= :priceFrom`, {
-            priceFrom: filters.priceFrom,
-          });
-        }
-
-        if (filters.priceTo !== undefined) {
-          query.andWhere(`${EFFECTIVE_PRICE_EXPRESSION} <= :priceTo`, {
-            priceTo: filters.priceTo,
-          });
-        }
-
-        filters.attributes?.forEach((attribute, index) => {
-          this.applyAttributeFilter(query, attribute, index);
-        });
+        this.applyCommonCatalogFilters(query, filters);
       },
       skip,
       take,
       this.resolveCatalogOrderings(filters.sort),
+    );
+  }
+
+  /**
+   * Same page as `findCatalogPaginated`, selected by a search term instead of a
+   * category: the filters, the sorting and the pagination are identical.
+   *
+   * The name match narrows the rows through the trigram index before the price
+   * and attribute filters, which are correlated subqueries, are evaluated on
+   * what is left. Without a `sort` the page is ordered by relevance, the same
+   * tiering the search suggestions use.
+   */
+  async findSearchPaginated(
+    filters: CatalogProductSearchFilters,
+    skip: number,
+    take: number,
+  ): Promise<{ items: Product[]; total: number }> {
+    return this.findPaginatedWithRelations(
+      (query) => {
+        query.andWhere(PRODUCT_NAME_MATCH_CONDITION, {
+          term: escapeLikeWildcards(filters.term),
+        });
+
+        this.applyCommonCatalogFilters(query, filters);
+      },
+      skip,
+      take,
+      this.resolveSearchOrderings(filters.sort),
     );
   }
 
@@ -166,6 +174,38 @@ export class ProductClientRepository extends ProductQueryRepository {
     };
   }
 
+  /** Everything both catalog listings narrow by once their rows are selected. */
+  private applyCommonCatalogFilters(
+    query: SelectQueryBuilder<Product>,
+    filters: CommonCatalogProductFilters,
+  ): void {
+    query
+      .andWhere('product.shopId = :shopId', { shopId: filters.shopId })
+      .andWhere('product.status = :status', { status: ProductStatus.ACTIVE });
+
+    if (filters.available !== undefined) {
+      query.andWhere('product.available = :available', {
+        available: filters.available,
+      });
+    }
+
+    if (filters.priceFrom !== undefined) {
+      query.andWhere(`${EFFECTIVE_PRICE_EXPRESSION} >= :priceFrom`, {
+        priceFrom: filters.priceFrom,
+      });
+    }
+
+    if (filters.priceTo !== undefined) {
+      query.andWhere(`${EFFECTIVE_PRICE_EXPRESSION} <= :priceTo`, {
+        priceTo: filters.priceTo,
+      });
+    }
+
+    filters.attributes?.forEach((attribute, index) => {
+      this.applyAttributeFilter(query, attribute, index);
+    });
+  }
+
   private applyAttributeFilter(
     query: SelectQueryBuilder<Product>,
     attribute: CatalogFilter,
@@ -202,6 +242,26 @@ export class ProductClientRepository extends ProductQueryRepository {
         [valuesParameter]: attribute.values,
       },
     );
+  }
+
+  /**
+   * An explicit sort wins, exactly as on the category page. Only its absence
+   * differs: a search without a preference is ordered by relevance rather than
+   * by date, because the best match is what the user asked for.
+   */
+  private resolveSearchOrderings(sort?: CatalogProductSort): ProductOrdering[] {
+    if (sort) {
+      return this.resolveCatalogOrderings(sort);
+    }
+
+    // `product.id` is appended by the paginated query, which keeps equally
+    // relevant products from shuffling between pages.
+    return [
+      { expression: PRODUCT_SEARCH_RELEVANCE_EXPRESSION, direction: 'ASC' },
+      { expression: 'product.isPopular', direction: 'DESC' },
+      { expression: 'length(product.name)', direction: 'ASC' },
+      { expression: 'product.createdAt', direction: 'DESC' },
+    ];
   }
 
   private resolveCatalogOrderings(

@@ -16,16 +16,43 @@ const MAIN_IMAGE_EXPRESSION = `(
 /**
  * Relevance of a search hit, best first: the exact name, then names starting
  * with the term, then names where a later word starts with it, then the
- * remaining substring matches. Popularity, then the shortest name, then the
- * newest product break the ties inside a tier, and the id keeps the order
- * stable so equally relevant products do not shuffle between requests.
+ * remaining substring matches.
+ *
+ * The placeholder differs per caller: the raw statement below numbers its
+ * parameters, the query builder names them.
  */
-const SEARCH_ORDER_BY = `CASE
-        WHEN product.name ILIKE $3 THEN 0
-        WHEN product.name ILIKE $3 || '%' THEN 1
-        WHEN product.name ILIKE '% ' || $3 || '%' THEN 2
+function buildSearchRelevanceExpression(termPlaceholder: string): string {
+  return `CASE
+        WHEN product.name ILIKE ${termPlaceholder} THEN 0
+        WHEN product.name ILIKE ${termPlaceholder} || '%' THEN 1
+        WHEN product.name ILIKE '% ' || ${termPlaceholder} || '%' THEN 2
         ELSE 3
-      END ASC,
+      END`;
+}
+
+/**
+ * Relevance tiers for the query builder. The `:term` parameter has to be bound
+ * by the caller, which the name match below already does.
+ */
+export const PRODUCT_SEARCH_RELEVANCE_EXPRESSION =
+  buildSearchRelevanceExpression(':term');
+
+/**
+ * Name match of a search, for the query builder.
+ *
+ * `ILIKE '%term%'` is served by the GIN trigram index on the names of active
+ * products, so the match stays an index lookup instead of a sequential scan.
+ * The `:term` parameter has to arrive with its LIKE wildcards escaped.
+ */
+export const PRODUCT_NAME_MATCH_CONDITION = `product.name ILIKE '%' || :term || '%'`;
+
+/**
+ * Relevance ordering of the raw statement below. Popularity, then the shortest
+ * name, then the newest product break the ties inside a tier, and the id keeps
+ * the order stable so equally relevant products do not shuffle between
+ * requests.
+ */
+const SEARCH_ORDER_BY = `${buildSearchRelevanceExpression('$3')} ASC,
       product.is_popular DESC,
       length(product.name) ASC,
       product.created_at DESC,

@@ -1,8 +1,10 @@
 import {
   CatalogProductFilters,
+  CatalogProductSearchFilters,
   CatalogProductSort,
 } from '../models/product.models';
 import {
+  buildCatalogProductSearchCacheSegments,
   buildCatalogProductsCacheSegments,
   buildProductSearchCacheSegments,
 } from './catalog-cache.helpers';
@@ -111,6 +113,71 @@ describe('buildCatalogProductsCacheSegments', () => {
         20,
       ),
     ).toEqual(buildCatalogProductsCacheSegments(baseFilters, 1, 20));
+  });
+});
+
+describe('buildCatalogProductSearchCacheSegments', () => {
+  const baseFilters: CatalogProductSearchFilters = {
+    shopId: 'shop-id',
+    term: 'ocean tee',
+  };
+
+  it('should keep the user input out of the key', () => {
+    const segments = buildCatalogProductSearchCacheSegments(baseFilters, 1, 20);
+
+    expect(segments[0]).toBe('products-search');
+    expect(segments[1]).toMatch(/^[0-9a-f]{40}$/);
+  });
+
+  it.each<[string, Partial<CatalogProductSearchFilters>]>([
+    ['term', { term: 'tee' }],
+    ['sort', { sort: CatalogProductSort.CHEAPER }],
+    ['availability', { available: true }],
+    ['priceFrom', { priceFrom: 60 }],
+    ['priceTo', { priceTo: 6000 }],
+    ['attributes', { attributes: [{ name: 'color', values: ['Red'] }] }],
+  ])('should separate pages that differ by %s', (_label, override) => {
+    expect(
+      buildCatalogProductSearchCacheSegments(
+        { ...baseFilters, ...override },
+        1,
+        20,
+      ),
+    ).not.toEqual(buildCatalogProductSearchCacheSegments(baseFilters, 1, 20));
+  });
+
+  it('should separate pages of the same search', () => {
+    expect(
+      buildCatalogProductSearchCacheSegments(baseFilters, 2, 20),
+    ).not.toEqual(buildCatalogProductSearchCacheSegments(baseFilters, 1, 20));
+  });
+
+  it('should reuse one key for the same search', () => {
+    expect(
+      buildCatalogProductSearchCacheSegments(
+        { ...baseFilters, attributes: [{ name: 'color', values: ['Red'] }] },
+        1,
+        20,
+      ),
+    ).toEqual(
+      buildCatalogProductSearchCacheSegments(
+        { ...baseFilters, attributes: [{ name: 'color', values: ['Red'] }] },
+        1,
+        20,
+      ),
+    );
+  });
+
+  it('should not collide with a category page carrying the same filters', () => {
+    expect(
+      buildCatalogProductSearchCacheSegments(baseFilters, 1, 20),
+    ).not.toEqual(
+      buildCatalogProductsCacheSegments(
+        { shopId: 'shop-id', categoryId: 'ocean tee' },
+        1,
+        20,
+      ),
+    );
   });
 });
 

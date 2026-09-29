@@ -1,6 +1,7 @@
 import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ProductsClientService } from '../../../services/products/client/products-client.service';
+import { ListCatalogProductsBySearchQueryDto } from '../../../dto/products/list-catalog-products-by-search-query.dto';
 import { ListCatalogProductsQueryDto } from '../../../dto/products/list-catalog-products-query.dto';
 import { SearchCatalogProductsQueryDto } from '../../../dto/products/search-catalog-products-query.dto';
 import { PRODUCT_SEARCH_LIMIT } from '../../../constants/pagination.constants';
@@ -26,6 +27,20 @@ export class ProductsClientController {
   })
   async searchProducts(@Query() query: SearchCatalogProductsQueryDto) {
     return this.productsClientService.searchProducts(query.shopId, query.query);
+  }
+
+  // Declared before `:productId` so the literal path wins the route match.
+  @Get('by-search')
+  @ApiOperation({
+    summary:
+      'List active catalog products matching a search string with filters, sorting and pagination',
+    description:
+      'Accepts the same filters, sorting and pagination as the category listing. Without `sort` the page is ordered by relevance.',
+  })
+  async listCatalogProductsBySearch(
+    @Query() query: ListCatalogProductsBySearchQueryDto,
+  ) {
+    return this.productsClientService.listCatalogProductsBySearch(query);
   }
 
   @Get('by-category/:categoryId')

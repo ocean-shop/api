@@ -16,9 +16,11 @@ import {
   POPULAR_PRODUCTS_LIMIT,
   PRODUCT_SEARCH_LIMIT,
 } from '../../../constants/pagination.constants';
+import { ListCatalogProductsBySearchQueryDto } from '../../../dto/products/list-catalog-products-by-search-query.dto';
 import { ListCatalogProductsQueryDto } from '../../../dto/products/list-catalog-products-query.dto';
 import { Product } from '../../../entities/product.entity';
 import {
+  buildCatalogProductSearchCacheSegments,
   buildCatalogProductsCacheSegments,
   buildProductSearchCacheSegments,
 } from '../../../helpers/catalog-cache.helpers';
@@ -29,6 +31,7 @@ import {
 import {
   CatalogFilter,
   CatalogProductFilters,
+  CatalogProductSearchFilters,
   ProductListResponse,
   ProductSearchResponse,
 } from '../../../models/product.models';
@@ -90,6 +93,47 @@ export class ProductsClientService {
       async () => {
         const { items, total } =
           await this.productClientRepository.findCatalogPaginated(
+            filters,
+            skip,
+            limit,
+          );
+
+        return toListResponse(items, total, page, limit);
+      },
+    );
+  }
+
+  /**
+   * The catalog page of a search: the same filters, sorting and pagination as
+   * `listCatalogProducts`, with the term selecting the products.
+   */
+  async listCatalogProductsBySearch(
+    query: ListCatalogProductsBySearchQueryDto,
+  ): Promise<ProductListResponse> {
+    this.assertPriceRangeValid(query.priceFrom, query.priceTo);
+
+    const { page, limit, skip } = resolvePagination(query);
+    const filters: CatalogProductSearchFilters = {
+      shopId: query.shopId,
+      term: query.query,
+      attributes: query.attributes,
+      priceFrom: query.priceFrom,
+      priceTo: query.priceTo,
+      available: query.available,
+      sort: query.sort,
+    };
+
+    // Search terms are typed character by character, so the same page is asked
+    // for repeatedly within seconds: caching it keeps those repeats off Postgres.
+    return this.cacheService.wrap(
+      {
+        scope: query.shopId,
+        segments: buildCatalogProductSearchCacheSegments(filters, page, limit),
+        ttlSeconds: CATALOG_PRODUCTS_CACHE_TTL_SECONDS,
+      },
+      async () => {
+        const { items, total } =
+          await this.productClientRepository.findSearchPaginated(
             filters,
             skip,
             limit,

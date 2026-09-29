@@ -1,5 +1,10 @@
 import { createHash } from 'node:crypto';
-import { CatalogFilter, CatalogProductFilters } from '../models/product.models';
+import {
+  CatalogFilter,
+  CatalogProductFilters,
+  CatalogProductSearchFilters,
+  CommonCatalogProductFilters,
+} from '../models/product.models';
 
 /**
  * Builds the cache key segments for a catalog page.
@@ -14,21 +19,30 @@ export function buildCatalogProductsCacheSegments(
   page: number,
   limit: number,
 ): string[] {
-  const canonical = JSON.stringify({
-    attributes: canonicalizeAttributes(filters.attributes),
-    available: filters.available ?? null,
-    limit,
-    page,
-    priceFrom: filters.priceFrom ?? null,
-    priceTo: filters.priceTo ?? null,
-    sort: filters.sort ?? null,
-  });
-
   // The category id stays readable so a key can be traced back in redis-cli.
   return [
     'products',
     filters.categoryId,
-    createHash('sha1').update(canonical).digest('hex'),
+    hashCatalogFilters(filters, page, limit),
+  ];
+}
+
+/**
+ * Builds the cache key segments for a page of search results.
+ *
+ * Unlike the category id, the term goes into the hash: it is free text, so
+ * hashing keeps arbitrary user input out of the key and bounds its length. The
+ * term has to arrive normalized, so that terms differing only in case or
+ * spacing share one key.
+ */
+export function buildCatalogProductSearchCacheSegments(
+  filters: CatalogProductSearchFilters,
+  page: number,
+  limit: number,
+): string[] {
+  return [
+    'products-search',
+    hashCatalogFilters(filters, page, limit, filters.term),
   ];
 }
 
@@ -41,6 +55,27 @@ export function buildCatalogProductsCacheSegments(
  */
 export function buildProductSearchCacheSegments(term: string): string[] {
   return ['search', createHash('sha1').update(term).digest('hex')];
+}
+
+/** Hashes everything a listing varies by, in a form independent of its spelling. */
+function hashCatalogFilters(
+  filters: CommonCatalogProductFilters,
+  page: number,
+  limit: number,
+  term?: string,
+): string {
+  const canonical = JSON.stringify({
+    attributes: canonicalizeAttributes(filters.attributes),
+    available: filters.available ?? null,
+    limit,
+    page,
+    priceFrom: filters.priceFrom ?? null,
+    priceTo: filters.priceTo ?? null,
+    sort: filters.sort ?? null,
+    term: term ?? null,
+  });
+
+  return createHash('sha1').update(canonical).digest('hex');
 }
 
 /**
