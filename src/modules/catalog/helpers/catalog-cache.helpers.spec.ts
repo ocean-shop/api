@@ -2,7 +2,10 @@ import {
   CatalogProductFilters,
   CatalogProductSort,
 } from '../models/product.models';
-import { buildCatalogProductsCacheSegments } from './catalog-cache.helpers';
+import {
+  buildCatalogProductsCacheSegments,
+  buildProductSearchCacheSegments,
+} from './catalog-cache.helpers';
 
 describe('buildCatalogProductsCacheSegments', () => {
   const baseFilters: CatalogProductFilters = {
@@ -108,5 +111,26 @@ describe('buildCatalogProductsCacheSegments', () => {
         20,
       ),
     ).toEqual(buildCatalogProductsCacheSegments(baseFilters, 1, 20));
+  });
+});
+
+describe('buildProductSearchCacheSegments', () => {
+  it('should keep the user input out of the key', () => {
+    const segments = buildProductSearchCacheSegments('ocean tee');
+
+    expect(segments[0]).toBe('search');
+    expect(segments[1]).toMatch(/^[0-9a-f]{40}$/);
+  });
+
+  it('should separate different terms', () => {
+    expect(buildProductSearchCacheSegments('ocean')).not.toEqual(
+      buildProductSearchCacheSegments('tee'),
+    );
+  });
+
+  it('should reuse one key for the same term', () => {
+    expect(buildProductSearchCacheSegments('ocean')).toEqual(
+      buildProductSearchCacheSegments('ocean'),
+    );
   });
 });

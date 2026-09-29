@@ -49,6 +49,20 @@ export type ProductOrdering = {
   direction: 'ASC' | 'DESC';
 };
 
+/** Everything a search suggestion needs: a card plus the id to redirect to. */
+export type ProductSearchItem = {
+  id: string;
+  name: string;
+  price: string;
+  oldPrice: string | null;
+  image: string | null;
+};
+
+export type ProductSearchResponse = {
+  total: number;
+  items: ProductSearchItem[];
+};
+
 export type ProductListResponse = {
   items: Product[];
   total: number;

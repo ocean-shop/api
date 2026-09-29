@@ -10,11 +10,18 @@ import {
   CATALOG_PRODUCT_CACHE_TTL_SECONDS,
   CATALOG_PRODUCTS_CACHE_TTL_SECONDS,
   POPULAR_PRODUCTS_CACHE_TTL_SECONDS,
+  PRODUCT_SEARCH_CACHE_TTL_SECONDS,
 } from '../../../constants/catalog-cache.constants';
-import { POPULAR_PRODUCTS_LIMIT } from '../../../constants/pagination.constants';
+import {
+  POPULAR_PRODUCTS_LIMIT,
+  PRODUCT_SEARCH_LIMIT,
+} from '../../../constants/pagination.constants';
 import { ListCatalogProductsQueryDto } from '../../../dto/products/list-catalog-products-query.dto';
 import { Product } from '../../../entities/product.entity';
-import { buildCatalogProductsCacheSegments } from '../../../helpers/catalog-cache.helpers';
+import {
+  buildCatalogProductsCacheSegments,
+  buildProductSearchCacheSegments,
+} from '../../../helpers/catalog-cache.helpers';
 import {
   resolvePagination,
   toListResponse,
@@ -23,6 +30,7 @@ import {
   CatalogFilter,
   CatalogProductFilters,
   ProductListResponse,
+  ProductSearchResponse,
 } from '../../../models/product.models';
 import { AttributeRepository } from '../../../repositories/attribute/attribute.repository';
 import { CategoryRepository } from '../../../repositories/category/admin/category.repository';
@@ -89,6 +97,30 @@ export class ProductsClientService {
 
         return toListResponse(items, total, page, limit);
       },
+    );
+  }
+
+  /**
+   * The term arrives normalized from the DTO, so the cache key is shared by
+   * every spelling of the same search and the suggestions of a term that is
+   * being typed again are served without touching Postgres.
+   */
+  async searchProducts(
+    shopId: string,
+    term: string,
+  ): Promise<ProductSearchResponse> {
+    return this.cacheService.wrap(
+      {
+        scope: shopId,
+        segments: buildProductSearchCacheSegments(term),
+        ttlSeconds: PRODUCT_SEARCH_CACHE_TTL_SECONDS,
+      },
+      () =>
+        this.productClientRepository.searchActive(
+          shopId,
+          term,
+          PRODUCT_SEARCH_LIMIT,
+        ),
     );
   }
 

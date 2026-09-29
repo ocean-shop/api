@@ -13,6 +13,7 @@ describe('ProductsClientController', () => {
       listCatalogProducts: jest.fn(),
       getFiltersByCategoryId: jest.fn(),
       getProductById: jest.fn(),
+      searchProducts: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -83,6 +84,36 @@ describe('ProductsClientController', () => {
     expect(productsClientService.listCatalogProducts).toHaveBeenCalledWith(
       categoryId,
       query,
+    );
+    expect(result).toEqual(expected);
+  });
+
+  it('should search products by the string from the user', async () => {
+    const query = {
+      shopId: '5d4d8a1f-3a1c-4c0e-8a0b-2f6f1c9d4e7b',
+      query: 'ocean tee',
+    };
+    const expected = {
+      total: 42,
+      items: [
+        {
+          id: '1',
+          name: 'Ocean Tee',
+          price: '100.00',
+          oldPrice: '120.00',
+          image: 'https://cdn/main.png',
+        },
+      ],
+    };
+    jest
+      .mocked(productsClientService.searchProducts)
+      .mockResolvedValue(expected);
+
+    const result = await controller.searchProducts(query);
+
+    expect(productsClientService.searchProducts).toHaveBeenCalledWith(
+      query.shopId,
+      query.query,
     );
     expect(result).toEqual(expected);
   });

@@ -8,10 +8,19 @@ import {
   CatalogProductFilters,
   CatalogProductSort,
   ProductOrdering,
+  ProductSearchItem,
+  ProductSearchResponse,
 } from '../../../models/product.models';
 import { CATEGORY_SUBTREE_IDS_SUBQUERY } from '../../../constants/category-query.constants';
-import { EFFECTIVE_PRICE_EXPRESSION } from '../../../constants/product-query.constants';
+import {
+  EFFECTIVE_PRICE_EXPRESSION,
+  PRODUCT_SEARCH_QUERY,
+} from '../../../constants/product-query.constants';
+import { escapeLikeWildcards } from '../../../helpers/catalog-query.helpers';
 import { ProductQueryRepository } from '../common/product-query.repository';
+
+/** Every row repeats the total, which Postgres returns as a bigint string. */
+type ProductSearchRow = ProductSearchItem & { total: string };
 
 @Injectable()
 export class ProductClientRepository extends ProductQueryRepository {
@@ -125,6 +134,36 @@ export class ProductClientRepository extends ProductQueryRepository {
     );
 
     return items;
+  }
+
+  /**
+   * Searches the active products of a shop by name and returns the most
+   * relevant ones plus how many products matched in total.
+   *
+   * Written as one raw statement rather than through the query builder: the
+   * count rides along on the rows, and the image and price lookups stay out of
+   * the part of the plan that touches every match. See `PRODUCT_SEARCH_QUERY`.
+   */
+  async searchActive(
+    shopId: string,
+    term: string,
+    take: number,
+  ): Promise<ProductSearchResponse> {
+    const rows = await this.repository.query<ProductSearchRow[]>(
+      PRODUCT_SEARCH_QUERY,
+      [shopId, ProductStatus.ACTIVE, escapeLikeWildcards(term), take],
+    );
+
+    return {
+      total: rows.length > 0 ? Number(rows[0].total) : 0,
+      items: rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        price: row.price,
+        oldPrice: row.oldPrice,
+        image: row.image,
+      })),
+    };
   }
 
   private applyAttributeFilter(

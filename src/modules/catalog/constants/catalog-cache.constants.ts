@@ -18,3 +18,10 @@ export const CATALOG_PRODUCTS_CACHE_TTL_SECONDS = 60;
 
 /** A product page changes only when an admin edits that product. */
 export const CATALOG_PRODUCT_CACHE_TTL_SECONDS = 300;
+
+/**
+ * Search terms are typed character by character, so the same prefixes repeat
+ * within seconds. Short like the catalog pages: the terms form a long tail and
+ * rarely repeated keys should not pile up in Redis.
+ */
+export const PRODUCT_SEARCH_CACHE_TTL_SECONDS = 60;

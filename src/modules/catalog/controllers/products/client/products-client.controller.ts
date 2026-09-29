@@ -2,6 +2,8 @@ import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ProductsClientService } from '../../../services/products/client/products-client.service';
 import { ListCatalogProductsQueryDto } from '../../../dto/products/list-catalog-products-query.dto';
+import { SearchCatalogProductsQueryDto } from '../../../dto/products/search-catalog-products-query.dto';
+import { PRODUCT_SEARCH_LIMIT } from '../../../constants/pagination.constants';
 
 @Controller('catalog/products-client')
 @ApiTags('Catalog Products')
@@ -15,6 +17,15 @@ export class ProductsClientController {
     @Query('shopId', new ParseUUIDPipe({ optional: true })) shopId?: string,
   ) {
     return this.productsClientService.listPopularProducts(shopId);
+  }
+
+  // Declared before `:productId` so the literal path wins the route match.
+  @Get('search')
+  @ApiOperation({
+    summary: `Count the active products of a shop matching a search string and return the ${PRODUCT_SEARCH_LIMIT} most relevant ones`,
+  })
+  async searchProducts(@Query() query: SearchCatalogProductsQueryDto) {
+    return this.productsClientService.searchProducts(query.shopId, query.query);
   }
 
   @Get('by-category/:categoryId')

@@ -31,6 +31,7 @@ describe('ProductClientRepository', () => {
       createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
       find: jest.fn(),
       findOne: jest.fn(),
+      query: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -349,6 +350,56 @@ describe('ProductClientRepository', () => {
     expect(queryBuilder.offset).toHaveBeenCalledWith(0);
     expect(queryBuilder.limit).toHaveBeenCalledWith(6);
     expect(result).toEqual(products);
+  });
+
+  it('should search active products of a shop and report the total', async () => {
+    typeOrmRepository.query.mockResolvedValue([
+      {
+        id: '1',
+        name: 'Ocean Tee',
+        price: '100.00',
+        oldPrice: '120.00',
+        image: 'https://cdn/main.png',
+        total: '42',
+      },
+    ]);
+
+    const result = await repository.searchActive('shop-id', 'ocean', 5);
+
+    expect(typeOrmRepository.query).toHaveBeenCalledWith(
+      expect.stringContaining('COUNT(*) OVER ()'),
+      ['shop-id', ProductStatus.ACTIVE, 'ocean', 5],
+    );
+    expect(result).toEqual({
+      total: 42,
+      items: [
+        {
+          id: '1',
+          name: 'Ocean Tee',
+          price: '100.00',
+          oldPrice: '120.00',
+          image: 'https://cdn/main.png',
+        },
+      ],
+    });
+  });
+
+  it('should escape the like wildcards of a search term', async () => {
+    typeOrmRepository.query.mockResolvedValue([]);
+
+    await repository.searchActive('shop-id', '50% off_1', 5);
+
+    const [, parameters] = typeOrmRepository.query.mock.calls[0];
+
+    expect(parameters[2]).toBe('50\\% off\\_1');
+  });
+
+  it('should report no matches for a search without results', async () => {
+    typeOrmRepository.query.mockResolvedValue([]);
+
+    const result = await repository.searchActive('shop-id', 'ocean', 5);
+
+    expect(result).toEqual({ total: 0, items: [] });
   });
 
   it('should find popular products filtered by shop id', async () => {

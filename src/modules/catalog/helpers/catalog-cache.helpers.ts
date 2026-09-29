@@ -33,6 +33,17 @@ export function buildCatalogProductsCacheSegments(
 }
 
 /**
+ * Builds the cache key segments for a search term.
+ *
+ * The term is free text, so it is hashed: that keeps arbitrary user input out
+ * of the key and bounds its length. The term has to arrive normalized, so that
+ * terms differing only in case or spacing share one key.
+ */
+export function buildProductSearchCacheSegments(term: string): string[] {
+  return ['search', createHash('sha1').update(term).digest('hex')];
+}
+
+/**
  * Attribute filters are combined with OR inside a name and AND across names,
  * so neither the order of the names nor the order of the values changes the
  * result set. Sorting both makes the key independent of how the client

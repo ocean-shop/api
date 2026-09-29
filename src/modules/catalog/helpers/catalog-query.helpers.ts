@@ -58,6 +58,26 @@ export function parseAttributeFilters(
   }));
 }
 
+/**
+ * The match itself is case insensitive and ignores repeated spaces, so terms
+ * that only differ in typing are folded together here to share a cache key.
+ */
+export function normalizeSearchTerm(value: unknown): unknown {
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  return value.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
+/**
+ * Escapes the LIKE wildcards in a search term, so `50%` searches for that text
+ * instead of matching every product.
+ */
+export function escapeLikeWildcards(term: string): string {
+  return term.replace(/[\\%_]/g, (character) => `\\${character}`);
+}
+
 export function parseBoolean(value: unknown): unknown {
   if (value === 'true') {
     return true;

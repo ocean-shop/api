@@ -5,7 +5,11 @@ import {
   CacheService,
 } from '../../../../../core/cache/cache.service';
 import { CACHE_SCOPE_ALL } from '../../../../../core/cache/constants/cache.constants';
-import { POPULAR_PRODUCTS_LIMIT } from '../../../constants/pagination.constants';
+import {
+  POPULAR_PRODUCTS_LIMIT,
+  PRODUCT_SEARCH_LIMIT,
+} from '../../../constants/pagination.constants';
+import { buildProductSearchCacheSegments } from '../../../helpers/catalog-cache.helpers';
 import { CatalogProductSort } from '../../../models/product.models';
 import { AttributeRepository } from '../../../repositories/attribute/attribute.repository';
 import { CategoryRepository } from '../../../repositories/category/admin/category.repository';
@@ -24,6 +28,7 @@ describe('ProductsClientService', () => {
       findCatalogPaginated: jest.fn(),
       findPopular: jest.fn(),
       findActiveByShopIdAndId: jest.fn(),
+      searchActive: jest.fn(),
     };
 
     const categoryRepositoryMock = {
@@ -284,6 +289,64 @@ describe('ProductsClientService', () => {
     await expect(
       service.getProductById('product-id', 'shop-id'),
     ).rejects.toThrow(NotFoundException);
+  });
+
+  it('should search products and return the count with the top matches', async () => {
+    const searchResult = {
+      total: 42,
+      items: [
+        {
+          id: '1',
+          name: 'ocean tee',
+          price: '100.00',
+          oldPrice: null,
+          image: 'https://cdn/main.png',
+        },
+      ],
+    };
+    jest
+      .mocked(productClientRepository.searchActive)
+      .mockResolvedValue(searchResult);
+
+    const result = await service.searchProducts('shop-id', 'ocean');
+
+    expect(productClientRepository.searchActive).toHaveBeenCalledWith(
+      'shop-id',
+      'ocean',
+      PRODUCT_SEARCH_LIMIT,
+    );
+    expect(result).toEqual(searchResult);
+  });
+
+  it('should cache search results under the shop scope', async () => {
+    jest
+      .mocked(productClientRepository.searchActive)
+      .mockResolvedValue({ total: 0, items: [] });
+
+    await service.searchProducts('shop-id', 'ocean');
+
+    expect(cacheService.wrap).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scope: 'shop-id',
+        segments: buildProductSearchCacheSegments('ocean'),
+      }),
+      expect.any(Function),
+    );
+  });
+
+  it('should cache different search terms under different keys', async () => {
+    jest
+      .mocked(productClientRepository.searchActive)
+      .mockResolvedValue({ total: 0, items: [] });
+
+    await service.searchProducts('shop-id', 'ocean');
+    await service.searchProducts('shop-id', 'tee');
+
+    const [first, second] = jest
+      .mocked(cacheService.wrap)
+      .mock.calls.map(([descriptor]) => descriptor.segments);
+
+    expect(first).not.toEqual(second);
   });
 
   it('should cache a product under the shop scope', async () => {
