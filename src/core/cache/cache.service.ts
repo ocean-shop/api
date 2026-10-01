@@ -9,6 +9,7 @@ import type { Redis } from 'ioredis';
 import {
   CACHE_CLIENT,
   CACHE_KEY_PREFIX,
+  CACHE_SCAN_BATCH_SIZE,
   CACHE_SCOPE_ALL,
 } from './constants/cache.constants';
 
@@ -18,6 +19,12 @@ export type CacheDescriptor = {
   /** Identifies the payload inside the scope. Must already be canonical. */
   segments: string[];
   ttlSeconds: number;
+};
+
+export type CacheInvalidationResult = {
+  /** False when the API runs without Redis: there was nothing to clear. */
+  enabled: boolean;
+  removedKeys: number;
 };
 
 @Injectable()
@@ -99,6 +106,48 @@ export class CacheService implements OnModuleDestroy {
       // runs out, so an admin write must never fail because Redis is down.
       this.warn(`invalidate ${shopId}`, error);
     }
+  }
+
+  /**
+   * Drops every cached payload and version counter, for an operator who needs
+   * a clean slate. Writes use `invalidate` instead: that costs one INCR, while
+   * this walks the keyspace and is not a per-request tool.
+   *
+   * Unlike the read path this rethrows. The caller asked for an empty cache
+   * and has nothing to fall back to, so reporting success after a failed
+   * sweep would leave stale responses in rotation unnoticed.
+   */
+  async invalidateAll(): Promise<CacheInvalidationResult> {
+    const client = this.client;
+
+    if (!client) {
+      return { enabled: false, removedKeys: 0 };
+    }
+
+    let cursor = '0';
+    let removedKeys = 0;
+
+    do {
+      // SCAN rather than KEYS: the cache shares its Redis instance with
+      // BullMQ, so the sweep must not block queue traffic.
+      const [nextCursor, keys] = await client.scan(
+        cursor,
+        'MATCH',
+        `${CACHE_KEY_PREFIX}:*`,
+        'COUNT',
+        CACHE_SCAN_BATCH_SIZE,
+      );
+
+      cursor = nextCursor;
+
+      if (keys.length > 0) {
+        // UNLINK reclaims the memory on a background thread, keeping a large
+        // sweep off the main Redis loop.
+        removedKeys += await client.unlink(...keys);
+      }
+    } while (cursor !== '0');
+
+    return { enabled: true, removedKeys };
   }
 
   async onModuleDestroy(): Promise<void> {

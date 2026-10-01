@@ -13,6 +13,8 @@ describe('CacheService', () => {
   let set: jest.Mock;
   let incr: jest.Mock;
   let exec: jest.Mock;
+  let scan: jest.Mock;
+  let unlink: jest.Mock;
   let client: Redis;
 
   beforeEach(() => {
@@ -21,10 +23,14 @@ describe('CacheService', () => {
     incr = jest.fn();
     exec = jest.fn().mockResolvedValue([]);
     incr.mockImplementation(() => ({ incr, exec }));
+    scan = jest.fn().mockResolvedValue(['0', []]);
+    unlink = jest.fn((...keys: string[]) => Promise.resolve(keys.length));
 
     client = {
       get,
       set,
+      scan,
+      unlink,
       pipeline: jest.fn(() => ({ incr, exec })),
       quit: jest.fn().mockResolvedValue('OK'),
       disconnect: jest.fn(),
@@ -133,6 +139,60 @@ describe('CacheService', () => {
     exec.mockRejectedValue(new Error('ECONNRESET'));
 
     await expect(service.invalidate('shop-id')).resolves.toBeUndefined();
+  });
+
+  it('should report a disabled cache when sweeping without a client', async () => {
+    const service = new CacheService();
+
+    await expect(service.invalidateAll()).resolves.toEqual({
+      enabled: false,
+      removedKeys: 0,
+    });
+  });
+
+  it('should drop every cache key across all scan pages', async () => {
+    const service = new CacheService(client);
+    scan
+      .mockResolvedValueOnce(['17', ['cache:shop-id:version', 'cache:a']])
+      .mockResolvedValueOnce(['0', ['cache:b']]);
+
+    await expect(service.invalidateAll()).resolves.toEqual({
+      enabled: true,
+      removedKeys: 3,
+    });
+    expect(scan).toHaveBeenNthCalledWith(
+      1,
+      '0',
+      'MATCH',
+      'cache:*',
+      'COUNT',
+      500,
+    );
+    expect(scan).toHaveBeenNthCalledWith(
+      2,
+      '17',
+      'MATCH',
+      'cache:*',
+      'COUNT',
+      500,
+    );
+  });
+
+  it('should not unlink when the keyspace holds no cache keys', async () => {
+    const service = new CacheService(client);
+
+    await expect(service.invalidateAll()).resolves.toEqual({
+      enabled: true,
+      removedKeys: 0,
+    });
+    expect(unlink).not.toHaveBeenCalled();
+  });
+
+  it('should surface a failed sweep instead of reporting an empty cache', async () => {
+    const service = new CacheService(client);
+    scan.mockRejectedValue(new Error('ECONNRESET'));
+
+    await expect(service.invalidateAll()).rejects.toThrow('ECONNRESET');
   });
 
   it('should close the connection on shutdown', async () => {
