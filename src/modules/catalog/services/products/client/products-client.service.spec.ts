@@ -12,12 +12,14 @@ import {
 } from '../../../constants/pagination.constants';
 import {
   buildCatalogProductSearchCacheSegments,
+  buildCatalogSearchCategoriesCacheSegments,
   buildCatalogSearchFiltersCacheSegments,
   buildProductSearchCacheSegments,
 } from '../../../helpers/catalog-cache.helpers';
 import { CatalogProductSort } from '../../../models/product.models';
 import { AttributeRepository } from '../../../repositories/attribute/attribute.repository';
 import { CategoryRepository } from '../../../repositories/category/admin/category.repository';
+import { CategoryClientRepository } from '../../../repositories/category/client/category-client.repository';
 import { ProductClientRepository } from '../../../repositories/product/client/product-client.repository';
 import { ProductsClientService } from './products-client.service';
 
@@ -25,6 +27,7 @@ describe('ProductsClientService', () => {
   let service: ProductsClientService;
   let productClientRepository: ProductClientRepository;
   let categoryRepository: CategoryRepository;
+  let categoryClientRepository: CategoryClientRepository;
   let attributeRepository: AttributeRepository;
   let cacheService: CacheService;
 
@@ -39,6 +42,10 @@ describe('ProductsClientService', () => {
 
     const categoryRepositoryMock = {
       findById: jest.fn(),
+    };
+
+    const categoryClientRepositoryMock = {
+      findSearchCategories: jest.fn().mockResolvedValue([]),
     };
 
     const attributeRepositoryMock = {
@@ -64,6 +71,10 @@ describe('ProductsClientService', () => {
           useValue: productClientRepositoryMock,
         },
         { provide: CategoryRepository, useValue: categoryRepositoryMock },
+        {
+          provide: CategoryClientRepository,
+          useValue: categoryClientRepositoryMock,
+        },
         { provide: AttributeRepository, useValue: attributeRepositoryMock },
         { provide: CacheService, useValue: cacheServiceMock },
       ],
@@ -74,6 +85,9 @@ describe('ProductsClientService', () => {
       ProductClientRepository,
     );
     categoryRepository = module.get<CategoryRepository>(CategoryRepository);
+    categoryClientRepository = module.get<CategoryClientRepository>(
+      CategoryClientRepository,
+    );
     attributeRepository = module.get<AttributeRepository>(AttributeRepository);
     cacheService = module.get<CacheService>(CacheService);
   });
@@ -193,6 +207,17 @@ describe('ProductsClientService', () => {
       { name: 'Color', value: 'Red' },
       { name: 'Size', value: 'M' },
     ]);
+    jest
+      .mocked(categoryClientRepository.findSearchCategories)
+      .mockResolvedValue([
+        { id: 'category-1', name: 'Tees', slug: 'tees', parentId: null },
+        {
+          id: 'category-2',
+          name: 'Long sleeves',
+          slug: 'long-sleeves',
+          parentId: 'category-1',
+        },
+      ]);
 
     const result = await service.listCatalogProductsBySearch({
       shopId: 'shop-id',
@@ -225,6 +250,11 @@ describe('ProductsClientService', () => {
       'shop-id',
       'ocean tee',
     );
+    // Same for the categories, and they are scoped to the shop.
+    expect(categoryClientRepository.findSearchCategories).toHaveBeenCalledWith(
+      'shop-id',
+      'ocean tee',
+    );
     expect(result).toEqual({
       items: [{ id: '1' }],
       total: 1,
@@ -235,15 +265,27 @@ describe('ProductsClientService', () => {
         { name: 'Color', values: ['Blue', 'Red'] },
         { name: 'Size', values: ['M'] },
       ],
+      categories: [
+        { id: 'category-1', name: 'Tees', slug: 'tees', parentId: null },
+        {
+          id: 'category-2',
+          name: 'Long sleeves',
+          slug: 'long-sleeves',
+          parentId: 'category-1',
+        },
+      ],
     });
   });
 
-  it('should list a searched page with no filters when the term matches no attributes', async () => {
+  it('should list a searched page with no filters and no categories when the term matches nothing', async () => {
     jest
       .mocked(productClientRepository.findSearchPaginated)
       .mockResolvedValue({ items: [], total: 0 });
     jest
       .mocked(attributeRepository.findSearchFilterOptions)
+      .mockResolvedValue([]);
+    jest
+      .mocked(categoryClientRepository.findSearchCategories)
       .mockResolvedValue([]);
 
     const result = await service.listCatalogProductsBySearch({
@@ -254,6 +296,7 @@ describe('ProductsClientService', () => {
     });
 
     expect(result.filters).toEqual([]);
+    expect(result.categories).toEqual([]);
   });
 
   it('should reject a searched page price range when priceFrom is greater than priceTo', async () => {
@@ -270,6 +313,9 @@ describe('ProductsClientService', () => {
 
     expect(productClientRepository.findSearchPaginated).not.toHaveBeenCalled();
     expect(attributeRepository.findSearchFilterOptions).not.toHaveBeenCalled();
+    expect(
+      categoryClientRepository.findSearchCategories,
+    ).not.toHaveBeenCalled();
   });
 
   it('should cache a searched page under the shop scope', async () => {
@@ -314,6 +360,29 @@ describe('ProductsClientService', () => {
       expect.objectContaining({
         scope: 'shop-id',
         segments: buildCatalogSearchFiltersCacheSegments('ocean'),
+        ttlSeconds: CATALOG_FILTERS_CACHE_TTL_SECONDS,
+      }),
+      expect.any(Function),
+    );
+  });
+
+  it('should cache the categories of a search under the term alone', async () => {
+    jest
+      .mocked(productClientRepository.findSearchPaginated)
+      .mockResolvedValue({ items: [], total: 0 });
+
+    await service.listCatalogProductsBySearch({
+      shopId: 'shop-id',
+      query: 'ocean',
+      page: 3,
+      limit: 20,
+      sort: CatalogProductSort.CHEAPER,
+    });
+
+    expect(cacheService.wrap).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scope: 'shop-id',
+        segments: buildCatalogSearchCategoriesCacheSegments('ocean'),
         ttlSeconds: CATALOG_FILTERS_CACHE_TTL_SECONDS,
       }),
       expect.any(Function),

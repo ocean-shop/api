@@ -53,6 +53,23 @@ export const SEARCH_MATCHED_PRODUCT_CONDITION = `matched_product.shop_id = :shop
             AND ${buildProductNameMatchCondition('matched_product')}`;
 
 /**
+ * Whether a category, aliased as `category`, holds any product a search term
+ * matches, for the query that collects the categories of a search. Parameters
+ * `:shopId`, `:status` and `:term`, the last with its LIKE wildcards escaped,
+ * are bound by the caller.
+ *
+ * `EXISTS` rather than a join: the category is returned once however many of
+ * its products the term matches, so no `DISTINCT` is needed.
+ */
+export const SEARCH_MATCHED_CATEGORY_CONDITION = `EXISTS (
+          SELECT 1
+          FROM products_categories pc
+          INNER JOIN products matched_product ON matched_product.id = pc.product_id
+          WHERE pc.category_id = category.id
+            AND ${SEARCH_MATCHED_PRODUCT_CONDITION}
+        )`;
+
+/**
  * Relevance ordering of the raw statement below. Popularity, then the shortest
  * name, then the newest product break the ties inside a tier, and the id keeps
  * the order stable so equally relevant products do not shuffle between

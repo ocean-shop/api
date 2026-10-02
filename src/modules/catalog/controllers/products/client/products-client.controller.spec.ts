@@ -108,6 +108,9 @@ describe('ProductsClientController', () => {
       limit: 20,
       totalPages: 0,
       filters: [{ name: 'Color', values: ['Blue', 'Red'] }],
+      categories: [
+        { id: 'category-1', name: 'Tees', slug: 'tees', parentId: null },
+      ],
     };
     jest
       .mocked(productsClientService.listCatalogProductsBySearch)

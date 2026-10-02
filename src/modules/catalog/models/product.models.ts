@@ -1,5 +1,6 @@
 import { ProductStatus } from '../entities/enums/product.enum';
 import { Product } from '../entities/product.entity';
+import { CatalogCategoryOption } from './category.models';
 
 export enum ProductSortBy {
   CREATED_AT = 'createdAt',
@@ -48,9 +49,14 @@ export type CatalogProductFilters = CommonCatalogProductFilters & {
   categoryId: string;
 };
 
-/** The search listing selects by a term where the catalog selects by category. */
+/**
+ * The search listing selects by a term where the catalog selects by category.
+ * Categories narrow its matches instead of selecting them, so they are a
+ * filter like any other and a search without them spans the whole shop.
+ */
 export type CatalogProductSearchFilters = CommonCatalogProductFilters & {
   term: string;
+  categoryIds?: string[];
 };
 
 export type ProductOrdering = {
@@ -81,11 +87,14 @@ export type ProductListResponse = {
 };
 
 /**
- * A search page plus the filters the term can be narrowed by, so the storefront
- * renders the results and the filter panel from a single request. The category
- * page gets the same filters from `filters/by-category/:categoryId`, which it
- * can request once per category instead of once per page.
+ * A search page plus everything the term can be narrowed by — the attribute
+ * filters and the categories holding the matched products — so the storefront
+ * renders the results, the filter panel and the category list from a single
+ * request. The category page gets the same filters from
+ * `filters/by-category/:categoryId`, which it can request once per category
+ * instead of once per page.
  */
 export type ProductSearchListResponse = ProductListResponse & {
   filters: CatalogFilter[];
+  categories: CatalogCategoryOption[];
 };

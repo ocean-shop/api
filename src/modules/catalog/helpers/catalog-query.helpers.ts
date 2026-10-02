@@ -3,6 +3,7 @@ import {
   ATTRIBUTE_NAME_SEPARATOR,
   ATTRIBUTE_VALUE_SEPARATOR,
 } from '../constants/attribute-filter.constants';
+import { CATEGORY_ID_SEPARATOR } from '../constants/category-query.constants';
 import { CatalogFilter } from '../models/product.models';
 
 function toRawAttributeGroups(value: unknown): string[] {
@@ -88,6 +89,23 @@ export function escapeLikeWildcards(term: string): string {
  */
 export function buildProductNameMatchCondition(alias: string): string {
   return `${alias}.name ILIKE '%' || :term || '%'`;
+}
+
+/**
+ * Reads the category ids given either as repeated parameters or as one comma
+ * separated value, so `categoryIds=a&categoryIds=b` and `categoryIds=a,b` are
+ * the same query. An empty list reads as no filter at all.
+ */
+export function parseCategoryIds(value: unknown): string[] | undefined {
+  const rawValues = Array.isArray(value) ? value : [value];
+
+  const ids = rawValues
+    .filter((item): item is string => typeof item === 'string')
+    .flatMap((item) => item.split(CATEGORY_ID_SEPARATOR))
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+
+  return ids.length > 0 ? Array.from(new Set(ids)) : undefined;
 }
 
 export function parseBoolean(value: unknown): unknown {

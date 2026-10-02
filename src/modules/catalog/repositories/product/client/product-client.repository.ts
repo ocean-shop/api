@@ -13,7 +13,10 @@ import {
   ProductSearchItem,
   ProductSearchResponse,
 } from '../../../models/product.models';
-import { CATEGORY_SUBTREE_IDS_SUBQUERY } from '../../../constants/category-query.constants';
+import {
+  CATEGORY_SUBTREES_IDS_SUBQUERY,
+  CATEGORY_SUBTREE_IDS_SUBQUERY,
+} from '../../../constants/category-query.constants';
 import {
   EFFECTIVE_PRICE_EXPRESSION,
   PRODUCT_NAME_MATCH_CONDITION,
@@ -76,6 +79,7 @@ export class ProductClientRepository extends ProductQueryRepository {
           term: escapeLikeWildcards(filters.term),
         });
 
+        this.applySearchCategoryFilter(query, filters.categoryIds);
         this.applyCommonCatalogFilters(query, filters);
       },
       skip,
@@ -204,6 +208,34 @@ export class ProductClientRepository extends ProductQueryRepository {
     filters.attributes?.forEach((attribute, index) => {
       this.applyAttributeFilter(query, attribute, index);
     });
+  }
+
+  /**
+   * Narrows a search to a selection of categories: a product matches when it
+   * sits in one of them or anywhere under it, so ticking a category returns
+   * what following it to `by-category/{categoryId}` returns for the same term.
+   *
+   * `EXISTS` rather than the join the category listing uses: a product
+   * assigned to several of the selected categories has to be one row, not one
+   * per category.
+   */
+  private applySearchCategoryFilter(
+    query: SelectQueryBuilder<Product>,
+    categoryIds?: string[],
+  ): void {
+    if (!categoryIds?.length) {
+      return;
+    }
+
+    query.andWhere(
+      `EXISTS (
+        SELECT 1
+        FROM products_categories filtered_category
+        WHERE filtered_category.product_id = product.id
+          AND filtered_category.category_id IN (${CATEGORY_SUBTREES_IDS_SUBQUERY})
+      )`,
+      { categoryIds },
+    );
   }
 
   private applyAttributeFilter(

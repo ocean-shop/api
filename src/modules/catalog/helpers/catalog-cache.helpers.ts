@@ -42,7 +42,10 @@ export function buildCatalogProductSearchCacheSegments(
 ): string[] {
   return [
     'products-search',
-    hashCatalogFilters(filters, page, limit, filters.term),
+    hashCatalogFilters(filters, page, limit, {
+      term: filters.term,
+      categoryIds: filters.categoryIds,
+    }),
   ];
 }
 
@@ -68,26 +71,48 @@ export function buildCatalogSearchFiltersCacheSegments(term: string): string[] {
   return ['filters-search', hashTerm(term)];
 }
 
+/**
+ * Builds the cache key segments for the categories available to a search term.
+ *
+ * Kept apart from the page and the filter segments for the same reason: the
+ * categories vary by term only, so paging or ticking a filter box reuses one
+ * entry instead of recollecting them for every combination.
+ */
+export function buildCatalogSearchCategoriesCacheSegments(
+  term: string,
+): string[] {
+  return ['categories-search', hashTerm(term)];
+}
+
 function hashTerm(term: string): string {
   return createHash('sha1').update(term).digest('hex');
 }
+
+/** What a search narrows by on top of the filters every listing shares. */
+type SearchCacheKeyParts = {
+  term: string;
+  categoryIds?: string[];
+};
 
 /** Hashes everything a listing varies by, in a form independent of its spelling. */
 function hashCatalogFilters(
   filters: CommonCatalogProductFilters,
   page: number,
   limit: number,
-  term?: string,
+  search?: SearchCacheKeyParts,
 ): string {
   const canonical = JSON.stringify({
     attributes: canonicalizeAttributes(filters.attributes),
     available: filters.available ?? null,
+    // Sorted and deduplicated for the same reason as the attributes: the ids
+    // are combined with OR, so their order cannot change the page.
+    categoryIds: [...new Set(search?.categoryIds ?? [])].sort(),
     limit,
     page,
     priceFrom: filters.priceFrom ?? null,
     priceTo: filters.priceTo ?? null,
     sort: filters.sort ?? null,
-    term: term ?? null,
+    term: search?.term ?? null,
   });
 
   return createHash('sha1').update(canonical).digest('hex');

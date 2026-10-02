@@ -22,6 +22,7 @@ import { Product } from '../../../entities/product.entity';
 import {
   buildCatalogProductSearchCacheSegments,
   buildCatalogProductsCacheSegments,
+  buildCatalogSearchCategoriesCacheSegments,
   buildCatalogSearchFiltersCacheSegments,
   buildProductSearchCacheSegments,
 } from '../../../helpers/catalog-cache.helpers';
@@ -30,6 +31,7 @@ import {
   toListResponse,
 } from '../../../helpers/list-response.helpers';
 import { AttributeFilterOption } from '../../../models/attribute.models';
+import { CatalogCategoryOption } from '../../../models/category.models';
 import {
   CatalogFilter,
   CatalogProductFilters,
@@ -40,6 +42,7 @@ import {
 } from '../../../models/product.models';
 import { AttributeRepository } from '../../../repositories/attribute/attribute.repository';
 import { CategoryRepository } from '../../../repositories/category/admin/category.repository';
+import { CategoryClientRepository } from '../../../repositories/category/client/category-client.repository';
 import { ProductClientRepository } from '../../../repositories/product/client/product-client.repository';
 
 @Injectable()
@@ -47,6 +50,7 @@ export class ProductsClientService {
   constructor(
     private readonly productClientRepository: ProductClientRepository,
     private readonly categoryRepository: CategoryRepository,
+    private readonly categoryClientRepository: CategoryClientRepository,
     private readonly attributeRepository: AttributeRepository,
     private readonly cacheService: CacheService,
   ) {}
@@ -110,10 +114,10 @@ export class ProductsClientService {
    * The catalog page of a search: the same filters, sorting and pagination as
    * `listCatalogProducts`, with the term selecting the products.
    *
-   * The filter panel ships with the page. A search has no category to ask
-   * `getFiltersByCategoryId` about, and the filters of a term are only known
-   * once the term is known, so the storefront would otherwise need a second
-   * round trip for every search.
+   * The filter panel and the category list ship with the page. A search has no
+   * category to ask `getFiltersByCategoryId` about, and what a term can be
+   * narrowed to is only known once the term is known, so the storefront would
+   * otherwise need two more round trips for every search.
    */
   async listCatalogProductsBySearch(
     query: ListCatalogProductsBySearchQueryDto,
@@ -124,6 +128,7 @@ export class ProductsClientService {
     const filters: CatalogProductSearchFilters = {
       shopId: query.shopId,
       term: query.query,
+      categoryIds: query.categoryIds,
       attributes: query.attributes,
       priceFrom: query.priceFrom,
       priceTo: query.priceTo,
@@ -131,14 +136,21 @@ export class ProductsClientService {
       sort: query.sort,
     };
 
-    // Two independent lookups, so they go out together: the page varies by
-    // every filter while the available filters vary by the term alone.
-    const [listResponse, availableFilters] = await Promise.all([
-      this.loadSearchPage(filters, page, limit, skip),
-      this.getFiltersBySearch(filters.shopId, filters.term),
-    ]);
+    // Three independent lookups, so they go out together: the page varies by
+    // every filter while the available filters and categories vary by the term
+    // alone.
+    const [listResponse, availableFilters, availableCategories] =
+      await Promise.all([
+        this.loadSearchPage(filters, page, limit, skip),
+        this.getFiltersBySearch(filters.shopId, filters.term),
+        this.getCategoriesBySearch(filters.shopId, filters.term),
+      ]);
 
-    return { ...listResponse, filters: availableFilters };
+    return {
+      ...listResponse,
+      filters: availableFilters,
+      categories: availableCategories,
+    };
   }
 
   private async loadSearchPage(
@@ -194,6 +206,28 @@ export class ProductsClientService {
 
         return this.toCatalogFilters(options);
       },
+    );
+  }
+
+  /**
+   * The categories a search can be narrowed to: every category holding an
+   * active product the term matches.
+   *
+   * Cached apart from the page and the filters, under the term alone, for the
+   * same reason as the filters: the categories are the same for every page,
+   * sort and filter combination of that term.
+   */
+  private async getCategoriesBySearch(
+    shopId: string,
+    term: string,
+  ): Promise<CatalogCategoryOption[]> {
+    return this.cacheService.wrap(
+      {
+        scope: shopId,
+        segments: buildCatalogSearchCategoriesCacheSegments(term),
+        ttlSeconds: CATALOG_FILTERS_CACHE_TTL_SECONDS,
+      },
+      () => this.categoryClientRepository.findSearchCategories(shopId, term),
     );
   }
 
