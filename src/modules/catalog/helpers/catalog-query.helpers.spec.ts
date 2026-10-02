@@ -1,4 +1,5 @@
 import {
+  buildProductNameMatchCondition,
   escapeLikeWildcards,
   normalizeSearchTerm,
 } from './catalog-query.helpers';
@@ -33,5 +34,13 @@ describe('escapeLikeWildcards', () => {
 
   it('should leave a term without wildcards untouched', () => {
     expect(escapeLikeWildcards('ocean tee')).toBe('ocean tee');
+  });
+});
+
+describe('buildProductNameMatchCondition', () => {
+  it('should match the name of the given alias against the bound term', () => {
+    expect(buildProductNameMatchCondition('matched_product')).toBe(
+      `matched_product.name ILIKE '%' || :term || '%'`,
+    );
   });
 });

@@ -1,12 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { Attribute } from '../../entities/attribute.entity';
 import { ProductStatus } from '../../entities/enums/product.enum';
 import {
   CATEGORY_SUBTREE_CTE,
   CATEGORY_SUBTREE_IDS,
 } from '../../constants/category-query.constants';
+import { SEARCH_MATCHED_PRODUCT_CONDITION } from '../../constants/product-query.constants';
+import { escapeLikeWildcards } from '../../helpers/catalog-query.helpers';
+import { AttributeFilterOption } from '../../models/attribute.models';
 
 @Injectable()
 export class AttributeRepository {
@@ -52,13 +55,9 @@ export class AttributeRepository {
 
   async findCategoryFilterOptions(
     categoryId: string,
-  ): Promise<Array<{ name: string; value: string }>> {
-    return this.repository
-      .createQueryBuilder('attribute')
-      .select('attribute.name', 'name')
-      .addSelect('attribute.value', 'value')
-      .distinct(true)
-      .where(
+  ): Promise<AttributeFilterOption[]> {
+    return this.createFilterOptionsQuery()
+      .andWhere(
         `attribute.id IN (
           ${CATEGORY_SUBTREE_CTE}
           SELECT pa.attribute_type_id
@@ -76,11 +75,44 @@ export class AttributeRepository {
         )`,
         { categoryId, status: ProductStatus.ACTIVE },
       )
-      .andWhere('attribute.value IS NOT NULL')
-      .andWhere("attribute.value <> ''")
-      .orderBy('attribute.name', 'ASC')
-      .addOrderBy('attribute.value', 'ASC')
-      .getRawMany<{ name: string; value: string }>();
+      .getRawMany<AttributeFilterOption>();
+  }
+
+  /**
+   * The filter options of a search: every attribute carried by an active
+   * product of the shop whose name the term matches, taken from the products
+   * themselves and from their variations.
+   *
+   * Deliberately independent of the attribute and price filters the listing
+   * applies, exactly like the category filters: the options describe what the
+   * term can be narrowed to, so they must not disappear as the user narrows.
+   */
+  async findSearchFilterOptions(
+    shopId: string,
+    term: string,
+  ): Promise<AttributeFilterOption[]> {
+    return this.createFilterOptionsQuery()
+      .andWhere('attribute.shopId = :shopId', { shopId })
+      .andWhere(
+        `attribute.id IN (
+          SELECT pa.attribute_type_id
+          FROM products matched_product
+          INNER JOIN products_attributes pa ON pa.product_id = matched_product.id
+          WHERE ${SEARCH_MATCHED_PRODUCT_CONDITION}
+          UNION
+          SELECT va.attribute_type_id
+          FROM products matched_product
+          INNER JOIN product_variations pv ON pv.product_id = matched_product.id
+          INNER JOIN variations_attributes va ON va.variation_id = pv.id
+          WHERE ${SEARCH_MATCHED_PRODUCT_CONDITION}
+        )`,
+        {
+          shopId,
+          status: ProductStatus.ACTIVE,
+          term: escapeLikeWildcards(term),
+        },
+      )
+      .getRawMany<AttributeFilterOption>();
   }
 
   create(payload: Partial<Attribute>): Attribute {
@@ -93,5 +125,24 @@ export class AttributeRepository {
 
   async remove(attribute: Attribute): Promise<Attribute> {
     return this.repository.remove(attribute);
+  }
+
+  /**
+   * The shape every filter option list is read in: the distinct name/value
+   * pairs, blanks dropped, ordered so the storefront renders them as stored.
+   *
+   * Callers narrow it with `andWhere` only: `where` would reset the conditions
+   * added here.
+   */
+  private createFilterOptionsQuery(): SelectQueryBuilder<Attribute> {
+    return this.repository
+      .createQueryBuilder('attribute')
+      .select('attribute.name', 'name')
+      .addSelect('attribute.value', 'value')
+      .distinct(true)
+      .where('attribute.value IS NOT NULL')
+      .andWhere("attribute.value <> ''")
+      .orderBy('attribute.name', 'ASC')
+      .addOrderBy('attribute.value', 'ASC');
   }
 }

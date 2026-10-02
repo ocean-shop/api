@@ -22,17 +22,20 @@ import { Product } from '../../../entities/product.entity';
 import {
   buildCatalogProductSearchCacheSegments,
   buildCatalogProductsCacheSegments,
+  buildCatalogSearchFiltersCacheSegments,
   buildProductSearchCacheSegments,
 } from '../../../helpers/catalog-cache.helpers';
 import {
   resolvePagination,
   toListResponse,
 } from '../../../helpers/list-response.helpers';
+import { AttributeFilterOption } from '../../../models/attribute.models';
 import {
   CatalogFilter,
   CatalogProductFilters,
   CatalogProductSearchFilters,
   ProductListResponse,
+  ProductSearchListResponse,
   ProductSearchResponse,
 } from '../../../models/product.models';
 import { AttributeRepository } from '../../../repositories/attribute/attribute.repository';
@@ -106,10 +109,15 @@ export class ProductsClientService {
   /**
    * The catalog page of a search: the same filters, sorting and pagination as
    * `listCatalogProducts`, with the term selecting the products.
+   *
+   * The filter panel ships with the page. A search has no category to ask
+   * `getFiltersByCategoryId` about, and the filters of a term are only known
+   * once the term is known, so the storefront would otherwise need a second
+   * round trip for every search.
    */
   async listCatalogProductsBySearch(
     query: ListCatalogProductsBySearchQueryDto,
-  ): Promise<ProductListResponse> {
+  ): Promise<ProductSearchListResponse> {
     this.assertPriceRangeValid(query.priceFrom, query.priceTo);
 
     const { page, limit, skip } = resolvePagination(query);
@@ -123,11 +131,27 @@ export class ProductsClientService {
       sort: query.sort,
     };
 
+    // Two independent lookups, so they go out together: the page varies by
+    // every filter while the available filters vary by the term alone.
+    const [listResponse, availableFilters] = await Promise.all([
+      this.loadSearchPage(filters, page, limit, skip),
+      this.getFiltersBySearch(filters.shopId, filters.term),
+    ]);
+
+    return { ...listResponse, filters: availableFilters };
+  }
+
+  private async loadSearchPage(
+    filters: CatalogProductSearchFilters,
+    page: number,
+    limit: number,
+    skip: number,
+  ): Promise<ProductListResponse> {
     // Search terms are typed character by character, so the same page is asked
     // for repeatedly within seconds: caching it keeps those repeats off Postgres.
     return this.cacheService.wrap(
       {
-        scope: query.shopId,
+        scope: filters.shopId,
         segments: buildCatalogProductSearchCacheSegments(filters, page, limit),
         ttlSeconds: CATALOG_PRODUCTS_CACHE_TTL_SECONDS,
       },
@@ -140,6 +164,35 @@ export class ProductsClientService {
           );
 
         return toListResponse(items, total, page, limit);
+      },
+    );
+  }
+
+  /**
+   * The filters a search can be narrowed by: every attribute of the active
+   * products the term matches.
+   *
+   * Cached apart from the page, under the term alone: the options are the same
+   * for every page, sort and filter combination of that term, so paging or
+   * ticking a box hits one entry instead of recounting the attributes.
+   */
+  private async getFiltersBySearch(
+    shopId: string,
+    term: string,
+  ): Promise<CatalogFilter[]> {
+    return this.cacheService.wrap(
+      {
+        scope: shopId,
+        segments: buildCatalogSearchFiltersCacheSegments(term),
+        ttlSeconds: CATALOG_FILTERS_CACHE_TTL_SECONDS,
+      },
+      async () => {
+        const options = await this.attributeRepository.findSearchFilterOptions(
+          shopId,
+          term,
+        );
+
+        return this.toCatalogFilters(options);
       },
     );
   }
@@ -226,9 +279,7 @@ export class ProductsClientService {
     );
   }
 
-  private toCatalogFilters(
-    options: Array<{ name: string; value: string }>,
-  ): CatalogFilter[] {
+  private toCatalogFilters(options: AttributeFilterOption[]): CatalogFilter[] {
     const valuesByName = new Map<string, string[]>();
 
     for (const { name, value } of options) {

@@ -54,7 +54,22 @@ export function buildCatalogProductSearchCacheSegments(
  * terms differing only in case or spacing share one key.
  */
 export function buildProductSearchCacheSegments(term: string): string[] {
-  return ['search', createHash('sha1').update(term).digest('hex')];
+  return ['search', hashTerm(term)];
+}
+
+/**
+ * Builds the cache key segments for the filters available to a search term.
+ *
+ * Kept apart from the page segments on purpose: the filters vary by term only,
+ * so paging or ticking a filter box reuses one entry instead of recomputing the
+ * options for every combination.
+ */
+export function buildCatalogSearchFiltersCacheSegments(term: string): string[] {
+  return ['filters-search', hashTerm(term)];
+}
+
+function hashTerm(term: string): string {
+  return createHash('sha1').update(term).digest('hex');
 }
 
 /** Hashes everything a listing varies by, in a form independent of its spelling. */

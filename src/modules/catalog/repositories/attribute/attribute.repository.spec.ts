@@ -5,6 +5,22 @@ import { Attribute } from '../../entities/attribute.entity';
 import { ProductStatus } from '../../entities/enums/product.enum';
 import { AttributeRepository } from './attribute.repository';
 
+/** The chain both filter option lookups build on top of. */
+function createFilterOptionsQueryBuilderMock(
+  options: Array<{ name: string; value: string }>,
+) {
+  return {
+    select: jest.fn().mockReturnThis(),
+    addSelect: jest.fn().mockReturnThis(),
+    distinct: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    addOrderBy: jest.fn().mockReturnThis(),
+    getRawMany: jest.fn().mockResolvedValue(options),
+  };
+}
+
 describe('AttributeRepository', () => {
   let repository: AttributeRepository;
   let typeOrmRepository: any;
@@ -146,33 +162,66 @@ describe('AttributeRepository', () => {
 
   it('should find category filter options', async () => {
     const options = [{ name: 'Color', value: 'Red' }];
-    const queryBuilder = {
-      select: jest.fn().mockReturnThis(),
-      addSelect: jest.fn().mockReturnThis(),
-      distinct: jest.fn().mockReturnThis(),
-      where: jest.fn().mockReturnThis(),
-      andWhere: jest.fn().mockReturnThis(),
-      orderBy: jest.fn().mockReturnThis(),
-      addOrderBy: jest.fn().mockReturnThis(),
-      getRawMany: jest.fn().mockResolvedValue(options),
-    };
+    const queryBuilder = createFilterOptionsQueryBuilderMock(options);
     typeOrmRepository.createQueryBuilder.mockReturnValue(queryBuilder);
 
     const result = await repository.findCategoryFilterOptions('category-id');
 
     expect(queryBuilder.distinct).toHaveBeenCalledWith(true);
-    expect(queryBuilder.where).toHaveBeenCalledWith(
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
       expect.stringContaining('WITH RECURSIVE category_subtree'),
       {
         categoryId: 'category-id',
         status: ProductStatus.ACTIVE,
       },
     );
-    expect(queryBuilder.where).toHaveBeenCalledWith(
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
       expect.stringContaining('pc.category_id IN (SELECT id FROM'),
       expect.anything(),
     );
     expect(result).toEqual(options);
+  });
+
+  it('should find search filter options from products and their variations', async () => {
+    const options = [{ name: 'Color', value: 'Red' }];
+    const queryBuilder = createFilterOptionsQueryBuilderMock(options);
+    typeOrmRepository.createQueryBuilder.mockReturnValue(queryBuilder);
+
+    const result = await repository.findSearchFilterOptions(
+      'shop-id',
+      'ocean tee',
+    );
+
+    expect(queryBuilder.distinct).toHaveBeenCalledWith(true);
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'attribute.shopId = :shopId',
+      { shopId: 'shop-id' },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      expect.stringContaining('INNER JOIN products_attributes pa'),
+      {
+        shopId: 'shop-id',
+        status: ProductStatus.ACTIVE,
+        term: 'ocean tee',
+      },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      expect.stringContaining('INNER JOIN variations_attributes va'),
+      expect.anything(),
+    );
+    expect(result).toEqual(options);
+  });
+
+  it('should escape the like wildcards of a search filter options term', async () => {
+    const queryBuilder = createFilterOptionsQueryBuilderMock([]);
+    typeOrmRepository.createQueryBuilder.mockReturnValue(queryBuilder);
+
+    await repository.findSearchFilterOptions('shop-id', '50%_off');
+
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      expect.stringContaining('attribute.id IN ('),
+      expect.objectContaining({ term: '50\\%\\_off' }),
+    );
   });
 
   it('should save attribute entity', async () => {

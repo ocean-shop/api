@@ -1,3 +1,5 @@
+import { buildProductNameMatchCondition } from '../helpers/catalog-query.helpers';
+
 /**
  * Price shown in the catalog: the cheapest variation for variable products,
  * the product price otherwise.
@@ -37,14 +39,18 @@ function buildSearchRelevanceExpression(termPlaceholder: string): string {
 export const PRODUCT_SEARCH_RELEVANCE_EXPRESSION =
   buildSearchRelevanceExpression(':term');
 
+/** Name match of a search against the main `product` alias of a listing. */
+export const PRODUCT_NAME_MATCH_CONDITION =
+  buildProductNameMatchCondition('product');
+
 /**
- * Name match of a search, for the query builder.
- *
- * `ILIKE '%term%'` is served by the GIN trigram index on the names of active
- * products, so the match stays an index lookup instead of a sequential scan.
- * The `:term` parameter has to arrive with its LIKE wildcards escaped.
+ * The active products of a shop a search term matches, for the subqueries that
+ * collect the filter options of a search. Parameters `:shopId`, `:status` and
+ * `:term`, the last with its LIKE wildcards escaped, are bound by the caller.
  */
-export const PRODUCT_NAME_MATCH_CONDITION = `product.name ILIKE '%' || :term || '%'`;
+export const SEARCH_MATCHED_PRODUCT_CONDITION = `matched_product.shop_id = :shopId
+            AND matched_product.status = :status
+            AND ${buildProductNameMatchCondition('matched_product')}`;
 
 /**
  * Relevance ordering of the raw statement below. Popularity, then the shortest

@@ -78,6 +78,18 @@ export function escapeLikeWildcards(term: string): string {
   return term.replace(/[\\%_]/g, (character) => `\\${character}`);
 }
 
+/**
+ * Builds the name match of a search for a query that aliases the products table
+ * as `alias`.
+ *
+ * `ILIKE '%term%'` is served by the GIN trigram index on the names of active
+ * products, so the match stays an index lookup instead of a sequential scan.
+ * The `:term` parameter has to arrive with its LIKE wildcards escaped.
+ */
+export function buildProductNameMatchCondition(alias: string): string {
+  return `${alias}.name ILIKE '%' || :term || '%'`;
+}
+
 export function parseBoolean(value: unknown): unknown {
   if (value === 'true') {
     return true;

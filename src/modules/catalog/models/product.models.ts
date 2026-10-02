@@ -79,3 +79,13 @@ export type ProductListResponse = {
   limit: number;
   totalPages: number;
 };
+
+/**
+ * A search page plus the filters the term can be narrowed by, so the storefront
+ * renders the results and the filter panel from a single request. The category
+ * page gets the same filters from `filters/by-category/:categoryId`, which it
+ * can request once per category instead of once per page.
+ */
+export type ProductSearchListResponse = ProductListResponse & {
+  filters: CatalogFilter[];
+};

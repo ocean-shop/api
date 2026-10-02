@@ -101,7 +101,14 @@ describe('ProductsClientController', () => {
       available: true,
       sort: CatalogProductSort.CHEAPER,
     };
-    const expected = { items: [], total: 0, page: 2, limit: 20, totalPages: 0 };
+    const expected = {
+      items: [],
+      total: 0,
+      page: 2,
+      limit: 20,
+      totalPages: 0,
+      filters: [{ name: 'Color', values: ['Blue', 'Red'] }],
+    };
     jest
       .mocked(productsClientService.listCatalogProductsBySearch)
       .mockResolvedValue(expected);

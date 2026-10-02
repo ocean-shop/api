@@ -5,12 +5,14 @@ import {
   CacheService,
 } from '../../../../../core/cache/cache.service';
 import { CACHE_SCOPE_ALL } from '../../../../../core/cache/constants/cache.constants';
+import { CATALOG_FILTERS_CACHE_TTL_SECONDS } from '../../../constants/catalog-cache.constants';
 import {
   POPULAR_PRODUCTS_LIMIT,
   PRODUCT_SEARCH_LIMIT,
 } from '../../../constants/pagination.constants';
 import {
   buildCatalogProductSearchCacheSegments,
+  buildCatalogSearchFiltersCacheSegments,
   buildProductSearchCacheSegments,
 } from '../../../helpers/catalog-cache.helpers';
 import { CatalogProductSort } from '../../../models/product.models';
@@ -41,6 +43,7 @@ describe('ProductsClientService', () => {
 
     const attributeRepositoryMock = {
       findCategoryFilterOptions: jest.fn(),
+      findSearchFilterOptions: jest.fn().mockResolvedValue([]),
     };
 
     // Stands in for a permanent cache miss, so the existing expectations keep
@@ -185,6 +188,11 @@ describe('ProductsClientService', () => {
     jest
       .mocked(productClientRepository.findSearchPaginated)
       .mockResolvedValue({ items: [{ id: '1' }] as any, total: 1 });
+    jest.mocked(attributeRepository.findSearchFilterOptions).mockResolvedValue([
+      { name: 'Color', value: 'Blue' },
+      { name: 'Color', value: 'Red' },
+      { name: 'Size', value: 'M' },
+    ]);
 
     const result = await service.listCatalogProductsBySearch({
       shopId: 'shop-id',
@@ -211,13 +219,41 @@ describe('ProductsClientService', () => {
       20,
       20,
     );
+    // The filters come from the term alone: the applied attribute and price
+    // filters must not narrow the panel they are ticked in.
+    expect(attributeRepository.findSearchFilterOptions).toHaveBeenCalledWith(
+      'shop-id',
+      'ocean tee',
+    );
     expect(result).toEqual({
       items: [{ id: '1' }],
       total: 1,
       page: 2,
       limit: 20,
       totalPages: 1,
+      filters: [
+        { name: 'Color', values: ['Blue', 'Red'] },
+        { name: 'Size', values: ['M'] },
+      ],
     });
+  });
+
+  it('should list a searched page with no filters when the term matches no attributes', async () => {
+    jest
+      .mocked(productClientRepository.findSearchPaginated)
+      .mockResolvedValue({ items: [], total: 0 });
+    jest
+      .mocked(attributeRepository.findSearchFilterOptions)
+      .mockResolvedValue([]);
+
+    const result = await service.listCatalogProductsBySearch({
+      shopId: 'shop-id',
+      query: 'ocean',
+      page: 1,
+      limit: 20,
+    });
+
+    expect(result.filters).toEqual([]);
   });
 
   it('should reject a searched page price range when priceFrom is greater than priceTo', async () => {
@@ -233,6 +269,7 @@ describe('ProductsClientService', () => {
     ).rejects.toThrow(BadRequestException);
 
     expect(productClientRepository.findSearchPaginated).not.toHaveBeenCalled();
+    expect(attributeRepository.findSearchFilterOptions).not.toHaveBeenCalled();
   });
 
   it('should cache a searched page under the shop scope', async () => {
@@ -260,7 +297,30 @@ describe('ProductsClientService', () => {
     );
   });
 
-  it('should cache a searched page apart from the suggestions of the same term', async () => {
+  it('should cache the filters of a search under the term alone', async () => {
+    jest
+      .mocked(productClientRepository.findSearchPaginated)
+      .mockResolvedValue({ items: [], total: 0 });
+
+    await service.listCatalogProductsBySearch({
+      shopId: 'shop-id',
+      query: 'ocean',
+      page: 3,
+      limit: 20,
+      sort: CatalogProductSort.CHEAPER,
+    });
+
+    expect(cacheService.wrap).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scope: 'shop-id',
+        segments: buildCatalogSearchFiltersCacheSegments('ocean'),
+        ttlSeconds: CATALOG_FILTERS_CACHE_TTL_SECONDS,
+      }),
+      expect.any(Function),
+    );
+  });
+
+  it('should cache a searched page apart from its filters and from the suggestions of the same term', async () => {
     jest
       .mocked(productClientRepository.findSearchPaginated)
       .mockResolvedValue({ items: [], total: 0 });
@@ -276,11 +336,11 @@ describe('ProductsClientService', () => {
     });
     await service.searchProducts('shop-id', 'ocean');
 
-    const [page, suggestions] = jest
+    const segments = jest
       .mocked(cacheService.wrap)
-      .mock.calls.map(([descriptor]) => descriptor.segments);
+      .mock.calls.map(([descriptor]) => descriptor.segments.join(':'));
 
-    expect(page).not.toEqual(suggestions);
+    expect(new Set(segments).size).toBe(segments.length);
   });
 
   it('should reject catalog price range when priceFrom is greater than priceTo', async () => {

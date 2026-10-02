@@ -6,6 +6,7 @@ import {
 import {
   buildCatalogProductSearchCacheSegments,
   buildCatalogProductsCacheSegments,
+  buildCatalogSearchFiltersCacheSegments,
   buildProductSearchCacheSegments,
 } from './catalog-cache.helpers';
 
@@ -177,6 +178,33 @@ describe('buildCatalogProductSearchCacheSegments', () => {
         1,
         20,
       ),
+    );
+  });
+});
+
+describe('buildCatalogSearchFiltersCacheSegments', () => {
+  it('should keep the user input out of the key', () => {
+    const segments = buildCatalogSearchFiltersCacheSegments('ocean tee');
+
+    expect(segments[0]).toBe('filters-search');
+    expect(segments[1]).toMatch(/^[0-9a-f]{40}$/);
+  });
+
+  it('should separate different terms', () => {
+    expect(buildCatalogSearchFiltersCacheSegments('ocean')).not.toEqual(
+      buildCatalogSearchFiltersCacheSegments('tee'),
+    );
+  });
+
+  it('should reuse one key for the same term', () => {
+    expect(buildCatalogSearchFiltersCacheSegments('ocean')).toEqual(
+      buildCatalogSearchFiltersCacheSegments('ocean'),
+    );
+  });
+
+  it('should not collide with the suggestions of the same term', () => {
+    expect(buildCatalogSearchFiltersCacheSegments('ocean')).not.toEqual(
+      buildProductSearchCacheSegments('ocean'),
     );
   });
 });

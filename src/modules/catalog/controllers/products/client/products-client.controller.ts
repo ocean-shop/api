@@ -35,7 +35,8 @@ export class ProductsClientController {
     summary:
       'List active catalog products matching a search string with filters, sorting and pagination',
     description:
-      'Accepts the same filters, sorting and pagination as the category listing. Without `sort` the page is ordered by relevance.',
+      'Accepts the same filters, sorting and pagination as the category listing. Without `sort` the page is ordered by relevance. ' +
+      'The response carries a `filters` array of the same shape as `filters/by-category/{categoryId}`, built from every attribute of the products the search string matches and independent of the filters applied to the page.',
   })
   async listCatalogProductsBySearch(
     @Query() query: ListCatalogProductsBySearchQueryDto,
