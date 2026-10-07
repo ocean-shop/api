@@ -28,10 +28,10 @@ export class CreateOrderDto {
   @IsNotEmpty()
   readonly shopId: string;
 
-  @ApiProperty({ format: 'uuid' })
+  @ApiPropertyOptional({ format: 'uuid' })
+  @IsOptional()
   @IsUUID()
-  @IsNotEmpty()
-  readonly userId: string;
+  readonly userId?: string;
 
   @ApiProperty({ maxLength: 255 })
   @IsString()
@@ -39,11 +39,11 @@ export class CreateOrderDto {
   @MaxLength(255)
   readonly shippingNumber: string;
 
-  @ApiProperty({ maxLength: 100 })
+  @ApiPropertyOptional({ maxLength: 100 })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(100)
-  readonly orderNumber: string;
+  readonly orderNumber?: string;
 
   @ApiPropertyOptional({ maxLength: 100 })
   @IsOptional()

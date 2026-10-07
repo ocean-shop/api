@@ -22,9 +22,9 @@ export class OrdersClientService extends OrdersStatusService {
 
     const order = this.orderClientRepository.create({
       shopId: dto.shopId,
-      userId: dto.userId,
+      userId: dto.userId ?? null,
       shippingNumber: dto.shippingNumber,
-      orderNumber: dto.orderNumber,
+      orderNumber: dto.orderNumber ?? null,
       firstName: dto.firstName ?? null,
       lastName: dto.lastName ?? null,
       middleName: dto.middleName ?? null,

@@ -26,14 +26,19 @@ export class Order {
   @Column({ type: 'uuid', name: 'shop_id' })
   shopId: string;
 
-  @Column({ type: 'uuid', name: 'user_id' })
-  userId: string;
+  @Column({ type: 'uuid', name: 'user_id', nullable: true })
+  userId: string | null;
 
   @Column({ type: 'varchar', length: 255, name: 'shipping_number' })
   shippingNumber: string;
 
-  @Column({ type: 'varchar', length: 100, name: 'order_number' })
-  orderNumber: string;
+  @Column({
+    type: 'varchar',
+    length: 100,
+    name: 'order_number',
+    nullable: true,
+  })
+  orderNumber: string | null;
 
   @Column({ type: 'varchar', length: 100, name: 'first_name', nullable: true })
   firstName: string | null;
@@ -114,9 +119,9 @@ export class Order {
   @JoinColumn({ name: 'shop_id' })
   shop: Shop;
 
-  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, { onDelete: 'CASCADE', nullable: true })
   @JoinColumn({ name: 'user_id' })
-  user: User;
+  user: User | null;
 
   @OneToMany(() => OrderProduct, (orderProduct) => orderProduct.order, {
     cascade: true,
