@@ -6,7 +6,6 @@ import {
   Param,
   ParseUUIDPipe,
   Patch,
-  Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -18,15 +17,14 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { Roles } from '../../../user/decorators/roles.decorator';
-import { JwtAuthGuard } from '../../../user/guards/jwt-auth.guard';
-import { RolesGuard } from '../../../user/guards/roles.guard';
-import { CreateOrderDto } from '../../dto/create-order.dto';
-import { ListOrdersByUserQueryDto } from '../../dto/list-orders-by-user-query.dto';
-import { ListOrdersQueryDto } from '../../dto/list-orders-query.dto';
-import { UpdateOrderPaymentStatusDto } from '../../dto/update-order-payment-status.dto';
-import { UpdateOrderStatusDto } from '../../dto/update-order-status.dto';
-import { OrdersService } from '../../services/orders/orders.service';
+import { Roles } from '../../../../user/decorators/roles.decorator';
+import { JwtAuthGuard } from '../../../../user/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../../user/guards/roles.guard';
+import { ListOrdersByUserQueryDto } from '../../../dto/list-orders-by-user-query.dto';
+import { ListOrdersQueryDto } from '../../../dto/list-orders-query.dto';
+import { UpdateOrderPaymentStatusDto } from '../../../dto/update-order-payment-status.dto';
+import { UpdateOrderStatusDto } from '../../../dto/update-order-status.dto';
+import { OrdersService } from '../../../services/orders/admin/orders.service';
 
 @Controller('orders')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -62,14 +60,6 @@ export class OrdersController {
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   async getOrderById(@Param('id', ParseUUIDPipe) id: string) {
     return this.ordersService.getOrderById(id);
-  }
-
-  @Post()
-  @Roles('admin', 'super')
-  @ApiOperation({ summary: 'Create order' })
-  @ApiBody({ type: CreateOrderDto })
-  async createOrder(@Body() dto: CreateOrderDto) {
-    return this.ordersService.createOrder(dto);
   }
 
   @Delete(':id')

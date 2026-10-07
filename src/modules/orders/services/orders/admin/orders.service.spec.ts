@@ -1,11 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import {
-  OrderPaymentMethod,
   OrderPaymentStatus,
-  OrderShippingMethod,
   OrderStatus,
-} from '../../entities/enums/order.enum';
-import { OrderRepository } from '../../repositories/order/order.repository';
+} from '../../../entities/enums/order.enum';
+import { OrderRepository } from '../../../repositories/order/admin/order.repository';
 import { OrdersService } from './orders.service';
 
 describe('OrdersService', () => {
@@ -17,11 +15,8 @@ describe('OrdersService', () => {
       findAllByShopId: jest.fn(),
       findAllByShopIdAndUserId: jest.fn(),
       findById: jest.fn(),
-      create: jest.fn(),
       save: jest.fn(),
       remove: jest.fn(),
-      replaceItems: jest.fn(),
-      validateProductsForShop: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -93,59 +88,6 @@ describe('OrdersService', () => {
 
     expect(orderRepository.findById).toHaveBeenCalledWith('order-1');
     expect(result).toEqual(order);
-  });
-
-  it('should create order with default statuses when omitted', async () => {
-    const dto = {
-      shopId: 'shop-id',
-      userId: 'user-id',
-      shippingNumber: 'TTN-1001',
-      orderNumber: 'ORD-1001',
-      subtotalAmount: 100,
-      discountAmount: 5,
-      totalAmount: 95,
-      paymentMethod: OrderPaymentMethod.CARD,
-      shippingMethod: OrderShippingMethod.NOVA,
-      items: [{ productId: 'product-id', unitPrice: 95, quantity: 1 }],
-    };
-
-    const created = { id: 'order-id', ...dto } as any;
-    const saved = { id: 'order-id' } as any;
-    const fullOrder = { id: 'order-id', items: [] } as any;
-
-    jest
-      .mocked(orderRepository.validateProductsForShop)
-      .mockResolvedValue(undefined);
-    jest.mocked(orderRepository.create).mockReturnValue(created);
-    jest.mocked(orderRepository.save).mockResolvedValue(saved);
-    jest.mocked(orderRepository.replaceItems).mockResolvedValue([]);
-    jest.mocked(orderRepository.findById).mockResolvedValue(fullOrder);
-
-    const result = await service.createOrder(dto);
-
-    expect(orderRepository.validateProductsForShop).toHaveBeenCalledWith(
-      'shop-id',
-      ['product-id'],
-    );
-    expect(orderRepository.create).toHaveBeenCalledWith({
-      shopId: 'shop-id',
-      userId: 'user-id',
-      shippingNumber: 'TTN-1001',
-      orderNumber: 'ORD-1001',
-      subtotalAmount: '100',
-      discountAmount: '5',
-      totalAmount: '95',
-      paymentMethod: OrderPaymentMethod.CARD,
-      paymentStatus: OrderPaymentStatus.UNPAID,
-      shippingMethod: OrderShippingMethod.NOVA,
-      status: OrderStatus.PENDING,
-    });
-    expect(orderRepository.save).toHaveBeenCalledWith(created);
-    expect(orderRepository.replaceItems).toHaveBeenCalledWith('order-id', [
-      { productId: 'product-id', unitPrice: 95, quantity: 1 },
-    ]);
-    expect(orderRepository.findById).toHaveBeenCalledWith('order-id');
-    expect(result).toEqual(fullOrder);
   });
 
   it('should remove order', async () => {

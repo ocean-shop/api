@@ -5,11 +5,14 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtAuthGuard } from '../user/guards/jwt-auth.guard';
 import { RolesGuard } from '../user/guards/roles.guard';
 import { Product } from '../catalog/entities/product.entity';
-import { OrdersController } from './controllers/orders/orders.controller';
+import { OrdersController } from './controllers/orders/admin/orders.controller';
+import { OrdersClientController } from './controllers/orders/client/orders-client.controller';
 import { Order } from './entities/order.entity';
 import { OrderProduct } from './entities/order-product.entity';
-import { OrderRepository } from './repositories/order/order.repository';
-import { OrdersService } from './services/orders/orders.service';
+import { OrderRepository } from './repositories/order/admin/order.repository';
+import { OrderClientRepository } from './repositories/order/client/order-client.repository';
+import { OrdersService } from './services/orders/admin/orders.service';
+import { OrdersClientService } from './services/orders/client/orders-client.service';
 
 @Module({
   imports: [
@@ -22,7 +25,14 @@ import { OrdersService } from './services/orders/orders.service';
       inject: [ConfigService],
     }),
   ],
-  controllers: [OrdersController],
-  providers: [OrdersService, OrderRepository, JwtAuthGuard, RolesGuard],
+  controllers: [OrdersController, OrdersClientController],
+  providers: [
+    OrdersService,
+    OrdersClientService,
+    OrderRepository,
+    OrderClientRepository,
+    JwtAuthGuard,
+    RolesGuard,
+  ],
 })
 export class OrdersModule {}
