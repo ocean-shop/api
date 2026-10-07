@@ -35,6 +35,21 @@ export class Order {
   @Column({ type: 'varchar', length: 100, name: 'order_number' })
   orderNumber: string;
 
+  @Column({ type: 'varchar', length: 100, name: 'first_name', nullable: true })
+  firstName: string | null;
+
+  @Column({ type: 'varchar', length: 100, name: 'last_name', nullable: true })
+  lastName: string | null;
+
+  @Column({ type: 'varchar', length: 100, name: 'middle_name', nullable: true })
+  middleName: string | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  email: string | null;
+
+  @Column({ type: 'varchar', length: 30, name: 'phone_number', nullable: true })
+  phoneNumber: string | null;
+
   @Column({
     type: 'numeric',
     precision: 10,

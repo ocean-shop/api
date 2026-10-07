@@ -2,12 +2,14 @@ import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
+  IsEmail,
   IsEnum,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
   IsUUID,
+  Matches,
   MaxLength,
   Min,
   ValidateNested,
@@ -42,6 +44,39 @@ export class CreateOrderDto {
   @IsNotEmpty()
   @MaxLength(100)
   readonly orderNumber: string;
+
+  @ApiPropertyOptional({ maxLength: 100 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  readonly firstName?: string;
+
+  @ApiPropertyOptional({ maxLength: 100 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  readonly lastName?: string;
+
+  @ApiPropertyOptional({ maxLength: 100 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  readonly middleName?: string;
+
+  @ApiPropertyOptional({ example: 'customer@example.com', maxLength: 255 })
+  @IsOptional()
+  @IsEmail()
+  @MaxLength(255)
+  readonly email?: string;
+
+  @ApiPropertyOptional({ example: '+380991234567' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^(\+380|380|0)\d{9}$/, {
+    message:
+      'Phone must be a valid Ukrainian number in +380XXXXXXXXX, 380XXXXXXXXX, or 0XXXXXXXXX format',
+  })
+  readonly phoneNumber?: string;
 
   @ApiProperty({ type: Number, minimum: 0 })
   @Type(() => Number)
