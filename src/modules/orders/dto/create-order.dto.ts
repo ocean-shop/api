@@ -43,12 +43,6 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   @MaxLength(100)
-  readonly orderNumber?: string;
-
-  @ApiPropertyOptional({ maxLength: 100 })
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
   readonly firstName?: string;
 
   @ApiPropertyOptional({ maxLength: 100 })

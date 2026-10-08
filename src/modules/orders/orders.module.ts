@@ -11,6 +11,7 @@ import { Order } from './entities/order.entity';
 import { OrderProduct } from './entities/order-product.entity';
 import { OrderRepository } from './repositories/order/admin/order.repository';
 import { OrderClientRepository } from './repositories/order/client/order-client.repository';
+import { OrderEmailService } from './services/email/order-email.service';
 import { OrdersService } from './services/orders/admin/orders.service';
 import { OrdersClientService } from './services/orders/client/orders-client.service';
 
@@ -29,6 +30,7 @@ import { OrdersClientService } from './services/orders/client/orders-client.serv
   providers: [
     OrdersService,
     OrdersClientService,
+    OrderEmailService,
     OrderRepository,
     OrderClientRepository,
     JwtAuthGuard,

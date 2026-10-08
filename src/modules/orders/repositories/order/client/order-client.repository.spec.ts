@@ -62,6 +62,59 @@ describe('OrderClientRepository', () => {
     expect(result).toEqual(order);
   });
 
+  describe('saveWithNextOrderNumber', () => {
+    let manager: any;
+    let queryBuilder: any;
+
+    beforeEach(() => {
+      queryBuilder = {
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn(),
+      };
+      manager = {
+        query: jest.fn().mockResolvedValue(undefined),
+        createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
+        save: jest.fn().mockImplementation((_entity, order) => order),
+      };
+      typeOrmRepository.manager = {
+        transaction: jest.fn((callback) => callback(manager)),
+      };
+    });
+
+    it('should assign the previous shop order number plus one', async () => {
+      queryBuilder.getRawOne.mockResolvedValue({ lastOrderNumber: '41' });
+
+      const result = await repository.saveWithNextOrderNumber({
+        shopId: 'shop-id',
+      } as any);
+
+      expect(manager.query).toHaveBeenCalledWith(
+        'SELECT pg_advisory_xact_lock(hashtext($1))',
+        ['shop-id'],
+      );
+      expect(queryBuilder.where).toHaveBeenCalledWith(
+        'order.shopId = :shopId',
+        { shopId: 'shop-id' },
+      );
+      expect(manager.save).toHaveBeenCalledWith(Order, {
+        shopId: 'shop-id',
+        orderNumber: '42',
+      });
+      expect(result.orderNumber).toBe('42');
+    });
+
+    it('should start from 1 when the shop has no orders', async () => {
+      queryBuilder.getRawOne.mockResolvedValue(undefined);
+
+      const result = await repository.saveWithNextOrderNumber({
+        shopId: 'shop-id',
+      } as any);
+
+      expect(result.orderNumber).toBe('1');
+    });
+  });
+
   it('should replace order items', async () => {
     const items = [
       { productId: 'p1', unitPrice: 10.5, quantity: 2 },
@@ -92,6 +145,36 @@ describe('OrderClientRepository', () => {
     expect(itemRepository.delete).toHaveBeenCalledWith({ orderId: 'order-id' });
     expect(itemRepository.save).not.toHaveBeenCalled();
     expect(result).toEqual([]);
+  });
+
+  it('should return the first image url per product by sort order', async () => {
+    productRepository.find.mockResolvedValue([
+      {
+        id: 'p1',
+        images: [
+          { url: 'second.jpg', sort: 2 },
+          { url: 'first.jpg', sort: 1 },
+        ],
+      },
+      { id: 'p2', images: [] },
+      { id: 'p3' },
+    ]);
+
+    const result = await repository.findProductImageUrls(['p1', 'p2', 'p3']);
+
+    expect(productRepository.find).toHaveBeenCalledWith({
+      where: { id: expect.anything() },
+      relations: { images: true },
+      select: { id: true, images: { url: true, sort: true } },
+    });
+    expect(result).toEqual(new Map([['p1', 'first.jpg']]));
+  });
+
+  it('should skip image lookup when there are no products', async () => {
+    const result = await repository.findProductImageUrls([]);
+
+    expect(productRepository.find).not.toHaveBeenCalled();
+    expect(result).toEqual(new Map());
   });
 
   it('should validate products for shop', async () => {

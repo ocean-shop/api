@@ -23,6 +23,29 @@ export class OrderClientRepository extends OrderQueryRepository {
     return this.repository.create(payload);
   }
 
+  // Assigns the next sequential order number within the shop. The advisory
+  // lock serialises concurrent order creation per shop so numbers never clash.
+  async saveWithNextOrderNumber(order: Order): Promise<Order> {
+    return this.repository.manager.transaction(async (manager) => {
+      await manager.query('SELECT pg_advisory_xact_lock(hashtext($1))', [
+        order.shopId,
+      ]);
+
+      const result = await manager
+        .createQueryBuilder(Order, 'order')
+        .select(
+          `COALESCE(MAX(CASE WHEN "order"."order_number" ~ '^[0-9]+$' THEN "order"."order_number"::bigint END), 0)`,
+          'lastOrderNumber',
+        )
+        .where('order.shopId = :shopId', { shopId: order.shopId })
+        .getRawOne<{ lastOrderNumber: string }>();
+
+      order.orderNumber = String(Number(result?.lastOrderNumber ?? 0) + 1);
+
+      return manager.save(Order, order);
+    });
+  }
+
   async replaceItems(
     orderId: string,
     items: Array<{ productId: string; unitPrice: number; quantity: number }>,
@@ -43,6 +66,34 @@ export class OrderClientRepository extends OrderQueryRepository {
     );
 
     return this.itemRepository.save(entities);
+  }
+
+  async findProductImageUrls(
+    productIds: string[],
+  ): Promise<Map<string, string>> {
+    const uniqueProductIds = Array.from(new Set(productIds));
+
+    if (uniqueProductIds.length === 0) {
+      return new Map();
+    }
+
+    const products = await this.productRepository.find({
+      where: { id: In(uniqueProductIds) },
+      relations: { images: true },
+      select: { id: true, images: { url: true, sort: true } },
+    });
+
+    const imageUrls = new Map<string, string>();
+    for (const product of products) {
+      const [firstImage] = [...(product.images ?? [])].sort(
+        (a, b) => a.sort - b.sort,
+      );
+      if (firstImage) {
+        imageUrls.set(product.id, firstImage.url);
+      }
+    }
+
+    return imageUrls;
   }
 
   async validateProductsForShop(

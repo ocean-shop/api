@@ -6,17 +6,24 @@ import {
   OrderStatus,
 } from '../../../entities/enums/order.enum';
 import { OrderClientRepository } from '../../../repositories/order/client/order-client.repository';
+import { OrderEmailService } from '../../email/order-email.service';
 import { OrdersClientService } from './orders-client.service';
 
 describe('OrdersClientService', () => {
   let service: OrdersClientService;
   let orderClientRepository: OrderClientRepository;
+  let orderEmailService: { sendOrderCreatedEmail: jest.Mock };
 
   beforeEach(async () => {
+    orderEmailService = {
+      sendOrderCreatedEmail: jest.fn().mockResolvedValue(undefined),
+    };
+
     const orderClientRepositoryMock = {
       findById: jest.fn(),
       create: jest.fn(),
       save: jest.fn(),
+      saveWithNextOrderNumber: jest.fn(),
       replaceItems: jest.fn(),
       validateProductsForShop: jest.fn(),
     };
@@ -25,6 +32,7 @@ describe('OrdersClientService', () => {
       providers: [
         OrdersClientService,
         { provide: OrderClientRepository, useValue: orderClientRepositoryMock },
+        { provide: OrderEmailService, useValue: orderEmailService },
       ],
     }).compile();
 
@@ -43,7 +51,6 @@ describe('OrdersClientService', () => {
       shopId: 'shop-id',
       userId: 'user-id',
       shippingNumber: 'TTN-1001',
-      orderNumber: 'ORD-1001',
       subtotalAmount: 100,
       discountAmount: 5,
       totalAmount: 95,
@@ -60,7 +67,9 @@ describe('OrdersClientService', () => {
       .mocked(orderClientRepository.validateProductsForShop)
       .mockResolvedValue(undefined);
     jest.mocked(orderClientRepository.create).mockReturnValue(created);
-    jest.mocked(orderClientRepository.save).mockResolvedValue(saved);
+    jest
+      .mocked(orderClientRepository.saveWithNextOrderNumber)
+      .mockResolvedValue(saved);
     jest.mocked(orderClientRepository.replaceItems).mockResolvedValue([]);
     jest.mocked(orderClientRepository.findById).mockResolvedValue(fullOrder);
 
@@ -74,7 +83,6 @@ describe('OrdersClientService', () => {
       shopId: 'shop-id',
       userId: 'user-id',
       shippingNumber: 'TTN-1001',
-      orderNumber: 'ORD-1001',
       firstName: null,
       lastName: null,
       middleName: null,
@@ -88,12 +96,47 @@ describe('OrdersClientService', () => {
       shippingMethod: OrderShippingMethod.NOVA,
       status: OrderStatus.PENDING,
     });
-    expect(orderClientRepository.save).toHaveBeenCalledWith(created);
+    expect(orderClientRepository.saveWithNextOrderNumber).toHaveBeenCalledWith(
+      created,
+    );
     expect(orderClientRepository.replaceItems).toHaveBeenCalledWith(
       'order-id',
       [{ productId: 'product-id', unitPrice: 95, quantity: 1 }],
     );
     expect(orderClientRepository.findById).toHaveBeenCalledWith('order-id');
+    expect(orderEmailService.sendOrderCreatedEmail).toHaveBeenCalledWith(
+      fullOrder,
+    );
+    expect(result).toEqual(fullOrder);
+  });
+
+  it('should still return the order when the email fails to send', async () => {
+    const fullOrder = { id: 'order-id', items: [] } as any;
+    jest
+      .mocked(orderClientRepository.validateProductsForShop)
+      .mockResolvedValue(undefined);
+    jest.mocked(orderClientRepository.create).mockReturnValue({} as any);
+    jest
+      .mocked(orderClientRepository.saveWithNextOrderNumber)
+      .mockResolvedValue({ id: 'order-id' } as any);
+    jest.mocked(orderClientRepository.replaceItems).mockResolvedValue([]);
+    jest.mocked(orderClientRepository.findById).mockResolvedValue(fullOrder);
+    orderEmailService.sendOrderCreatedEmail.mockRejectedValue(
+      new Error('Resend down'),
+    );
+
+    const result = await service.createOrder({
+      shopId: 'shop-id',
+      shippingNumber: 'TTN-1001',
+      subtotalAmount: 0,
+      discountAmount: 0,
+      totalAmount: 0,
+      paymentMethod: OrderPaymentMethod.CARD,
+      shippingMethod: OrderShippingMethod.NOVA,
+      items: [],
+    });
+    await new Promise(process.nextTick);
+
     expect(result).toEqual(fullOrder);
   });
 

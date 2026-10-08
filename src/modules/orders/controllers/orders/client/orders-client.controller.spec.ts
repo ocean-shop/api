@@ -46,7 +46,6 @@ describe('OrdersClientController', () => {
       shopId: '98f21967-fce6-4ceb-af61-304913f593a7',
       userId: '7208ff32-031d-4869-91e8-8a0bdd080f3e',
       shippingNumber: 'TTN-1001',
-      orderNumber: 'ORD-1001',
       subtotalAmount: 100,
       discountAmount: 10,
       totalAmount: 90,
