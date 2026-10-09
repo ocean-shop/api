@@ -11,7 +11,8 @@ import { AuthOtp } from './entities/auth-otp.entity';
 import { UserSettings } from './entities/user-settings.entity';
 import { Shop } from '../catalog/entities/shop.entity';
 import { Order } from '../orders/entities/order.entity';
-import { AuthController } from './controllers/auth/auth.controller';
+import { AuthController } from './controllers/auth/admin/auth.controller';
+import { AuthClientController } from './controllers/auth/client/auth-client.controller';
 import { SettingsController } from './controllers/settings/settings.controller';
 import { AdminsController } from './controllers/admins/admins.controller';
 import { UsersController } from './controllers/users/users.controller';
@@ -20,7 +21,9 @@ import { AuthOtpRepository } from './repositories/auth-otp/auth-otp.repository';
 import { UserSessionRepository } from './repositories/user-session/user-session.repository';
 import { SettingsRepository } from './repositories/settings/settings.repository';
 import { UsersRepository } from './repositories/users/users.repository';
+import { AuthClientRepository } from './repositories/auth-client/auth-client.repository';
 import { AuthService } from './services/auth/auth.service';
+import { AuthClientService } from './services/auth-client/auth-client.service';
 import { RequestOtpService } from './services/request-otp/request-otp.service';
 import { VerifyOtpService } from './services/verify-otp/verify-otp.service';
 import { RefreshTokenService } from './services/refresh-token/refresh-token.service';
@@ -58,6 +61,7 @@ import { RolesGuard } from './guards/roles.guard';
   ],
   controllers: [
     AuthController,
+    AuthClientController,
     SettingsController,
     AdminsController,
     UsersController,
@@ -68,7 +72,9 @@ import { RolesGuard } from './guards/roles.guard';
     UserSessionRepository,
     SettingsRepository,
     UsersRepository,
+    AuthClientRepository,
     AuthService,
+    AuthClientService,
     RequestOtpService,
     VerifyOtpService,
     RefreshTokenService,

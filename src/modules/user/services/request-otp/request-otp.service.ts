@@ -56,7 +56,7 @@ export class RequestOtpService {
     await this.createAndSendOtp(user.id, email, phone, purpose);
   }
 
-  private async createAndSendOtp(
+  async createAndSendOtp(
     userId: string,
     email: string | undefined,
     phone: string | undefined,

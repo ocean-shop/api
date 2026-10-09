@@ -1,12 +1,12 @@
 import { Controller, Post, Body, Res, Req, Headers, Ip } from '@nestjs/common';
 import { ApiBody, ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Response, Request } from 'express';
-import { RequestOtpService } from '../../services/request-otp/request-otp.service';
-import { VerifyOtpService } from '../../services/verify-otp/verify-otp.service';
-import { RefreshTokenService } from '../../services/refresh-token/refresh-token.service';
-import { LogoutService } from '../../services/logout/logout.service';
-import { RequestOtpDto } from '../../dto/request-otp.dto';
-import { VerifyOtpDto } from '../../dto/verify-otp.dto';
+import { RequestOtpService } from '../../../services/request-otp/request-otp.service';
+import { VerifyOtpService } from '../../../services/verify-otp/verify-otp.service';
+import { RefreshTokenService } from '../../../services/refresh-token/refresh-token.service';
+import { LogoutService } from '../../../services/logout/logout.service';
+import { RequestOtpDto } from '../../../dto/request-otp.dto';
+import { VerifyOtpDto } from '../../../dto/verify-otp.dto';
 
 @Controller('user/auth')
 @ApiTags('User Auth')
