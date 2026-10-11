@@ -1,0 +1,54 @@
+import { ForbiddenException, Injectable } from '@nestjs/common';
+import { UserProfile } from '../../entities/user-profile.entity';
+import { UserRepository } from '../../repositories/user/user.repository';
+import { ProfileRepository } from '../../repositories/profile/profile.repository';
+import { UpdateProfileDto } from '../../dto/update-profile.dto';
+import { JwtPayload } from '../../models/auth-request.models';
+
+const CLIENT_ROLE_NAME = 'user';
+
+@Injectable()
+export class ProfileService {
+  constructor(
+    private readonly userRepository: UserRepository,
+    private readonly profileRepository: ProfileRepository,
+  ) {}
+
+  async getProfile(
+    userId: string,
+    requester?: JwtPayload,
+  ): Promise<Partial<UserProfile>> {
+    this.assertCanAccess(userId, requester);
+    await this.userRepository.findById(userId);
+
+    const profile = await this.profileRepository.findByUserId(userId);
+    if (profile) {
+      return profile;
+    }
+
+    return { userId, fullName: null, phoneNumber: null };
+  }
+
+  async updateProfile(
+    userId: string,
+    dto: UpdateProfileDto,
+    requester?: JwtPayload,
+  ): Promise<UserProfile> {
+    this.assertCanAccess(userId, requester);
+    await this.userRepository.findById(userId);
+
+    await this.profileRepository.save({
+      userId,
+      fullName: dto.fullName,
+      phoneNumber: dto.phoneNumber,
+    });
+
+    return (await this.profileRepository.findByUserId(userId)) as UserProfile;
+  }
+
+  private assertCanAccess(userId: string, requester?: JwtPayload): void {
+    if (requester?.role === CLIENT_ROLE_NAME && requester.sub !== userId) {
+      throw new ForbiddenException('Доступ заборонено');
+    }
+  }
+}

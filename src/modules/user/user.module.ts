@@ -9,6 +9,7 @@ import { UserSession } from './entities/user-session.entity';
 import { OauthAccount } from './entities/oauth-account.entity';
 import { AuthOtp } from './entities/auth-otp.entity';
 import { UserSettings } from './entities/user-settings.entity';
+import { UserProfile } from './entities/user-profile.entity';
 import { Shop } from '../catalog/entities/shop.entity';
 import { Order } from '../orders/entities/order.entity';
 import { AuthController } from './controllers/auth/admin/auth.controller';
@@ -16,10 +17,12 @@ import { AuthClientController } from './controllers/auth/client/auth-client.cont
 import { SettingsController } from './controllers/settings/settings.controller';
 import { AdminsController } from './controllers/admins/admins.controller';
 import { UsersController } from './controllers/users/users.controller';
+import { ProfileController } from './controllers/users/client/profile-controller';
 import { UserRepository } from './repositories/user/user.repository';
 import { AuthOtpRepository } from './repositories/auth-otp/auth-otp.repository';
 import { UserSessionRepository } from './repositories/user-session/user-session.repository';
 import { SettingsRepository } from './repositories/settings/settings.repository';
+import { ProfileRepository } from './repositories/profile/profile.repository';
 import { UsersRepository } from './repositories/users/users.repository';
 import { AuthClientRepository } from './repositories/auth-client/auth-client.repository';
 import { AuthService } from './services/auth/auth.service';
@@ -31,6 +34,7 @@ import { LogoutService } from './services/logout/logout.service';
 import { EmailService } from './services/email/email.service';
 import { SmsService } from './services/sms/sms.service';
 import { SettingsService } from './services/settings/settings.service';
+import { ProfileService } from './services/profile/profile.service';
 import { AdminsService } from './services/admins/admins.service';
 import { UsersService } from './services/users/users.service';
 import { EmailProcessor } from './processors/email.processor';
@@ -48,6 +52,7 @@ import { RolesGuard } from './guards/roles.guard';
       OauthAccount,
       AuthOtp,
       UserSettings,
+      UserProfile,
       Shop,
       Order,
     ]),
@@ -65,12 +70,14 @@ import { RolesGuard } from './guards/roles.guard';
     SettingsController,
     AdminsController,
     UsersController,
+    ProfileController,
   ],
   providers: [
     UserRepository,
     AuthOtpRepository,
     UserSessionRepository,
     SettingsRepository,
+    ProfileRepository,
     UsersRepository,
     AuthClientRepository,
     AuthService,
@@ -82,6 +89,7 @@ import { RolesGuard } from './guards/roles.guard';
     EmailService,
     SmsService,
     SettingsService,
+    ProfileService,
     AdminsService,
     UsersService,
     JwtAuthGuard,
