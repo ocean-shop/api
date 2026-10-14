@@ -1,13 +1,18 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import { JwtPayload } from '../../../../user/models/auth-request.models';
 import { CreateOrderDto } from '../../../dto/create-order.dto';
+import { ListOrdersQueryDto } from '../../../dto/list-orders-query.dto';
 import {
   OrderPaymentStatus,
   OrderStatus,
 } from '../../../entities/enums/order.enum';
 import { Order } from '../../../entities/order.entity';
+import { OrdersListResponse } from '../../../models/order.models';
 import { OrderClientRepository } from '../../../repositories/order/client/order-client.repository';
 import { OrderEmailService } from '../../email/order-email.service';
 import { OrdersStatusService } from '../common/orders-status.service';
+
+const CLIENT_ROLE_NAME = 'user';
 
 @Injectable()
 export class OrdersClientService extends OrdersStatusService {
@@ -63,5 +68,45 @@ export class OrdersClientService extends OrdersStatusService {
       );
 
     return createdOrder;
+  }
+
+  async listOrdersByUser(
+    userId: string,
+    query: ListOrdersQueryDto,
+    requester?: JwtPayload,
+  ): Promise<OrdersListResponse> {
+    this.assertCanAccess(userId, requester);
+
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const skip = (page - 1) * limit;
+    const { items, total } =
+      await this.orderClientRepository.findAllByShopIdAndUserId(
+        query.shopId,
+        userId,
+        skip,
+        limit,
+      );
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+      totalPages: total > 0 ? Math.ceil(total / limit) : 0,
+    };
+  }
+
+  async getOrderById(id: string, requester?: JwtPayload): Promise<Order> {
+    const order = await this.orderClientRepository.findById(id);
+    this.assertCanAccess(order.userId, requester);
+
+    return order;
+  }
+
+  private assertCanAccess(userId: string | null, requester?: JwtPayload): void {
+    if (requester?.role === CLIENT_ROLE_NAME && requester.sub !== userId) {
+      throw new ForbiddenException('Доступ заборонено');
+    }
   }
 }

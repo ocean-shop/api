@@ -19,12 +19,12 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import { ShippingService } from '../../../services/shipping/shipping.service';
-import { CreateShippingDto } from '../../../dto/create-shipping.dto';
-import { JwtAuthGuard } from '../../../guards/jwt-auth.guard';
-import { RolesGuard } from '../../../guards/roles.guard';
-import { Roles } from '../../../decorators/roles.decorator';
-import type { AuthenticatedRequest } from '../../../models/auth-request.models';
+import { ShippingService } from '../../../../services/shipping/shipping.service';
+import { CreateShippingDto } from '../../../../dto/create-shipping.dto';
+import { JwtAuthGuard } from '../../../../guards/jwt-auth.guard';
+import { RolesGuard } from '../../../../guards/roles.guard';
+import { Roles } from '../../../../decorators/roles.decorator';
+import type { AuthenticatedRequest } from '../../../../models/auth-request.models';
 
 @Controller('user/client/shipping')
 @UseGuards(JwtAuthGuard, RolesGuard)

@@ -39,28 +39,6 @@ export class OrderRepository extends OrderQueryRepository {
     return { items, total };
   }
 
-  async findAllByShopIdAndUserId(
-    shopId: string,
-    userId: string,
-    skip: number,
-    take: number,
-  ): Promise<{ items: Order[]; total: number }> {
-    const [items, total] = await this.repository.findAndCount({
-      where: { shopId, userId },
-      relations: {
-        items: {
-          product: true,
-        },
-        user: true,
-      },
-      order: { createdAt: 'DESC' },
-      skip,
-      take,
-    });
-
-    return { items, total };
-  }
-
   async remove(order: Order): Promise<Order> {
     return this.repository.remove(order);
   }

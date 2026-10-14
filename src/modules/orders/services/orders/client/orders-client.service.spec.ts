@@ -1,3 +1,4 @@
+import { ForbiddenException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   OrderPaymentMethod,
@@ -21,6 +22,7 @@ describe('OrdersClientService', () => {
 
     const orderClientRepositoryMock = {
       findById: jest.fn(),
+      findAllByShopIdAndUserId: jest.fn(),
       create: jest.fn(),
       save: jest.fn(),
       saveWithNextOrderNumber: jest.fn(),
@@ -138,6 +140,83 @@ describe('OrdersClientService', () => {
     await new Promise(process.nextTick);
 
     expect(result).toEqual(fullOrder);
+  });
+
+  it('should list orders by user id with pagination', async () => {
+    const items = [{ id: 'order-1' }] as any;
+    jest
+      .mocked(orderClientRepository.findAllByShopIdAndUserId)
+      .mockResolvedValue({ items, total: 21 });
+
+    const result = await service.listOrdersByUser(
+      'user-id',
+      { shopId: 'shop-id', page: 2, limit: 20 },
+      { sub: 'user-id', role: 'user' } as any,
+    );
+
+    expect(orderClientRepository.findAllByShopIdAndUserId).toHaveBeenCalledWith(
+      'shop-id',
+      'user-id',
+      20,
+      20,
+    );
+    expect(result).toEqual({
+      items,
+      total: 21,
+      page: 2,
+      limit: 20,
+      totalPages: 2,
+    });
+  });
+
+  it('should forbid client listing orders of another user', async () => {
+    await expect(
+      service.listOrdersByUser(
+        'other-user-id',
+        { shopId: 'shop-id', page: 1, limit: 20 },
+        { sub: 'user-id', role: 'user' } as any,
+      ),
+    ).rejects.toThrow(ForbiddenException);
+    expect(
+      orderClientRepository.findAllByShopIdAndUserId,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('should allow admin to list orders of any user', async () => {
+    jest
+      .mocked(orderClientRepository.findAllByShopIdAndUserId)
+      .mockResolvedValue({ items: [], total: 0 });
+
+    const result = await service.listOrdersByUser(
+      'other-user-id',
+      { shopId: 'shop-id', page: 1, limit: 20 },
+      { sub: 'admin-id', role: 'admin' } as any,
+    );
+
+    expect(result.totalPages).toBe(0);
+  });
+
+  it('should get own order by id', async () => {
+    const order = { id: 'order-id', userId: 'user-id' } as any;
+    jest.mocked(orderClientRepository.findById).mockResolvedValue(order);
+
+    const result = await service.getOrderById('order-id', {
+      sub: 'user-id',
+      role: 'user',
+    } as any);
+
+    expect(orderClientRepository.findById).toHaveBeenCalledWith('order-id');
+    expect(result).toEqual(order);
+  });
+
+  it('should forbid client getting order of another user', async () => {
+    jest
+      .mocked(orderClientRepository.findById)
+      .mockResolvedValue({ id: 'order-id', userId: 'other-user-id' } as any);
+
+    await expect(
+      service.getOrderById('order-id', { sub: 'user-id', role: 'user' } as any),
+    ).rejects.toThrow(ForbiddenException);
   });
 
   it('should update payment status', async () => {

@@ -18,8 +18,8 @@ import { AuthClientController } from './controllers/auth/client/auth-client.cont
 import { SettingsController } from './controllers/settings/settings.controller';
 import { AdminsController } from './controllers/admins/admins.controller';
 import { UsersController } from './controllers/users/users.controller';
-import { ProfileController } from './controllers/users/client/profile-controller';
-import { ShippingController } from './controllers/users/client/shipping-controller';
+import { ProfileController } from './controllers/users/client/profile-client.controller';
+import { ShippingController } from './controllers/users/client/shipping-client.controller';
 import { UserRepository } from './repositories/user/user.repository';
 import { AuthOtpRepository } from './repositories/auth-otp/auth-otp.repository';
 import { UserSessionRepository } from './repositories/user-session/user-session.repository';

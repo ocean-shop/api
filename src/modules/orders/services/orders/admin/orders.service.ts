@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ListOrdersByUserQueryDto } from '../../../dto/list-orders-by-user-query.dto';
 import { ListOrdersQueryDto } from '../../../dto/list-orders-query.dto';
 import { Order } from '../../../entities/order.entity';
+import { OrdersListResponse } from '../../../models/order.models';
 import { OrderRepository } from '../../../repositories/order/admin/order.repository';
 import { OrdersStatusService } from '../common/orders-status.service';
 
@@ -11,7 +12,7 @@ export class OrdersService extends OrdersStatusService {
     super(orderRepository);
   }
 
-  async listOrders(query: ListOrdersQueryDto) {
+  async listOrders(query: ListOrdersQueryDto): Promise<OrdersListResponse> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const skip = (page - 1) * limit;
@@ -32,7 +33,9 @@ export class OrdersService extends OrdersStatusService {
     };
   }
 
-  async listOrdersByUser(query: ListOrdersByUserQueryDto) {
+  async listOrdersByUser(
+    query: ListOrdersByUserQueryDto,
+  ): Promise<OrdersListResponse> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const skip = (page - 1) * limit;

@@ -13,11 +13,11 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { Roles } from '../../decorators/roles.decorator';
-import { ListUsersByShopQueryDto } from '../../dto/list-users-by-shop-query.dto';
-import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
-import { RolesGuard } from '../../guards/roles.guard';
-import { UsersService } from '../../services/users/users.service';
+import { Roles } from '../../../decorators/roles.decorator';
+import { ListUsersByShopQueryDto } from '../../../dto/list-users-by-shop-query.dto';
+import { JwtAuthGuard } from '../../../guards/jwt-auth.guard';
+import { RolesGuard } from '../../../guards/roles.guard';
+import { UsersService } from '../../../services/users/users.service';
 
 @Controller('user/users')
 @UseGuards(JwtAuthGuard, RolesGuard)

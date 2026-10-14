@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ProfileController } from './profile-controller';
-import { ProfileService } from '../../../services/profile/profile.service';
-import { UpdateProfileDto } from '../../../dto/update-profile.dto';
-import { JwtAuthGuard } from '../../../guards/jwt-auth.guard';
-import { RolesGuard } from '../../../guards/roles.guard';
-import { AuthenticatedRequest } from '../../../models/auth-request.models';
+import { ProfileController } from './profile-client.controller';
+import { ProfileService } from '../../../../services/profile/profile.service';
+import { UpdateProfileDto } from '../../../../dto/update-profile.dto';
+import { JwtAuthGuard } from '../../../../guards/jwt-auth.guard';
+import { RolesGuard } from '../../../../guards/roles.guard';
+import { AuthenticatedRequest } from '../../../../models/auth-request.models';
 
 describe('ProfileController', () => {
   let controller: ProfileController;
