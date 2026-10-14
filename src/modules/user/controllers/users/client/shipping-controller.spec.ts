@@ -20,6 +20,8 @@ describe('ShippingController', () => {
     const shippingServiceMock = {
       getShippings: jest.fn(),
       createShipping: jest.fn(),
+      setMainShipping: jest.fn(),
+      removeShipping: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -48,6 +50,7 @@ describe('ShippingController', () => {
           userId,
           method: OrderShippingMethod.NOVA,
           address: 'Kyiv, branch 12',
+          isMain: true,
         },
       ];
 
@@ -70,6 +73,7 @@ describe('ShippingController', () => {
       const dto: CreateShippingDto = {
         method: OrderShippingMethod.UKR,
         address: 'Lviv, 79000',
+        isMain: true,
       };
       const expectedResult = {
         id: 'a1b2c3d4-0000-4000-8000-000000000002',
@@ -89,6 +93,52 @@ describe('ShippingController', () => {
         request.user,
       );
       expect(result).toEqual(expectedResult);
+    });
+  });
+
+  describe('setMainShipping', () => {
+    it('should call shippingService.setMainShipping', async () => {
+      const shippingId = 'a1b2c3d4-0000-4000-8000-000000000003';
+      const expectedResult = {
+        id: shippingId,
+        userId,
+        method: OrderShippingMethod.NOVA,
+        address: 'Odesa, branch 5',
+        isMain: true,
+      };
+
+      jest
+        .mocked(shippingService.setMainShipping)
+        .mockResolvedValue(expectedResult as any);
+
+      const result = await controller.setMainShipping(
+        userId,
+        shippingId,
+        request,
+      );
+
+      expect(shippingService.setMainShipping).toHaveBeenCalledWith(
+        userId,
+        shippingId,
+        request.user,
+      );
+      expect(result).toEqual(expectedResult);
+    });
+  });
+
+  describe('removeShipping', () => {
+    it('should call shippingService.removeShipping', async () => {
+      const shippingId = 'a1b2c3d4-0000-4000-8000-000000000004';
+
+      jest.mocked(shippingService.removeShipping).mockResolvedValue(undefined);
+
+      await controller.removeShipping(userId, shippingId, request);
+
+      expect(shippingService.removeShipping).toHaveBeenCalledWith(
+        userId,
+        shippingId,
+        request.user,
+      );
     });
   });
 });

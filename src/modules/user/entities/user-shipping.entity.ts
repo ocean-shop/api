@@ -33,6 +33,9 @@ export class UserShipping {
   @Column({ type: 'varchar', length: 255, name: 'address' })
   address: string;
 
+  @Column({ type: 'boolean', name: 'is_main', default: false })
+  isMain: boolean;
+
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 

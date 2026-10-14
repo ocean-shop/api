@@ -36,7 +36,30 @@ export class ShippingService {
       userId,
       method: dto.method,
       address: dto.address,
+      isMain: dto.isMain ?? false,
     });
+  }
+
+  async removeShipping(
+    userId: string,
+    shippingId: string,
+    requester?: JwtPayload,
+  ): Promise<void> {
+    this.assertCanAccess(userId, requester);
+    await this.userRepository.findById(userId);
+
+    await this.shippingRepository.remove(userId, shippingId);
+  }
+
+  async setMainShipping(
+    userId: string,
+    shippingId: string,
+    requester?: JwtPayload,
+  ): Promise<UserShipping> {
+    this.assertCanAccess(userId, requester);
+    await this.userRepository.findById(userId);
+
+    return this.shippingRepository.setMain(userId, shippingId);
   }
 
   private assertCanAccess(userId: string, requester?: JwtPayload): void {
