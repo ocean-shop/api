@@ -45,6 +45,7 @@ describe('ProfileController', () => {
         userId,
         fullName: 'John Doe',
         phoneNumber: '+380501234567',
+        birthday: '1990-05-21',
       };
 
       jest.mocked(profileService.getProfile).mockResolvedValue(expectedResult);
@@ -64,6 +65,7 @@ describe('ProfileController', () => {
       const dto: UpdateProfileDto = {
         fullName: 'John Doe',
         phoneNumber: '+380501234567',
+        birthday: '1990-05-21',
       };
       const expectedResult = { userId, ...dto };
 

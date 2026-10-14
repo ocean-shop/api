@@ -24,6 +24,9 @@ export class UserProfile {
   @Column({ type: 'varchar', length: 30, name: 'phone_number', nullable: true })
   phoneNumber: string | null;
 
+  @Column({ type: 'date', name: 'birthday', nullable: true })
+  birthday: string | null;
+
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 

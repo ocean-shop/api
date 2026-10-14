@@ -26,7 +26,7 @@ export class ProfileService {
       return profile;
     }
 
-    return { userId, fullName: null, phoneNumber: null };
+    return { userId, fullName: null, phoneNumber: null, birthday: null };
   }
 
   async updateProfile(
@@ -41,6 +41,7 @@ export class ProfileService {
       userId,
       fullName: dto.fullName,
       phoneNumber: dto.phoneNumber,
+      birthday: dto.birthday,
     });
 
     return (await this.profileRepository.findByUserId(userId)) as UserProfile;
