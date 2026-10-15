@@ -38,6 +38,10 @@ import { AttributesService } from './services/attributes/attributes.service';
 import { ImagesService } from './services/images/images.service';
 import { ProductsClientController } from './controllers/products/client/products-client.controller';
 import { CategoriesClientController } from './controllers/categories/client/categories-client.controller';
+import { FavoritesClientController } from './controllers/favorites/client/favorites-client.controller';
+import { UserFavoriteProduct } from './entities/user-favorite-product.entity';
+import { FavoriteProductRepository } from './repositories/favorite-product/favorite-product.repository';
+import { FavoritesClientService } from './services/favorites/client/favorites-client.service';
 
 @Module({
   imports: [
@@ -51,6 +55,7 @@ import { CategoriesClientController } from './controllers/categories/client/cate
       ProductVariation,
       VariationAttribute,
       VariationImage,
+      UserFavoriteProduct,
     ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -69,6 +74,7 @@ import { CategoriesClientController } from './controllers/categories/client/cate
     ProductsController,
     ProductsClientController,
     ImagesController,
+    FavoritesClientController,
   ],
   providers: [
     ShopsService,
@@ -80,6 +86,7 @@ import { CategoriesClientController } from './controllers/categories/client/cate
     ProductsClientService,
     ImagesService,
     ProductImagesCloudinaryService,
+    FavoritesClientService,
     ShopRepository,
     CategoryRepository,
     CategoryClientRepository,
@@ -88,6 +95,7 @@ import { CategoriesClientController } from './controllers/categories/client/cate
     ProductRepository,
     ProductClientRepository,
     ProductVariationRepository,
+    FavoriteProductRepository,
     JwtAuthGuard,
     RolesGuard,
   ],
