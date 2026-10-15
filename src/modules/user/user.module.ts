@@ -13,6 +13,7 @@ import { UserProfile } from './entities/user-profile.entity';
 import { UserShipping } from './entities/user-shipping.entity';
 import { Shop } from '../catalog/entities/shop.entity';
 import { Order } from '../orders/entities/order.entity';
+import { CatalogModule } from '../catalog/catalog.module';
 import { AuthController } from './controllers/auth/admin/auth.controller';
 import { AuthClientController } from './controllers/auth/client/auth-client.controller';
 import { SettingsController } from './controllers/settings/settings.controller';
@@ -20,12 +21,14 @@ import { AdminsController } from './controllers/admins/admins.controller';
 import { UsersController } from './controllers/users/admin/users.controller';
 import { ProfileController } from './controllers/users/client/profile-client/profile-client.controller';
 import { ShippingController } from './controllers/users/client/shippng-client/shipping-client.controller';
+import { DashboardController } from './controllers/users/client/dashboard-client/dashboard-client.controller';
 import { UserRepository } from './repositories/user/user.repository';
 import { AuthOtpRepository } from './repositories/auth-otp/auth-otp.repository';
 import { UserSessionRepository } from './repositories/user-session/user-session.repository';
 import { SettingsRepository } from './repositories/settings/settings.repository';
 import { ProfileRepository } from './repositories/profile/profile.repository';
 import { ShippingRepository } from './repositories/shipping/shipping.repository';
+import { DashboardRepository } from './repositories/dashboard/dashboard.repository';
 import { UsersRepository } from './repositories/users/users.repository';
 import { AuthClientRepository } from './repositories/auth-client/auth-client.repository';
 import { AuthService } from './services/auth/auth.service';
@@ -39,6 +42,7 @@ import { SmsService } from './services/sms/sms.service';
 import { SettingsService } from './services/settings/settings.service';
 import { ProfileService } from './services/profile/profile.service';
 import { ShippingService } from './services/shipping/shipping.service';
+import { DashboardService } from './services/dashboard/dashboard.service';
 import { AdminsService } from './services/admins/admins.service';
 import { UsersService } from './services/users/users.service';
 import { EmailProcessor } from './processors/email.processor';
@@ -68,6 +72,7 @@ import { RolesGuard } from './guards/roles.guard';
       }),
       inject: [ConfigService],
     }),
+    CatalogModule,
   ],
   controllers: [
     AuthController,
@@ -77,6 +82,7 @@ import { RolesGuard } from './guards/roles.guard';
     UsersController,
     ProfileController,
     ShippingController,
+    DashboardController,
   ],
   providers: [
     UserRepository,
@@ -85,6 +91,7 @@ import { RolesGuard } from './guards/roles.guard';
     SettingsRepository,
     ProfileRepository,
     ShippingRepository,
+    DashboardRepository,
     UsersRepository,
     AuthClientRepository,
     AuthService,
@@ -98,6 +105,7 @@ import { RolesGuard } from './guards/roles.guard';
     SettingsService,
     ProfileService,
     ShippingService,
+    DashboardService,
     AdminsService,
     UsersService,
     JwtAuthGuard,

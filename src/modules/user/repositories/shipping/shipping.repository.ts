@@ -17,6 +17,10 @@ export class ShippingRepository {
     });
   }
 
+  async findMainByUserId(userId: string): Promise<UserShipping | null> {
+    return this.repository.findOne({ where: { userId, isMain: true } });
+  }
+
   // Keeps a single main shipping per user: the first shipping becomes main
   // automatically, and a new main one unsets the previous main.
   async create(shipping: Partial<UserShipping>): Promise<UserShipping> {

@@ -99,5 +99,6 @@ import { FavoritesClientService } from './services/favorites/client/favorites-cl
     JwtAuthGuard,
     RolesGuard,
   ],
+  exports: [FavoriteProductRepository],
 })
 export class CatalogModule {}
