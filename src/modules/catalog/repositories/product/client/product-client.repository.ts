@@ -17,6 +17,7 @@ import {
   ProductOrdering,
   ProductSearchItem,
   ProductSearchResponse,
+  ProductSitemapEntry,
 } from '../../../models/product.models';
 import {
   CATEGORY_SUBTREES_IDS_SUBQUERY,
@@ -103,6 +104,28 @@ export class ProductClientRepository extends ProductQueryRepository {
     productId: string,
   ): Promise<Product | null> {
     return this.findOneActiveWithRelations({ id: productId, shopId });
+  }
+
+  /** Same as `findActiveByShopIdAndId`, addressed by the slug the storefront URLs carry. */
+  async findActiveByShopIdAndSlug(
+    shopId: string,
+    slug: string,
+  ): Promise<Product | null> {
+    return this.findOneActiveWithRelations({ slug, shopId });
+  }
+
+  /**
+   * Every active product of a shop, reduced to the two columns a sitemap needs,
+   * so listing the whole catalog loads no relations.
+   */
+  async findActiveSitemapEntries(
+    shopId: string,
+  ): Promise<ProductSitemapEntry[]> {
+    return this.repository.find({
+      select: { slug: true, updatedAt: true },
+      where: { shopId, status: ProductStatus.ACTIVE },
+      order: { updatedAt: 'DESC' },
+    });
   }
 
   /**
@@ -195,6 +218,7 @@ export class ProductClientRepository extends ProductQueryRepository {
       total: rows.length > 0 ? Number(rows[0].total) : 0,
       items: rows.map((row) => ({
         id: row.id,
+        slug: row.slug,
         name: row.name,
         price: row.price,
         oldPrice: row.oldPrice,

@@ -64,9 +64,16 @@ export type ProductOrdering = {
   direction: 'ASC' | 'DESC';
 };
 
-/** Everything a search suggestion needs: a card plus the id to redirect to. */
+/** One sitemap URL: the slug the storefront address is built from and when it last changed. */
+export type ProductSitemapEntry = {
+  slug: string;
+  updatedAt: Date;
+};
+
+/** Everything a search suggestion needs: a card plus the id and slug to redirect to. */
 export type ProductSearchItem = {
   id: string;
+  slug: string;
   name: string;
   price: string;
   oldPrice: string | null;

@@ -532,6 +532,7 @@ describe('ProductsClientService', () => {
       items: [
         {
           id: '1',
+          slug: 'ocean-tee',
           name: 'ocean tee',
           price: '100.00',
           oldPrice: null,

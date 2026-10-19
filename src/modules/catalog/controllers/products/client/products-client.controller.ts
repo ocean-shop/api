@@ -32,6 +32,17 @@ export class ProductsClientController {
   }
 
   // Declared before `:productId` so the literal path wins the route match.
+  @Get('sitemap')
+  @ApiOperation({
+    summary:
+      'List the slug and last update time of every active product of a shop, for the storefront sitemap',
+  })
+  @ApiQuery({ name: 'shopId', required: true, type: String, format: 'uuid' })
+  async listSitemapEntries(@Query('shopId', ParseUUIDPipe) shopId: string) {
+    return this.productsClientService.listSitemapEntries(shopId);
+  }
+
+  // Declared before `:productId` so the literal path wins the route match.
   @Get('search')
   @ApiOperation({
     summary: `Count the active products of a shop matching a search string and return the ${PRODUCT_SEARCH_LIMIT} most relevant ones`,
@@ -54,6 +65,20 @@ export class ProductsClientController {
     @Query() query: ListCatalogProductsBySearchQueryDto,
   ) {
     return this.productsClientService.listCatalogProductsBySearch(query);
+  }
+
+  @Get('by-slug/:slug')
+  @ApiOperation({
+    summary:
+      'Get an active product of a shop by its slug with its images, tags and variations with their images',
+  })
+  @ApiParam({ name: 'slug', type: String })
+  @ApiQuery({ name: 'shopId', required: true, type: String, format: 'uuid' })
+  async getProductBySlug(
+    @Param('slug') slug: string,
+    @Query('shopId', ParseUUIDPipe) shopId: string,
+  ) {
+    return this.productsClientService.getProductBySlug(slug, shopId);
   }
 
   @Get('by-category/:categoryId')

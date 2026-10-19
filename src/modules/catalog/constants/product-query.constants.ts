@@ -98,6 +98,7 @@ export const PRODUCT_SEARCH_QUERY = `
   WITH matches AS (
     SELECT
       product.id,
+      product.slug,
       product.name,
       product.price,
       product.old_price,
@@ -114,6 +115,7 @@ export const PRODUCT_SEARCH_QUERY = `
   )
   SELECT
     product.id AS "id",
+    product.slug AS "slug",
     product.name AS "name",
     ${EFFECTIVE_PRICE_EXPRESSION} AS "price",
     product.old_price AS "oldPrice",

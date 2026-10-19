@@ -39,6 +39,7 @@ import {
   ProductListResponse,
   ProductSearchListResponse,
   ProductSearchResponse,
+  ProductSitemapEntry,
 } from '../../../models/product.models';
 import { AttributeRepository } from '../../../repositories/attribute/attribute.repository';
 import { CategoryRepository } from '../../../repositories/category/admin/category.repository';
@@ -280,6 +281,42 @@ export class ProductsClientService {
 
         return product;
       },
+    );
+  }
+
+  async getProductBySlug(slug: string, shopId: string): Promise<Product> {
+    // Same contract as `getProductById`: only a matching pair is ever cached.
+    return this.cacheService.wrap(
+      {
+        scope: shopId,
+        segments: ['product-slug', slug],
+        ttlSeconds: CATALOG_PRODUCT_CACHE_TTL_SECONDS,
+      },
+      async () => {
+        const product =
+          await this.productClientRepository.findActiveByShopIdAndSlug(
+            shopId,
+            slug,
+          );
+
+        if (!product) {
+          throw new NotFoundException('Продукт не знайдено');
+        }
+
+        return product;
+      },
+    );
+  }
+
+  /** Crawlers ask for the sitemap rarely, but each ask reads the whole catalog. */
+  async listSitemapEntries(shopId: string): Promise<ProductSitemapEntry[]> {
+    return this.cacheService.wrap(
+      {
+        scope: shopId,
+        segments: ['sitemap'],
+        ttlSeconds: CATALOG_PRODUCT_CACHE_TTL_SECONDS,
+      },
+      () => this.productClientRepository.findActiveSitemapEntries(shopId),
     );
   }
 

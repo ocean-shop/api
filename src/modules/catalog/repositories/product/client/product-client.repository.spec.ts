@@ -467,6 +467,7 @@ describe('ProductClientRepository', () => {
     typeOrmRepository.query.mockResolvedValue([
       {
         id: '1',
+        slug: 'ocean-tee',
         name: 'Ocean Tee',
         price: '100.00',
         oldPrice: '120.00',
@@ -486,6 +487,7 @@ describe('ProductClientRepository', () => {
       items: [
         {
           id: '1',
+          slug: 'ocean-tee',
           name: 'Ocean Tee',
           price: '100.00',
           oldPrice: '120.00',

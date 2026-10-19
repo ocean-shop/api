@@ -134,6 +134,7 @@ describe('ProductsClientController', () => {
       items: [
         {
           id: '1',
+          slug: 'ocean-tee',
           name: 'Ocean Tee',
           price: '100.00',
           oldPrice: '120.00',
