@@ -37,6 +37,9 @@ export class Product {
   @Column({ type: 'varchar', length: 255 })
   name: string;
 
+  @Column({ type: 'varchar', length: 255 })
+  slug: string;
+
   @Column({ type: 'text', nullable: true })
   description: string | null;
 
@@ -74,6 +77,28 @@ export class Product {
     nullable: true,
   })
   oldPrice: string | null;
+
+  @Column({ type: 'varchar', length: 255, name: 'meta_title', nullable: true })
+  metaTitle: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 500,
+    name: 'meta_description',
+    nullable: true,
+  })
+  metaDescription: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 500,
+    name: 'canonical_url',
+    nullable: true,
+  })
+  canonicalUrl: string | null;
+
+  @Column({ type: 'boolean', default: false, name: 'no_index' })
+  noIndex: boolean;
 
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;

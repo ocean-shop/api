@@ -45,6 +45,15 @@ export class ProductImageItemDto {
   )
   readonly image: string;
 
+  @ApiPropertyOptional({
+    maxLength: 255,
+    description: 'Alternative text for search engines and screen readers',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  readonly alt?: string;
+
   @ApiPropertyOptional({ type: Number, minimum: 0 })
   @IsOptional()
   @Type(() => Number)

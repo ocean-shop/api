@@ -358,8 +358,12 @@ describe('ProductRepository', () => {
 
   it('should replace images for a product', async () => {
     const images = [
-      { url: 'https://cdn.example.com/a.jpg', sort: 0 },
-      { url: 'https://cdn.example.com/b.jpg', sort: 1 },
+      {
+        url: 'https://cdn.example.com/a.jpg',
+        alt: 'Маска для плавання',
+        sort: 0,
+      },
+      { url: 'https://cdn.example.com/b.jpg', alt: null, sort: 1 },
     ];
     const created = images.map((image) => ({
       productId: 'product-id',

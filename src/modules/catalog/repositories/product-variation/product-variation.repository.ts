@@ -60,7 +60,7 @@ export class ProductVariationRepository {
 
   async replaceImages(
     variationId: string,
-    images: Array<{ url: string; sort: number }>,
+    images: Array<{ url: string; alt: string | null; sort: number }>,
   ): Promise<VariationImage[]> {
     await this.imageRepository.delete({ variationId });
 
@@ -72,6 +72,7 @@ export class ProductVariationRepository {
       this.imageRepository.create({
         variationId,
         url: image.url,
+        alt: image.alt,
         sort: image.sort,
       }),
     );

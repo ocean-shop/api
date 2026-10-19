@@ -72,6 +72,10 @@ export class CategoriesService {
       name: dto.name,
       slug: dto.slug,
       sort,
+      metaTitle: dto.metaTitle ?? null,
+      metaDescription: dto.metaDescription ?? null,
+      canonicalUrl: dto.canonicalUrl ?? null,
+      noIndex: dto.noIndex ?? false,
     });
 
     return this.saveCategory(category);
@@ -112,6 +116,18 @@ export class CategoriesService {
     }
     if (dto.slug !== undefined) {
       category.slug = dto.slug;
+    }
+    if (dto.metaTitle !== undefined) {
+      category.metaTitle = dto.metaTitle;
+    }
+    if (dto.metaDescription !== undefined) {
+      category.metaDescription = dto.metaDescription;
+    }
+    if (dto.canonicalUrl !== undefined) {
+      category.canonicalUrl = dto.canonicalUrl;
+    }
+    if (dto.noIndex !== undefined) {
+      category.noIndex = dto.noIndex;
     }
 
     return this.saveCategory(category);

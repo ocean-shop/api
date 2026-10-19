@@ -93,6 +93,10 @@ describe('CategoriesService', () => {
       name: 'Accessories',
       slug: 'accessories',
       sort: 0,
+      metaTitle: null,
+      metaDescription: null,
+      canonicalUrl: null,
+      noIndex: false,
     });
     expect(result).toEqual(payload);
   });
@@ -121,6 +125,10 @@ describe('CategoriesService', () => {
       name: 'Bags',
       slug: 'bags',
       sort: 2,
+      metaTitle: null,
+      metaDescription: null,
+      canonicalUrl: null,
+      noIndex: false,
     });
   });
 

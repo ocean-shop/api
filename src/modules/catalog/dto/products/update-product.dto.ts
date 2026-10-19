@@ -7,10 +7,13 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUrl,
+  Matches,
   MaxLength,
   Min,
 } from 'class-validator';
 import { ProductStatus, ProductType } from '../../entities/enums/product.enum';
+import { SLUG_MAX_LENGTH, SLUG_REGEX } from '../../helpers/slug.helpers';
 
 export class UpdateProductDto {
   @ApiPropertyOptional({ enum: ProductType })
@@ -24,6 +27,21 @@ export class UpdateProductDto {
   @IsNotEmpty()
   @MaxLength(255)
   readonly name?: string;
+
+  @ApiPropertyOptional({
+    maxLength: SLUG_MAX_LENGTH,
+    description:
+      'Lowercase latin words joined by hyphens. Not regenerated on rename, so existing URLs keep working.',
+    example: 'hidrokostium-5-mm',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(SLUG_MAX_LENGTH)
+  @Matches(SLUG_REGEX, {
+    message:
+      'slug must contain only lowercase latin letters, digits and hyphens',
+  })
+  readonly slug?: string;
 
   @ApiPropertyOptional({ nullable: true })
   @IsOptional()
@@ -74,4 +92,27 @@ export class UpdateProductDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   readonly oldPrice?: number | null;
+
+  @ApiPropertyOptional({ maxLength: 255, nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  readonly metaTitle?: string | null;
+
+  @ApiPropertyOptional({ maxLength: 500, nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  readonly metaDescription?: string | null;
+
+  @ApiPropertyOptional({ maxLength: 500, nullable: true })
+  @IsOptional()
+  @IsUrl({ protocols: ['http', 'https'], require_protocol: true })
+  @MaxLength(500)
+  readonly canonicalUrl?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  readonly noIndex?: boolean;
 }

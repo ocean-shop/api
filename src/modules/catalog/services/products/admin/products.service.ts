@@ -19,6 +19,7 @@ import {
   resolvePagination,
   toListResponse,
 } from '../../../helpers/list-response.helpers';
+import { slugify, withSlugSuffix } from '../../../helpers/slug.helpers';
 import { ProductListResponse } from '../../../models/product.models';
 import { AttributeRepository } from '../../../repositories/attribute/attribute.repository';
 import { CategoryRepository } from '../../../repositories/category/admin/category.repository';
@@ -136,10 +137,15 @@ export class ProductsService {
       await this.ensureSkuUniqueInShop(dto.shopId, dto.sku);
     }
 
+    const slug = dto.slug
+      ? await this.ensureSlugUniqueInShop(dto.shopId, dto.slug)
+      : await this.generateUniqueSlug(dto.shopId, dto.name);
+
     const product = this.productRepository.create({
       shopId: dto.shopId,
       type: dto.type ?? ProductType.SIMPLE,
       name: dto.name,
+      slug,
       description: dto.description ?? null,
       landing: dto.landing ?? null,
       status: dto.status ?? ProductStatus.DRAFT,
@@ -149,6 +155,10 @@ export class ProductsService {
       sku: dto.sku ?? null,
       price: this.toNumericString(price),
       oldPrice: oldPrice === null ? null : this.toNumericString(oldPrice),
+      metaTitle: dto.metaTitle ?? null,
+      metaDescription: dto.metaDescription ?? null,
+      canonicalUrl: dto.canonicalUrl ?? null,
+      noIndex: dto.noIndex ?? false,
     });
 
     try {
@@ -180,6 +190,15 @@ export class ProductsService {
     if (dto.name !== undefined) {
       product.name = dto.name;
     }
+    // A rename leaves the slug alone on purpose: changing it would break every
+    // link and search result that already points at the product.
+    if (dto.slug !== undefined && dto.slug !== product.slug) {
+      product.slug = await this.ensureSlugUniqueInShop(
+        product.shopId,
+        dto.slug,
+        id,
+      );
+    }
     if (dto.description !== undefined) {
       product.description = dto.description;
     }
@@ -210,6 +229,18 @@ export class ProductsService {
     if (dto.oldPrice !== undefined) {
       product.oldPrice =
         dto.oldPrice === null ? null : this.toNumericString(dto.oldPrice);
+    }
+    if (dto.metaTitle !== undefined) {
+      product.metaTitle = dto.metaTitle;
+    }
+    if (dto.metaDescription !== undefined) {
+      product.metaDescription = dto.metaDescription;
+    }
+    if (dto.canonicalUrl !== undefined) {
+      product.canonicalUrl = dto.canonicalUrl;
+    }
+    if (dto.noIndex !== undefined) {
+      product.noIndex = dto.noIndex;
     }
 
     try {
@@ -278,6 +309,7 @@ export class ProductsService {
     const uploadedImages = await Promise.all(
       dto.images.map(async (image, index) => ({
         url: await this.resolveImageUrl(image.image),
+        alt: image.alt ?? null,
         sort: image.sort ?? index,
       })),
     );
@@ -361,6 +393,46 @@ export class ProductsService {
       throw new BadRequestException(
         'SKU продукту вже існує для цього магазину',
       );
+    }
+  }
+
+  /** Returns the slug so callers can assign it straight after the check. */
+  private async ensureSlugUniqueInShop(
+    shopId: string,
+    slug: string,
+    excludeProductId?: string,
+  ): Promise<string> {
+    const existing = await this.productRepository.findByShopIdAndSlug(
+      shopId,
+      slug,
+    );
+
+    if (existing && existing.id !== excludeProductId) {
+      throw new BadRequestException(
+        'Слаг продукту вже існує для цього магазину',
+      );
+    }
+
+    return slug;
+  }
+
+  /** Slug of the name, suffixed with `-2`, `-3`, … until no product holds it. */
+  private async generateUniqueSlug(
+    shopId: string,
+    name: string,
+  ): Promise<string> {
+    const base = slugify(name);
+
+    for (let attempt = 1; ; attempt += 1) {
+      const candidate = withSlugSuffix(base, attempt);
+      const existing = await this.productRepository.findByShopIdAndSlug(
+        shopId,
+        candidate,
+      );
+
+      if (!existing) {
+        return candidate;
+      }
     }
   }
 
@@ -461,10 +533,11 @@ export class ProductsService {
 
   private async resolveUploadedImages(
     dto: ProductVariationDto,
-  ): Promise<Array<{ url: string; sort: number }>> {
+  ): Promise<Array<{ url: string; alt: string | null; sort: number }>> {
     return Promise.all(
       dto.images.map(async (image, index) => ({
         url: await this.resolveImageUrl(image.image),
+        alt: image.alt ?? null,
         sort: image.sort ?? index,
       })),
     );
@@ -515,7 +588,7 @@ export class ProductsService {
   private async syncVariationRelations(
     variationId: string,
     validatedAttributes: string[],
-    uploadedImages: Array<{ url: string; sort: number }>,
+    uploadedImages: Array<{ url: string; alt: string | null; sort: number }>,
   ): Promise<void> {
     await this.productVariationRepository.replaceAttributes(
       variationId,
@@ -551,6 +624,17 @@ export class ProductsService {
     ) {
       throw new BadRequestException(
         'SKU продукту вже існує для цього магазину',
+      );
+    }
+
+    if (
+      matchesQueryFailedError(error, {
+        code: '23505',
+        constraint: 'uq_products_shop_slug',
+      })
+    ) {
+      throw new BadRequestException(
+        'Слаг продукту вже існує для цього магазину',
       );
     }
 

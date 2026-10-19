@@ -38,6 +38,7 @@ describe('ProductsService', () => {
       findByAttributeTypeIdPaginated: jest.fn(),
       findById: jest.fn(),
       findByShopIdAndSku: jest.fn(),
+      findByShopIdAndSlug: jest.fn(),
       create: jest.fn(),
       save: jest.fn((product) => Promise.resolve(product)),
       remove: jest.fn(),
@@ -274,6 +275,7 @@ describe('ProductsService', () => {
       shopId: 'shop-id',
       type: ProductType.SIMPLE,
       name: 'Ocean Tee',
+      slug: 'ocean-tee',
       description: null,
       landing: null,
       status: ProductStatus.DRAFT,
@@ -283,8 +285,142 @@ describe('ProductsService', () => {
       sku: null,
       price: '19.99',
       oldPrice: null,
+      metaTitle: null,
+      metaDescription: null,
+      canonicalUrl: null,
+      noIndex: false,
     });
     expect(result).toEqual(payload);
+  });
+
+  it('should suffix a generated slug that is already taken in the shop', async () => {
+    jest.mocked(shopRepository.findById).mockResolvedValue({
+      id: 'shop-id',
+    } as any);
+    jest
+      .mocked(productRepository.findByShopIdAndSlug)
+      .mockResolvedValueOnce({ id: 'other-1' } as any)
+      .mockResolvedValueOnce({ id: 'other-2' } as any)
+      .mockResolvedValueOnce(null);
+    jest.mocked(productRepository.create).mockReturnValue({ id: '1' } as any);
+    jest.mocked(productRepository.save).mockResolvedValue({ id: '1' } as any);
+
+    await service.createProduct({ shopId: 'shop-id', name: 'Маска Ocean' });
+
+    expect(productRepository.findByShopIdAndSlug).toHaveBeenLastCalledWith(
+      'shop-id',
+      'maska-ocean-3',
+    );
+    expect(productRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ slug: 'maska-ocean-3' }),
+    );
+  });
+
+  it('should create product with explicit slug and seo fields', async () => {
+    jest.mocked(shopRepository.findById).mockResolvedValue({
+      id: 'shop-id',
+    } as any);
+    jest.mocked(productRepository.findByShopIdAndSlug).mockResolvedValue(null);
+    jest.mocked(productRepository.create).mockReturnValue({ id: '1' } as any);
+    jest.mocked(productRepository.save).mockResolvedValue({ id: '1' } as any);
+
+    await service.createProduct({
+      shopId: 'shop-id',
+      name: 'Ocean Tee',
+      slug: 'tee',
+      metaTitle: 'Ocean Tee | Ocean Shop',
+      metaDescription: 'Cotton tee',
+      canonicalUrl: 'https://ocean.shop/tee',
+      noIndex: true,
+    });
+
+    expect(productRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        slug: 'tee',
+        metaTitle: 'Ocean Tee | Ocean Shop',
+        metaDescription: 'Cotton tee',
+        canonicalUrl: 'https://ocean.shop/tee',
+        noIndex: true,
+      }),
+    );
+  });
+
+  it('should throw when explicit slug already exists in shop on create', async () => {
+    jest.mocked(shopRepository.findById).mockResolvedValue({
+      id: 'shop-id',
+    } as any);
+    jest.mocked(productRepository.findByShopIdAndSlug).mockResolvedValue({
+      id: 'existing-id',
+    } as any);
+
+    await expect(
+      service.createProduct({ shopId: 'shop-id', name: 'Tee', slug: 'tee' }),
+    ).rejects.toThrow(BadRequestException);
+    expect(productRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('should keep the slug when a product is renamed', async () => {
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      name: 'Old',
+      slug: 'old',
+      price: '10.00',
+      oldPrice: null,
+    } as any;
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+
+    await service.updateProduct('1', { name: 'New' });
+
+    expect(productRepository.findByShopIdAndSlug).not.toHaveBeenCalled();
+    expect(productRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'New', slug: 'old' }),
+    );
+  });
+
+  it('should update slug and seo fields of a product', async () => {
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      slug: 'old',
+      price: '10.00',
+      oldPrice: null,
+      metaTitle: 'Old title',
+    } as any;
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+    jest.mocked(productRepository.findByShopIdAndSlug).mockResolvedValue(null);
+
+    await service.updateProduct('1', {
+      slug: 'new',
+      metaTitle: null,
+      noIndex: true,
+    });
+
+    expect(productRepository.findByShopIdAndSlug).toHaveBeenCalledWith(
+      'shop-id',
+      'new',
+    );
+    expect(productRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({ slug: 'new', metaTitle: null, noIndex: true }),
+    );
+  });
+
+  it('should throw when updated slug belongs to another product', async () => {
+    jest.mocked(productRepository.findById).mockResolvedValue({
+      id: '1',
+      shopId: 'shop-id',
+      slug: 'old',
+      price: '10.00',
+      oldPrice: null,
+    } as any);
+    jest.mocked(productRepository.findByShopIdAndSlug).mockResolvedValue({
+      id: '2',
+    } as any);
+
+    await expect(service.updateProduct('1', { slug: 'taken' })).rejects.toThrow(
+      BadRequestException,
+    );
+    expect(productRepository.save).not.toHaveBeenCalled();
   });
 
   it('should create product marked as popular', async () => {
@@ -868,14 +1004,18 @@ describe('ProductsService', () => {
     jest.mocked(productRepository.findById).mockResolvedValueOnce(withImages);
 
     const result = await service.assignImages('1', {
-      images: [{ image: 'data:image/png;base64,ZmFrZQ==' }],
+      images: [{ image: 'data:image/png;base64,ZmFrZQ==', alt: 'Ocean Tee' }],
     });
 
     expect(
       productImagesCloudinaryService.uploadBase64Image,
     ).toHaveBeenCalledWith('data:image/png;base64,ZmFrZQ==');
     expect(productRepository.replaceImages).toHaveBeenCalledWith('1', [
-      { url: 'https://res.cloudinary.com/shop/image/upload/a.jpg', sort: 0 },
+      {
+        url: 'https://res.cloudinary.com/shop/image/upload/a.jpg',
+        alt: 'Ocean Tee',
+        sort: 0,
+      },
     ]);
     expect(result).toEqual(withImages);
   });
@@ -900,7 +1040,7 @@ describe('ProductsService', () => {
       productImagesCloudinaryService.uploadBase64Image,
     ).not.toHaveBeenCalled();
     expect(productRepository.replaceImages).toHaveBeenCalledWith('1', [
-      { url: existingImageUrl, sort: 0 },
+      { url: existingImageUrl, alt: null, sort: 0 },
     ]);
     expect(result).toEqual(withImages);
   });
@@ -987,6 +1127,7 @@ describe('ProductsService', () => {
       [
         {
           url: 'https://res.cloudinary.com/shop/image/upload/v.jpg',
+          alt: null,
           sort: 0,
         },
       ],
@@ -1148,6 +1289,7 @@ describe('ProductsService', () => {
       [
         {
           url: 'https://res.cloudinary.com/shop/image/upload/v.jpg',
+          alt: null,
           sort: 0,
         },
       ],
@@ -1214,6 +1356,7 @@ describe('ProductsService', () => {
       [
         {
           url: existingImageUrl,
+          alt: null,
           sort: 0,
         },
       ],

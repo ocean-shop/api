@@ -176,6 +176,13 @@ export class ProductRepository extends ProductQueryRepository {
     return this.repository.findOne({ where: { shopId, sku } });
   }
 
+  async findByShopIdAndSlug(
+    shopId: string,
+    slug: string,
+  ): Promise<Product | null> {
+    return this.repository.findOne({ where: { shopId, slug } });
+  }
+
   create(payload: Partial<Product>): Product {
     return this.repository.create(payload);
   }
@@ -190,7 +197,7 @@ export class ProductRepository extends ProductQueryRepository {
 
   async replaceImages(
     productId: string,
-    images: Array<{ url: string; sort: number }>,
+    images: Array<{ url: string; alt: string | null; sort: number }>,
   ): Promise<ProductImage[]> {
     await this.imageRepository.delete({ productId });
 
@@ -202,6 +209,7 @@ export class ProductRepository extends ProductQueryRepository {
       this.imageRepository.create({
         productId,
         url: image.url,
+        alt: image.alt,
         sort: image.sort,
       }),
     );
