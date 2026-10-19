@@ -283,6 +283,32 @@ export class ProductsClientService {
     );
   }
 
+  async getMainBannerProduct(shopId: string): Promise<Product> {
+    // Like the product page, a missing banner throws inside the cached section
+    // and is never stored, so flagging a product shows up on the next request.
+    return this.cacheService.wrap(
+      {
+        scope: shopId,
+        segments: ['main-banner'],
+        ttlSeconds: CATALOG_PRODUCT_CACHE_TTL_SECONDS,
+      },
+      async () => {
+        const product =
+          await this.productClientRepository.findActiveMainBannerByShopId(
+            shopId,
+          );
+
+        if (!product) {
+          throw new NotFoundException(
+            'Продукт для головного банера не знайдено',
+          );
+        }
+
+        return product;
+      },
+    );
+  }
+
   async getFiltersByCategoryId(
     categoryId: string,
     shopId: string,

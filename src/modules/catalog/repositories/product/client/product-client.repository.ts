@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, SelectQueryBuilder } from 'typeorm';
+import {
+  FindOptionsOrder,
+  FindOptionsWhere,
+  Repository,
+  SelectQueryBuilder,
+} from 'typeorm';
 import { Product } from '../../../entities/product.entity';
 import { ProductStatus } from '../../../entities/enums/product.enum';
 import {
@@ -97,8 +102,28 @@ export class ProductClientRepository extends ProductQueryRepository {
     shopId: string,
     productId: string,
   ): Promise<Product | null> {
+    return this.findOneActiveWithRelations({ id: productId, shopId });
+  }
+
+  /**
+   * Loads the main banner product of a shop the same way as a product page.
+   * Nothing keeps the flag unique, so when several products carry it the most
+   * recently updated one wins.
+   */
+  async findActiveMainBannerByShopId(shopId: string): Promise<Product | null> {
+    return this.findOneActiveWithRelations(
+      { shopId, isMainBanner: true },
+      { updatedAt: 'DESC' },
+    );
+  }
+
+  private async findOneActiveWithRelations(
+    where: FindOptionsWhere<Product>,
+    order?: FindOptionsOrder<Product>,
+  ): Promise<Product | null> {
     const product = await this.repository.findOne({
-      where: { id: productId, shopId, status: ProductStatus.ACTIVE },
+      where: { ...where, status: ProductStatus.ACTIVE },
+      order,
       relations: {
         tags: true,
         images: true,

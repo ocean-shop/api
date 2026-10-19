@@ -21,6 +21,17 @@ export class ProductsClientController {
   }
 
   // Declared before `:productId` so the literal path wins the route match.
+  @Get('main-banner')
+  @ApiOperation({
+    summary:
+      'Get the active main banner product of a shop with its images, tags and variations with their images',
+  })
+  @ApiQuery({ name: 'shopId', required: true, type: String, format: 'uuid' })
+  async getMainBannerProduct(@Query('shopId', ParseUUIDPipe) shopId: string) {
+    return this.productsClientService.getMainBannerProduct(shopId);
+  }
+
+  // Declared before `:productId` so the literal path wins the route match.
   @Get('search')
   @ApiOperation({
     summary: `Count the active products of a shop matching a search string and return the ${PRODUCT_SEARCH_LIMIT} most relevant ones`,
