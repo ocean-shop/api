@@ -22,6 +22,7 @@ import { UsersController } from './controllers/users/admin/users.controller';
 import { ProfileController } from './controllers/users/client/profile-client/profile-client.controller';
 import { ShippingController } from './controllers/users/client/shippng-client/shipping-client.controller';
 import { DashboardController } from './controllers/users/client/dashboard-client/dashboard-client.controller';
+import { ContactsController } from './controllers/users/client/contacts/contacts-client.controller';
 import { UserRepository } from './repositories/user/user.repository';
 import { AuthOtpRepository } from './repositories/auth-otp/auth-otp.repository';
 import { UserSessionRepository } from './repositories/user-session/user-session.repository';
@@ -43,6 +44,7 @@ import { SettingsService } from './services/settings/settings.service';
 import { ProfileService } from './services/profile/profile.service';
 import { ShippingService } from './services/shipping/shipping.service';
 import { DashboardService } from './services/dashboard/dashboard.service';
+import { ContactsService } from './services/contacts/contacts.service';
 import { AdminsService } from './services/admins/admins.service';
 import { UsersService } from './services/users/users.service';
 import { EmailProcessor } from './processors/email.processor';
@@ -83,6 +85,7 @@ import { RolesGuard } from './guards/roles.guard';
     ProfileController,
     ShippingController,
     DashboardController,
+    ContactsController,
   ],
   providers: [
     UserRepository,
@@ -106,6 +109,7 @@ import { RolesGuard } from './guards/roles.guard';
     ProfileService,
     ShippingService,
     DashboardService,
+    ContactsService,
     AdminsService,
     UsersService,
     JwtAuthGuard,
