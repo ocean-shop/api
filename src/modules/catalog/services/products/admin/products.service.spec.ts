@@ -279,6 +279,7 @@ describe('ProductsService', () => {
       status: ProductStatus.DRAFT,
       available: true,
       isPopular: false,
+      isMainBanner: false,
       sku: null,
       price: '19.99',
       oldPrice: null,

@@ -145,6 +145,7 @@ export class ProductsService {
       status: dto.status ?? ProductStatus.DRAFT,
       available: dto.available ?? true,
       isPopular: dto.isPopular ?? false,
+      isMainBanner: dto.isMainBanner ?? false,
       sku: dto.sku ?? null,
       price: this.toNumericString(price),
       oldPrice: oldPrice === null ? null : this.toNumericString(oldPrice),
@@ -193,6 +194,9 @@ export class ProductsService {
     }
     if (dto.isPopular !== undefined) {
       product.isPopular = dto.isPopular;
+    }
+    if (dto.isMainBanner !== undefined) {
+      product.isMainBanner = dto.isMainBanner;
     }
     if (dto.sku !== undefined && dto.sku !== product.sku) {
       if (dto.sku) {

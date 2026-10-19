@@ -57,6 +57,9 @@ export class Product {
   @Column({ type: 'boolean', default: false, name: 'is_popular' })
   isPopular: boolean;
 
+  @Column({ type: 'boolean', default: false, name: 'is_main_banner' })
+  isMainBanner: boolean;
+
   @Column({ type: 'varchar', length: 100, nullable: true })
   sku: string | null;
 

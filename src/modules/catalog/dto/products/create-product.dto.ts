@@ -55,6 +55,11 @@ export class CreateProductDto {
   @IsBoolean()
   readonly isPopular?: boolean;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  readonly isMainBanner?: boolean;
+
   @ApiPropertyOptional({ maxLength: 100 })
   @IsOptional()
   @IsString()
