@@ -1,10 +1,11 @@
 import { In, Repository, SelectQueryBuilder } from 'typeorm';
 import { Product } from '../../../entities/product.entity';
+import { ProductOrdering } from '../../../models/product.models';
+import { PaginatedResult } from '../../../../../core/response/models/response.models';
 import {
-  ProductOrdering,
   ProductSortBy,
   ProductSortOrder,
-} from '../../../models/product.models';
+} from '../../../entities/enums/product-sort.enum';
 
 export abstract class ProductQueryRepository {
   protected constructor(protected readonly repository: Repository<Product>) {}
@@ -14,7 +15,7 @@ export abstract class ProductQueryRepository {
     skip: number,
     take: number,
     orderings?: ProductOrdering[],
-  ): Promise<{ items: Product[]; total: number }> {
+  ): Promise<PaginatedResult<Product>> {
     const baseQuery = this.buildBasePaginatedQuery();
     applyFilters(baseQuery);
 

@@ -21,6 +21,10 @@ import {
   OrderStatus,
 } from '../entities/enums/order.enum';
 import { CreateOrderItemDto } from './create-order-item.dto';
+import {
+  UKRAINIAN_PHONE_REGEX,
+  VALIDATION_MESSAGES,
+} from '../../user/constants/phone.constants';
 
 export class CreateOrderDto {
   @ApiProperty({ format: 'uuid' })
@@ -66,9 +70,8 @@ export class CreateOrderDto {
   @ApiPropertyOptional({ example: '+380991234567' })
   @IsOptional()
   @IsString()
-  @Matches(/^(\+380|380|0)\d{9}$/, {
-    message:
-      'Phone must be a valid Ukrainian number in +380XXXXXXXXX, 380XXXXXXXXX, or 0XXXXXXXXX format',
+  @Matches(UKRAINIAN_PHONE_REGEX, {
+    message: VALIDATION_MESSAGES.PHONE,
   })
   readonly phoneNumber?: string;
 

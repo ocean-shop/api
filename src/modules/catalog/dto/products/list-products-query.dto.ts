@@ -12,7 +12,10 @@ import {
   Min,
 } from 'class-validator';
 import { ProductStatus } from '../../entities/enums/product.enum';
-import { ProductSortBy, ProductSortOrder } from '../../models/product.models';
+import {
+  ProductSortBy,
+  ProductSortOrder,
+} from '../../entities/enums/product-sort.enum';
 
 export class ListProductsQueryDto {
   @Type(() => Number)

@@ -1,4 +1,5 @@
 import { Attribute } from '../entities/attribute.entity';
+import { ListResponse } from '../../../core/response/models/response.models';
 
 /** One filterable value of an attribute, as the catalog filter lists read it. */
 export type AttributeFilterOption = {
@@ -6,10 +7,4 @@ export type AttributeFilterOption = {
   value: string;
 };
 
-export type AttributeListResponse = {
-  items: Attribute[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-};
+export type AttributeListResponse = ListResponse<Attribute>;

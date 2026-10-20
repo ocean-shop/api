@@ -19,6 +19,7 @@ import { DashboardQueryDto } from '../../../../dto/dashboard-query.dto';
 import { JwtAuthGuard } from '../../../../guards/jwt-auth.guard';
 import { RolesGuard } from '../../../../guards/roles.guard';
 import { Roles } from '../../../../decorators/roles.decorator';
+import { ALL_ROLES } from '../../../../constants/role.constants';
 import type { AuthenticatedRequest } from '../../../../models/auth-request.models';
 
 @Controller('user/client/dashboard')
@@ -29,7 +30,7 @@ export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
   @Get(':userId')
-  @Roles('user', 'admin', 'super')
+  @Roles(...ALL_ROLES)
   @ApiOperation({
     summary:
       'Get user dashboard by user id: last 3 active orders, orders counts, favorite products count, main shipping and last 4 favorite products',

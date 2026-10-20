@@ -20,6 +20,7 @@ import { UpdateProfileDto } from '../../../../dto/update-profile.dto';
 import { JwtAuthGuard } from '../../../../guards/jwt-auth.guard';
 import { RolesGuard } from '../../../../guards/roles.guard';
 import { Roles } from '../../../../decorators/roles.decorator';
+import { ALL_ROLES } from '../../../../constants/role.constants';
 import type { AuthenticatedRequest } from '../../../../models/auth-request.models';
 
 @Controller('user/client/profile')
@@ -30,7 +31,7 @@ export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
 
   @Get(':userId')
-  @Roles('user', 'admin', 'super')
+  @Roles(...ALL_ROLES)
   @ApiOperation({ summary: 'Get user profile by user id' })
   @ApiParam({ name: 'userId', type: String, format: 'uuid' })
   async getProfile(
@@ -41,7 +42,7 @@ export class ProfileController {
   }
 
   @Put(':userId')
-  @Roles('user', 'admin', 'super')
+  @Roles(...ALL_ROLES)
   @ApiOperation({ summary: 'Create or update user profile by user id' })
   @ApiParam({ name: 'userId', type: String, format: 'uuid' })
   @ApiBody({ type: UpdateProfileDto })

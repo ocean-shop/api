@@ -3,11 +3,17 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ProductImage } from '../../../entities/product-image.entity';
 import { Product } from '../../../entities/product.entity';
+import { IMAGE_MESSAGES } from '../../../constants/image-messages.constants';
+import { PRODUCT_MESSAGES } from '../../../constants/product-messages.constants';
+import { UUID_REGEX } from '../../../constants/product-image.constants';
+import { PaginatedResult } from '../../../../../core/response/models/response.models';
+import { ImagePayload } from '../../../models/product-image.models';
+import { SortDirection } from '../../../models/sort.models';
+import { ProductFilters } from '../../../models/product.models';
 import {
-  ProductFilters,
   ProductSortBy,
   ProductSortOrder,
-} from '../../../models/product.models';
+} from '../../../entities/enums/product-sort.enum';
 import { ProductQueryRepository } from '../common/product-query.repository';
 
 @Injectable()
@@ -25,7 +31,7 @@ export class ProductRepository extends ProductQueryRepository {
     filters: ProductFilters,
     skip: number,
     take: number,
-  ): Promise<{ items: Product[]; total: number }> {
+  ): Promise<PaginatedResult<Product>> {
     return this.findPaginatedWithRelations(
       (query) => {
         if (filters.shopId) {
@@ -79,7 +85,7 @@ export class ProductRepository extends ProductQueryRepository {
     sortBy?: ProductSortBy,
     sortOrder?: ProductSortOrder,
     isPopular?: boolean,
-  ): Promise<{ items: Product[]; total: number }> {
+  ): Promise<PaginatedResult<Product>> {
     return this.findPaginatedWithRelations(
       (query) => {
         query
@@ -102,7 +108,7 @@ export class ProductRepository extends ProductQueryRepository {
     take: number,
     sortBy?: ProductSortBy,
     sortOrder?: ProductSortOrder,
-  ): Promise<{ items: Product[]; total: number }> {
+  ): Promise<PaginatedResult<Product>> {
     return this.findPaginatedWithRelations(
       (query) => {
         query
@@ -121,7 +127,7 @@ export class ProductRepository extends ProductQueryRepository {
     take: number,
     sortBy?: ProductSortBy,
     sortOrder?: ProductSortOrder,
-  ): Promise<{ items: Product[]; total: number }> {
+  ): Promise<PaginatedResult<Product>> {
     return this.findPaginatedWithRelations(
       (query) => {
         query
@@ -159,7 +165,7 @@ export class ProductRepository extends ProductQueryRepository {
     });
 
     if (!product) {
-      throw new NotFoundException('Продукт не знайдено');
+      throw new NotFoundException(PRODUCT_MESSAGES.NOT_FOUND);
     }
 
     return product;
@@ -197,7 +203,7 @@ export class ProductRepository extends ProductQueryRepository {
 
   async replaceImages(
     productId: string,
-    images: Array<{ url: string; alt: string | null; sort: number }>,
+    images: ImagePayload[],
   ): Promise<ProductImage[]> {
     await this.imageRepository.delete({ productId });
 
@@ -236,21 +242,19 @@ export class ProductRepository extends ProductQueryRepository {
       .getOne();
 
     if (!byUrl) {
-      throw new NotFoundException('Зображення продукта не знайдено');
+      throw new NotFoundException(IMAGE_MESSAGES.NOT_FOUND);
     }
 
     return byUrl;
   }
 
   private isUuid(value: string): boolean {
-    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      value,
-    );
+    return UUID_REGEX.test(value);
   }
 
   async findAdjacentImageSibling(
     image: ProductImage,
-    direction: 'up' | 'down',
+    direction: SortDirection,
   ): Promise<ProductImage | null> {
     const query = this.imageRepository
       .createQueryBuilder('image')

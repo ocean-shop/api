@@ -1,14 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
-import { OrderStatus } from '../../../orders/entities/enums/order.enum';
 import { Order } from '../../../orders/entities/order.entity';
-
-// Orders that are not shipped or cancelled yet are still in progress.
-export const ACTIVE_ORDER_STATUSES = [
-  OrderStatus.PENDING,
-  OrderStatus.PROCESSING,
-];
+import { ACTIVE_ORDER_STATUSES } from '../../constants/dashboard.constants';
+import { PaginatedResult } from '../../../../core/response/models/response.models';
 
 @Injectable()
 export class DashboardRepository {
@@ -26,7 +21,7 @@ export class DashboardRepository {
     shopId: string,
     userId: string,
     take: number,
-  ): Promise<{ items: Order[]; total: number }> {
+  ): Promise<PaginatedResult<Order>> {
     const [items, total] = await this.orderRepository.findAndCount({
       where: { shopId, userId, status: In(ACTIVE_ORDER_STATUSES) },
       relations: {

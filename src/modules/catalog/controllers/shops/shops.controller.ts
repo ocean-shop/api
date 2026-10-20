@@ -19,6 +19,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Roles } from '../../../user/decorators/roles.decorator';
+import { ADMIN_ROLES } from '../../../user/constants/role.constants';
 import { JwtAuthGuard } from '../../../user/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../user/guards/roles.guard';
 import { CreateShopDto } from '../../dto/shops/create-shop.dto';
@@ -34,7 +35,7 @@ export class ShopsController {
   constructor(private readonly shopsService: ShopsService) {}
 
   @Get()
-  @Roles('admin', 'super')
+  @Roles(...ADMIN_ROLES)
   @ApiOperation({ summary: 'List shops with filters and pagination' })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'offset', required: false, type: Number })
@@ -43,7 +44,7 @@ export class ShopsController {
   }
 
   @Get(':id')
-  @Roles('admin', 'super')
+  @Roles(...ADMIN_ROLES)
   @ApiOperation({ summary: 'Get shop by id' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   async getShopById(@Param('id', ParseUUIDPipe) id: string) {
@@ -51,7 +52,7 @@ export class ShopsController {
   }
 
   @Post()
-  @Roles('admin', 'super')
+  @Roles(...ADMIN_ROLES)
   @ApiOperation({ summary: 'Create shop' })
   @ApiBody({ type: CreateShopDto })
   async createShop(@Body() dto: CreateShopDto) {
@@ -59,7 +60,7 @@ export class ShopsController {
   }
 
   @Patch(':id')
-  @Roles('admin', 'super')
+  @Roles(...ADMIN_ROLES)
   @ApiOperation({ summary: 'Update shop' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiBody({ type: UpdateShopDto })
@@ -71,7 +72,7 @@ export class ShopsController {
   }
 
   @Delete(':id')
-  @Roles('admin', 'super')
+  @Roles(...ADMIN_ROLES)
   @ApiOperation({ summary: 'Delete shop by id' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   async removeShop(@Param('id', ParseUUIDPipe) id: string) {

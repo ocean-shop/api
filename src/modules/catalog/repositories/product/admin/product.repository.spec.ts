@@ -8,7 +8,7 @@ import { Product } from '../../../entities/product.entity';
 import {
   ProductSortBy,
   ProductSortOrder,
-} from '../../../models/product.models';
+} from '../../../entities/enums/product-sort.enum';
 import { ProductRepository } from './product.repository';
 
 describe('ProductRepository', () => {

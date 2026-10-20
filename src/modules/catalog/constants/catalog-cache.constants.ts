@@ -25,3 +25,18 @@ export const CATALOG_PRODUCT_CACHE_TTL_SECONDS = 300;
  * rarely repeated keys should not pile up in Redis.
  */
 export const PRODUCT_SEARCH_CACHE_TTL_SECONDS = 60;
+
+/** The first segment of every catalog cache key, naming what the entry holds. */
+export const CATALOG_CACHE_SEGMENTS = {
+  POPULAR: 'popular',
+  PRODUCTS: 'products',
+  PRODUCTS_SEARCH: 'products-search',
+  SEARCH: 'search',
+  FILTERS: 'filters',
+  FILTERS_SEARCH: 'filters-search',
+  CATEGORIES_SEARCH: 'categories-search',
+  PRODUCT: 'product',
+  PRODUCT_SLUG: 'product-slug',
+  SITEMAP: 'sitemap',
+  MAIN_BANNER: 'main-banner',
+} as const;

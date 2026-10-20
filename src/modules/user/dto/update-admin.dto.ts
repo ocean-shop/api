@@ -7,6 +7,8 @@ import {
   IsString,
   IsUUID,
 } from 'class-validator';
+import { ADMIN_ROLES } from '../constants/role.constants';
+import type { AdminRoleName } from '../models/role.models';
 
 export class UpdateAdminDto {
   @IsOptional()
@@ -22,8 +24,8 @@ export class UpdateAdminDto {
   readonly isActive?: boolean;
 
   @IsOptional()
-  @IsIn(['admin', 'super'])
-  readonly role?: 'admin' | 'super';
+  @IsIn(ADMIN_ROLES)
+  readonly role?: AdminRoleName;
 
   @IsOptional()
   @IsArray()

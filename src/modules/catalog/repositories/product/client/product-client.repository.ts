@@ -12,13 +12,14 @@ import {
   CatalogFilter,
   CatalogProductFilters,
   CatalogProductSearchFilters,
-  CatalogProductSort,
   CommonCatalogProductFilters,
   ProductOrdering,
-  ProductSearchItem,
   ProductSearchResponse,
+  ProductSearchRow,
   ProductSitemapEntry,
 } from '../../../models/product.models';
+import { PaginatedResult } from '../../../../../core/response/models/response.models';
+import { CatalogProductSort } from '../../../entities/enums/product-sort.enum';
 import {
   CATEGORY_SUBTREES_IDS_SUBQUERY,
   CATEGORY_SUBTREE_IDS_SUBQUERY,
@@ -31,9 +32,6 @@ import {
 } from '../../../constants/product-query.constants';
 import { escapeLikeWildcards } from '../../../helpers/catalog-query.helpers';
 import { ProductQueryRepository } from '../common/product-query.repository';
-
-/** Every row repeats the total, which Postgres returns as a bigint string. */
-type ProductSearchRow = ProductSearchItem & { total: string };
 
 @Injectable()
 export class ProductClientRepository extends ProductQueryRepository {
@@ -48,7 +46,7 @@ export class ProductClientRepository extends ProductQueryRepository {
     filters: CatalogProductFilters,
     skip: number,
     take: number,
-  ): Promise<{ items: Product[]; total: number }> {
+  ): Promise<PaginatedResult<Product>> {
     return this.findPaginatedWithRelations(
       (query) => {
         query
@@ -78,7 +76,7 @@ export class ProductClientRepository extends ProductQueryRepository {
     filters: CatalogProductSearchFilters,
     skip: number,
     take: number,
-  ): Promise<{ items: Product[]; total: number }> {
+  ): Promise<PaginatedResult<Product>> {
     return this.findPaginatedWithRelations(
       (query) => {
         query.andWhere(PRODUCT_NAME_MATCH_CONDITION, {

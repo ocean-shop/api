@@ -1,19 +1,22 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { QueryFailedError } from 'typeorm';
 import { CacheService } from '../../../../core/cache/cache.service';
+import { POSTGRES_ERROR_CODES } from '../../../../core/db/constants/postgres-error.constants';
+import { matchesQueryFailedError } from '../../../../core/db/helpers/query-failed-error.helpers';
+import { ATTRIBUTE_DUPLICATE_CONSTRAINTS } from '../../constants/attribute-constraint.constants';
+import { ATTRIBUTE_MESSAGES } from '../../constants/attribute-messages.constants';
 import { CreateAttributeDto } from '../../dto/attributes/create-attribute.dto';
 import { ListAttributesQueryDto } from '../../dto/attributes/list-attributes-query.dto';
 import { Attribute } from '../../entities/attribute.entity';
+import {
+  resolvePagination,
+  toListResponse,
+} from '../../../../core/response/helpers/list-response.helpers';
 import { AttributeListResponse } from '../../models/attribute.models';
+import { MessageResponse } from '../../../../core/response/models/response.models';
 import { AttributeRepository } from '../../repositories/attribute/attribute.repository';
-import { PAGINATION_MAX } from '../../constants/pagination.constants';
 
 @Injectable()
 export class AttributesService {
-  private readonly duplicateConstraintNames = [
-    'attribute_types_shop_id_name_value_key',
-  ];
-
   constructor(
     private readonly attributeRepository: AttributeRepository,
     private readonly cacheService: CacheService,
@@ -22,9 +25,7 @@ export class AttributesService {
   async getAllAttributes(
     query: ListAttributesQueryDto,
   ): Promise<AttributeListResponse> {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? PAGINATION_MAX;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = resolvePagination(query);
 
     const { items, total } = await this.attributeRepository.findAllPaginated(
       query.name,
@@ -33,13 +34,7 @@ export class AttributesService {
       limit,
     );
 
-    return {
-      items,
-      total,
-      page,
-      limit,
-      totalPages: total > 0 ? Math.ceil(total / limit) : 0,
-    };
+    return toListResponse(items, total, page, limit);
   }
 
   async createAttribute(dto: CreateAttributeDto): Promise<Attribute> {
@@ -55,36 +50,24 @@ export class AttributesService {
       return saved;
     } catch (error) {
       if (this.isDuplicateAttributeError(error)) {
-        throw new BadRequestException(
-          'Атрибут із такою назвою та значенням уже існує для цього магазину.',
-        );
+        throw new BadRequestException(ATTRIBUTE_MESSAGES.DUPLICATE);
       }
 
       throw error;
     }
   }
 
-  async removeAttribute(id: string): Promise<{ message: string }> {
+  async removeAttribute(id: string): Promise<MessageResponse> {
     const attribute = await this.attributeRepository.findById(id);
     await this.attributeRepository.remove(attribute);
     await this.cacheService.invalidate(attribute.shopId);
-    return { message: 'Атрибут успішно видалено.' };
+    return { message: ATTRIBUTE_MESSAGES.REMOVED };
   }
 
   private isDuplicateAttributeError(error: unknown): boolean {
-    if (!(error instanceof QueryFailedError)) {
-      return false;
-    }
-
-    const databaseError = error as QueryFailedError & {
-      code?: string;
-      constraint?: string;
-    };
-
-    return (
-      databaseError.code === '23505' &&
-      !!databaseError.constraint &&
-      this.duplicateConstraintNames.includes(databaseError.constraint)
-    );
+    return matchesQueryFailedError(error, {
+      code: POSTGRES_ERROR_CODES.UNIQUE_VIOLATION,
+      constraintIn: ATTRIBUTE_DUPLICATE_CONSTRAINTS,
+    });
   }
 }

@@ -20,6 +20,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Roles } from '../../../../user/decorators/roles.decorator';
+import { ALL_ROLES } from '../../../../user/constants/role.constants';
 import { JwtAuthGuard } from '../../../../user/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../../user/guards/roles.guard';
 import type { AuthenticatedRequest } from '../../../../user/models/auth-request.models';
@@ -37,7 +38,7 @@ export class FavoritesClientController {
   ) {}
 
   @Get(':userId')
-  @Roles('user', 'admin', 'super')
+  @Roles(...ALL_ROLES)
   @ApiOperation({
     summary:
       'List active favorite products of a user in a shop, newest favorite first',
@@ -56,7 +57,7 @@ export class FavoritesClientController {
   }
 
   @Post(':userId')
-  @Roles('user', 'admin', 'super')
+  @Roles(...ALL_ROLES)
   @ApiOperation({
     summary:
       'Add an active product of a shop to user favorites. Adding an already favorite product is a no-op.',
@@ -76,7 +77,7 @@ export class FavoritesClientController {
   }
 
   @Delete(':userId/:productId')
-  @Roles('user', 'admin', 'super')
+  @Roles(...ALL_ROLES)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Remove a product from user favorites' })
   @ApiParam({ name: 'userId', type: String, format: 'uuid' })

@@ -5,6 +5,8 @@ import { Product } from '../../../../catalog/entities/product.entity';
 import { OrderProduct } from '../../../entities/order-product.entity';
 import { Order } from '../../../entities/order.entity';
 import { OrderQueryRepository } from '../common/order-query.repository';
+import { ORDER_MESSAGES } from '../../../constants/order-messages.constants';
+import { OrderItemPayload } from '../../../models/order.models';
 
 @Injectable()
 export class OrderClientRepository extends OrderQueryRepository {
@@ -48,7 +50,7 @@ export class OrderClientRepository extends OrderQueryRepository {
 
   async replaceItems(
     orderId: string,
-    items: Array<{ productId: string; unitPrice: number; quantity: number }>,
+    items: OrderItemPayload[],
   ): Promise<OrderProduct[]> {
     await this.itemRepository.delete({ orderId });
 
@@ -125,7 +127,7 @@ export class OrderClientRepository extends OrderQueryRepository {
 
     if (missingProductIds.length > 0) {
       throw new BadRequestException(
-        `Невідомі ID продуктів для цього магазину: ${missingProductIds.join(', ')}`,
+        ORDER_MESSAGES.unknownProducts(missingProductIds),
       );
     }
   }

@@ -24,6 +24,7 @@ import { CreateShippingDto } from '../../../../dto/create-shipping.dto';
 import { JwtAuthGuard } from '../../../../guards/jwt-auth.guard';
 import { RolesGuard } from '../../../../guards/roles.guard';
 import { Roles } from '../../../../decorators/roles.decorator';
+import { ALL_ROLES } from '../../../../constants/role.constants';
 import type { AuthenticatedRequest } from '../../../../models/auth-request.models';
 
 @Controller('user/client/shipping')
@@ -34,7 +35,7 @@ export class ShippingController {
   constructor(private readonly shippingService: ShippingService) {}
 
   @Get(':userId')
-  @Roles('user', 'admin', 'super')
+  @Roles(...ALL_ROLES)
   @ApiOperation({
     summary: 'Get user shipping methods by user id (main shipping first)',
   })
@@ -47,7 +48,7 @@ export class ShippingController {
   }
 
   @Post(':userId')
-  @Roles('user', 'admin', 'super')
+  @Roles(...ALL_ROLES)
   @ApiOperation({
     summary:
       'Create user shipping method by user id. If isMain is true, the previous main shipping is unset; the first shipping is always main.',
@@ -63,7 +64,7 @@ export class ShippingController {
   }
 
   @Patch(':userId/:shippingId/main')
-  @Roles('user', 'admin', 'super')
+  @Roles(...ALL_ROLES)
   @ApiOperation({
     summary:
       'Make user shipping method main by id. The previous main shipping is unset.',
@@ -83,7 +84,7 @@ export class ShippingController {
   }
 
   @Delete(':userId/:shippingId')
-  @Roles('user', 'admin', 'super')
+  @Roles(...ALL_ROLES)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary:

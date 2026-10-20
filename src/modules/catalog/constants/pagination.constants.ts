@@ -1,4 +1,3 @@
-export const PAGINATION_MAX = 20;
 export const POPULAR_PRODUCTS_LIMIT = 8;
 
 /** Search returns a suggestion list, not a page: the count carries the rest. */

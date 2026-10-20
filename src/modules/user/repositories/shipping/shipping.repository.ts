@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserShipping } from '../../entities/user-shipping.entity';
+import { USER_MESSAGES } from '../../constants/user-messages.constants';
 
 @Injectable()
 export class ShippingRepository {
@@ -62,7 +63,7 @@ export class ShippingRepository {
       });
 
       if (!shipping) {
-        throw new NotFoundException('Спосіб доставки не знайдено');
+        throw new NotFoundException(USER_MESSAGES.SHIPPING_NOT_FOUND);
       }
 
       await manager.delete(UserShipping, { id: shippingId });
@@ -91,7 +92,7 @@ export class ShippingRepository {
       });
 
       if (!shipping) {
-        throw new NotFoundException('Спосіб доставки не знайдено');
+        throw new NotFoundException(USER_MESSAGES.SHIPPING_NOT_FOUND);
       }
 
       if (shipping.isMain) {

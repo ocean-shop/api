@@ -5,6 +5,8 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { AUTH_MESSAGES } from '../constants/auth-messages.constants';
+import { BEARER_PREFIX } from '../constants/auth.constants';
 import {
   AuthenticatedRequest,
   JwtPayload,
@@ -19,21 +21,21 @@ export class JwtAuthGuard implements CanActivate {
     const token = this.extractToken(request);
 
     if (!token) {
-      throw new UnauthorizedException('Потрібен токен доступу');
+      throw new UnauthorizedException(AUTH_MESSAGES.ACCESS_TOKEN_REQUIRED);
     }
 
     try {
       request.user = await this.jwtService.verifyAsync<JwtPayload>(token);
       return true;
     } catch {
-      throw new UnauthorizedException(
-        'Недійсний або прострочений токен доступу',
-      );
+      throw new UnauthorizedException(AUTH_MESSAGES.ACCESS_TOKEN_INVALID);
     }
   }
 
   private extractToken(request: AuthenticatedRequest): string | undefined {
     const authHeader = request.headers.authorization;
-    return authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+    return authHeader?.startsWith(BEARER_PREFIX)
+      ? authHeader.slice(BEARER_PREFIX.length)
+      : undefined;
   }
 }

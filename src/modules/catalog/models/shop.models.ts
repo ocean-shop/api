@@ -1,9 +1,4 @@
 import { Shop } from '../entities/shop.entity';
+import { ListResponse } from '../../../core/response/models/response.models';
 
-export type ShopListResponse = {
-  items: Shop[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-};
+export type ShopListResponse = ListResponse<Shop>;

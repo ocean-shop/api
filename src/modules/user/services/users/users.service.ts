@@ -1,4 +1,8 @@
 import { Injectable } from '@nestjs/common';
+import {
+  resolvePagination,
+  toListResponse,
+} from '../../../../core/response/helpers/list-response.helpers';
 import { ListUsersByShopQueryDto } from '../../dto/list-users-by-shop-query.dto';
 import { UserWithOrders, UsersByShopResponse } from '../../models/users.models';
 import { UsersRepository } from '../../repositories/users/users.repository';
@@ -10,9 +14,7 @@ export class UsersService {
   async getUsersByShop(
     query: ListUsersByShopQueryDto,
   ): Promise<UsersByShopResponse> {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = resolvePagination(query);
 
     const { items, total } = await this.usersRepository.findUsersByShopId(
       query.shopId,
@@ -23,13 +25,7 @@ export class UsersService {
       query.sortOrder,
     );
 
-    return {
-      items,
-      total,
-      page,
-      limit,
-      totalPages: total > 0 ? Math.ceil(total / limit) : 0,
-    };
+    return toListResponse(items, total, page, limit);
   }
 
   async getUserDetails(id: string): Promise<UserWithOrders> {

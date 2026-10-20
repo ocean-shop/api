@@ -14,6 +14,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Roles } from '../../../decorators/roles.decorator';
+import { ADMIN_ROLES } from '../../../constants/role.constants';
 import { ListUsersByShopQueryDto } from '../../../dto/list-users-by-shop-query.dto';
 import { JwtAuthGuard } from '../../../guards/jwt-auth.guard';
 import { RolesGuard } from '../../../guards/roles.guard';
@@ -27,7 +28,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  @Roles('admin', 'super')
+  @Roles(...ADMIN_ROLES)
   @ApiOperation({ summary: 'List users by shop' })
   @ApiQuery({ name: 'shopId', required: true, type: String, format: 'uuid' })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -37,7 +38,7 @@ export class UsersController {
   }
 
   @Get(':id')
-  @Roles('admin', 'super')
+  @Roles(...ADMIN_ROLES)
   @ApiOperation({ summary: 'Get user details by id' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   async getUserDetails(@Param('id', ParseUUIDPipe) id: string) {

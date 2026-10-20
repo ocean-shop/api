@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Product } from '../../entities/product.entity';
 import { ProductStatus } from '../../entities/enums/product.enum';
 import { UserFavoriteProduct } from '../../entities/user-favorite-product.entity';
+import { PaginatedResult } from '../../../../core/response/models/response.models';
 import { ProductQueryRepository } from '../product/common/product-query.repository';
 
 @Injectable()
@@ -62,7 +63,7 @@ export class FavoriteProductRepository extends ProductQueryRepository {
     shopId: string,
     skip: number,
     take: number,
-  ): Promise<{ items: Product[]; total: number }> {
+  ): Promise<PaginatedResult<Product>> {
     return this.findPaginatedWithRelations(
       (query) => {
         query

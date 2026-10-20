@@ -3,6 +3,7 @@ import {
   CacheInvalidationResult,
   CacheService,
 } from '../../../../core/cache/cache.service';
+import { CACHE_SETTINGS_MESSAGES } from '../../constants/cache-settings.constants';
 
 @Injectable()
 export class CacheSettingsService {
@@ -18,9 +19,9 @@ export class CacheSettingsService {
       return await this.cacheService.invalidateAll();
     } catch (error) {
       throw new ServiceUnavailableException(
-        `Не вдалося очистити кеш: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        CACHE_SETTINGS_MESSAGES.invalidationFailed(
+          error instanceof Error ? error.message : String(error),
+        ),
       );
     }
   }

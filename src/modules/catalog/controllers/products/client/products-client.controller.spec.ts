@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { CatalogProductSort } from '../../../models/product.models';
+import { CatalogProductSort } from '../../../entities/enums/product-sort.enum';
 import { ProductsClientService } from '../../../services/products/client/products-client.service';
 import { ProductsClientController } from './products-client.controller';
 

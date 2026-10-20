@@ -1,16 +1,12 @@
 import { ProductStatus } from '../entities/enums/product.enum';
+import {
+  CatalogProductSort,
+  ProductSortBy,
+  ProductSortOrder,
+} from '../entities/enums/product-sort.enum';
 import { Product } from '../entities/product.entity';
 import { CatalogCategoryOption } from './category.models';
-
-export enum ProductSortBy {
-  CREATED_AT = 'createdAt',
-  NAME = 'name',
-}
-
-export enum ProductSortOrder {
-  ASC = 'asc',
-  DESC = 'desc',
-}
+import { ListResponse } from '../../../core/response/models/response.models';
 
 export type ProductFilters = {
   shopId?: string;
@@ -22,13 +18,6 @@ export type ProductFilters = {
   sortBy?: ProductSortBy;
   sortOrder?: ProductSortOrder;
 };
-
-export enum CatalogProductSort {
-  POPULAR = 'popular',
-  CHEAPER = 'cheaper',
-  EXPENSIVE = 'expensive',
-  NEW = 'new',
-}
 
 export type CatalogFilter = {
   name: string;
@@ -59,6 +48,12 @@ export type CatalogProductSearchFilters = CommonCatalogProductFilters & {
   categoryIds?: string[];
 };
 
+/** What a search narrows by on top of the filters every listing shares. */
+export type SearchCacheKeyParts = Pick<
+  CatalogProductSearchFilters,
+  'term' | 'categoryIds'
+>;
+
 export type ProductOrdering = {
   expression: string;
   direction: 'ASC' | 'DESC';
@@ -80,17 +75,28 @@ export type ProductSearchItem = {
   image: string | null;
 };
 
+/** Every row repeats the total, which Postgres returns as a bigint string. */
+export type ProductSearchRow = ProductSearchItem & { total: string };
+
 export type ProductSearchResponse = {
   total: number;
   items: ProductSearchItem[];
 };
 
-export type ProductListResponse = {
-  items: Product[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+export type ProductListResponse = ListResponse<Product>;
+
+/** Any shop-owned entity a product links to through a many-to-many relation. */
+export type ShopOwnedEntity = {
+  id: string;
+  shopId: string;
+};
+
+export type ProductRelationAssignment = {
+  productId: string;
+  relationName: 'categories' | 'tags' | 'attributes';
+  relationEntity: ShopOwnedEntity;
+  assign: boolean;
+  crossShopMessage: string;
 };
 
 /**

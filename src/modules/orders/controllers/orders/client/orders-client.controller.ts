@@ -19,6 +19,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Roles } from '../../../../user/decorators/roles.decorator';
+import { ALL_ROLES } from '../../../../user/constants/role.constants';
 import { JwtAuthGuard } from '../../../../user/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../../user/guards/roles.guard';
 import type { AuthenticatedRequest } from '../../../../user/models/auth-request.models';
@@ -42,7 +43,7 @@ export class OrdersClientController {
 
   @Get('by-user/:userId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('user', 'admin', 'super')
+  @Roles(...ALL_ROLES)
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'List orders by user id' })
   @ApiParam({ name: 'userId', type: String, format: 'uuid' })
@@ -63,7 +64,7 @@ export class OrdersClientController {
 
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('user', 'admin', 'super')
+  @Roles(...ALL_ROLES)
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get order by id' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })

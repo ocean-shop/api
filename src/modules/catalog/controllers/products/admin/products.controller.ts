@@ -20,6 +20,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Roles } from '../../../../user/decorators/roles.decorator';
+import { ADMIN_ROLES } from '../../../../user/constants/role.constants';
 import { JwtAuthGuard } from '../../../../user/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../../user/guards/roles.guard';
 import { AssignProductAttributeDto } from '../../../dto/attributes/assign-product-attribute.dto';
@@ -36,7 +37,7 @@ import { ProductsService } from '../../../services/products/admin/products.servi
 @ApiTags('Catalog Products')
 @ApiBearerAuth('access-token')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin', 'super')
+@Roles(...ADMIN_ROLES)
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 

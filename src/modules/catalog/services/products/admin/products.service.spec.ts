@@ -5,7 +5,7 @@ import { CacheService } from '../../../../../core/cache/cache.service';
 import {
   ProductSortBy,
   ProductSortOrder,
-} from '../../../models/product.models';
+} from '../../../entities/enums/product-sort.enum';
 import {
   ProductStatus,
   ProductType,

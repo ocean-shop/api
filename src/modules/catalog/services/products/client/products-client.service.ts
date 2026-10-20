@@ -5,7 +5,10 @@ import {
 } from '@nestjs/common';
 import { CacheService } from '../../../../../core/cache/cache.service';
 import { CACHE_SCOPE_ALL } from '../../../../../core/cache/constants/cache.constants';
+import { CATEGORY_MESSAGES } from '../../../constants/category-messages.constants';
+import { PRODUCT_MESSAGES } from '../../../constants/product-messages.constants';
 import {
+  CATALOG_CACHE_SEGMENTS,
   CATALOG_FILTERS_CACHE_TTL_SECONDS,
   CATALOG_PRODUCT_CACHE_TTL_SECONDS,
   CATALOG_PRODUCTS_CACHE_TTL_SECONDS,
@@ -29,7 +32,7 @@ import {
 import {
   resolvePagination,
   toListResponse,
-} from '../../../helpers/list-response.helpers';
+} from '../../../../../core/response/helpers/list-response.helpers';
 import { AttributeFilterOption } from '../../../models/attribute.models';
 import { CatalogCategoryOption } from '../../../models/category.models';
 import {
@@ -60,7 +63,7 @@ export class ProductsClientService {
     return this.cacheService.wrap(
       {
         scope: shopId ?? CACHE_SCOPE_ALL,
-        segments: ['popular', shopId ?? CACHE_SCOPE_ALL],
+        segments: [CATALOG_CACHE_SEGMENTS.POPULAR, shopId ?? CACHE_SCOPE_ALL],
         ttlSeconds: POPULAR_PRODUCTS_CACHE_TTL_SECONDS,
       },
       () =>
@@ -263,7 +266,7 @@ export class ProductsClientService {
     return this.cacheService.wrap(
       {
         scope: shopId,
-        segments: ['product', productId],
+        segments: [CATALOG_CACHE_SEGMENTS.PRODUCT, productId],
         ttlSeconds: CATALOG_PRODUCT_CACHE_TTL_SECONDS,
       },
       async () => {
@@ -276,7 +279,7 @@ export class ProductsClientService {
         // A draft product, or one of another shop, is treated as missing rather
         // than forbidden: the storefront has no business knowing it exists.
         if (!product) {
-          throw new NotFoundException('Продукт не знайдено');
+          throw new NotFoundException(PRODUCT_MESSAGES.NOT_FOUND);
         }
 
         return product;
@@ -289,7 +292,7 @@ export class ProductsClientService {
     return this.cacheService.wrap(
       {
         scope: shopId,
-        segments: ['product-slug', slug],
+        segments: [CATALOG_CACHE_SEGMENTS.PRODUCT_SLUG, slug],
         ttlSeconds: CATALOG_PRODUCT_CACHE_TTL_SECONDS,
       },
       async () => {
@@ -300,7 +303,7 @@ export class ProductsClientService {
           );
 
         if (!product) {
-          throw new NotFoundException('Продукт не знайдено');
+          throw new NotFoundException(PRODUCT_MESSAGES.NOT_FOUND);
         }
 
         return product;
@@ -313,7 +316,7 @@ export class ProductsClientService {
     return this.cacheService.wrap(
       {
         scope: shopId,
-        segments: ['sitemap'],
+        segments: [CATALOG_CACHE_SEGMENTS.SITEMAP],
         ttlSeconds: CATALOG_PRODUCT_CACHE_TTL_SECONDS,
       },
       () => this.productClientRepository.findActiveSitemapEntries(shopId),
@@ -326,7 +329,7 @@ export class ProductsClientService {
     return this.cacheService.wrap(
       {
         scope: shopId,
-        segments: ['main-banner'],
+        segments: [CATALOG_CACHE_SEGMENTS.MAIN_BANNER],
         ttlSeconds: CATALOG_PRODUCT_CACHE_TTL_SECONDS,
       },
       async () => {
@@ -336,9 +339,7 @@ export class ProductsClientService {
           );
 
         if (!product) {
-          throw new NotFoundException(
-            'Продукт для головного банера не знайдено',
-          );
+          throw new NotFoundException(PRODUCT_MESSAGES.MAIN_BANNER_NOT_FOUND);
         }
 
         return product;
@@ -356,7 +357,7 @@ export class ProductsClientService {
     return this.cacheService.wrap(
       {
         scope: shopId,
-        segments: ['filters', categoryId],
+        segments: [CATALOG_CACHE_SEGMENTS.FILTERS, categoryId],
         ttlSeconds: CATALOG_FILTERS_CACHE_TTL_SECONDS,
       },
       async () => {
@@ -365,7 +366,7 @@ export class ProductsClientService {
         // A category of another shop is treated as missing rather than
         // forbidden: the storefront has no business knowing it exists.
         if (category.shopId !== shopId) {
-          throw new NotFoundException('Категорію не знайдено');
+          throw new NotFoundException(CATEGORY_MESSAGES.NOT_FOUND);
         }
 
         const options =
@@ -399,9 +400,7 @@ export class ProductsClientService {
       priceTo !== undefined &&
       priceFrom > priceTo
     ) {
-      throw new BadRequestException(
-        'priceFrom має бути меншим або дорівнювати priceTo',
-      );
+      throw new BadRequestException(PRODUCT_MESSAGES.INVALID_PRICE_RANGE);
     }
   }
 }

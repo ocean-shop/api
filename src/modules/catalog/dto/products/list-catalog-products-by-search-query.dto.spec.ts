@@ -1,7 +1,7 @@
 import { plainToInstance } from 'class-transformer';
 import { validateSync } from 'class-validator';
 import { PRODUCT_SEARCH_TERM_MAX_LENGTH } from '../../constants/pagination.constants';
-import { CatalogProductSort } from '../../models/product.models';
+import { CatalogProductSort } from '../../entities/enums/product-sort.enum';
 import { ListCatalogProductsBySearchQueryDto } from './list-catalog-products-by-search-query.dto';
 
 const SHOP_ID = '5d4d8a1f-3a1c-4c0e-8a0b-2f6f1c9d4e7b';

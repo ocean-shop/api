@@ -9,6 +9,7 @@ import {
   CatalogCategoryOption,
   CategoryFilters,
 } from '../../../models/category.models';
+import { PaginatedResult } from '../../../../../core/response/models/response.models';
 import { CategoryQueryRepository } from '../common/category-query.repository';
 
 @Injectable()
@@ -24,7 +25,7 @@ export class CategoryClientRepository extends CategoryQueryRepository {
     filters: CategoryFilters,
     skip: number,
     take: number,
-  ): Promise<{ items: Category[]; total: number }> {
+  ): Promise<PaginatedResult<Category>> {
     return this.findPaginated(filters, skip, take);
   }
 

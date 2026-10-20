@@ -115,10 +115,14 @@ describe('TagsService', () => {
 
     jest.mocked(tagRepository.create).mockReturnValue(payload);
     jest.mocked(tagRepository.save).mockRejectedValue(
-      new QueryFailedError('INSERT INTO tags', [], {
-        code: '23505',
-        constraint: 'tags_shop_id_name_key',
-      }),
+      new QueryFailedError(
+        'INSERT INTO tags',
+        [],
+        Object.assign(new Error(), {
+          code: '23505',
+          constraint: 'tags_shop_id_name_key',
+        }),
+      ),
     );
 
     await expect(
@@ -179,10 +183,14 @@ describe('TagsService', () => {
     jest.mocked(tagRepository.findById).mockResolvedValue(existing);
     jest.mocked(tagRepository.findByShopIdAndName).mockResolvedValue(null);
     jest.mocked(tagRepository.save).mockRejectedValue(
-      new QueryFailedError('UPDATE tags', [], {
-        code: '23505',
-        constraint: 'tags_shop_id_name_key',
-      }),
+      new QueryFailedError(
+        'UPDATE tags',
+        [],
+        Object.assign(new Error(), {
+          code: '23505',
+          constraint: 'tags_shop_id_name_key',
+        }),
+      ),
     );
 
     await expect(service.updateTag('1', { name: 'Featured' })).rejects.toThrow(

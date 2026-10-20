@@ -1,14 +1,9 @@
 import { Tag } from '../entities/tag.entity';
+import { ListResponse } from '../../../core/response/models/response.models';
 
 export type TagFilters = {
   shopId?: string;
   name?: string;
 };
 
-export type TagListResponse = {
-  items: Tag[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-};
+export type TagListResponse = ListResponse<Tag>;

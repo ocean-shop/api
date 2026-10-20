@@ -1,6 +1,7 @@
 import { Repository } from 'typeorm';
 import { Category } from '../../../entities/category.entity';
 import { CategoryFilters } from '../../../models/category.models';
+import { PaginatedResult } from '../../../../../core/response/models/response.models';
 
 export abstract class CategoryQueryRepository {
   protected constructor(protected readonly repository: Repository<Category>) {}
@@ -9,7 +10,7 @@ export abstract class CategoryQueryRepository {
     filters: CategoryFilters,
     skip: number,
     take: number,
-  ): Promise<{ items: Category[]; total: number }> {
+  ): Promise<PaginatedResult<Category>> {
     const query = this.repository
       .createQueryBuilder('category')
       .orderBy('category.sort', 'ASC')

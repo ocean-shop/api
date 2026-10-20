@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { JwtPayload } from '../../../../user/models/auth-request.models';
 import { CreateOrderDto } from '../../../dto/create-order.dto';
 import { ListOrdersQueryDto } from '../../../dto/list-orders-query.dto';
@@ -11,8 +11,11 @@ import { OrdersListResponse } from '../../../models/order.models';
 import { OrderClientRepository } from '../../../repositories/order/client/order-client.repository';
 import { OrderEmailService } from '../../email/order-email.service';
 import { OrdersStatusService } from '../common/orders-status.service';
-
-const CLIENT_ROLE_NAME = 'user';
+import {
+  resolvePagination,
+  toListResponse,
+} from '../../../../../core/response/helpers/list-response.helpers';
+import { assertCanAccessUser } from '../../../../user/helpers/access.helpers';
 
 @Injectable()
 export class OrdersClientService extends OrdersStatusService {
@@ -75,11 +78,9 @@ export class OrdersClientService extends OrdersStatusService {
     query: ListOrdersQueryDto,
     requester?: JwtPayload,
   ): Promise<OrdersListResponse> {
-    this.assertCanAccess(userId, requester);
+    assertCanAccessUser(userId, requester);
 
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = resolvePagination(query);
     const { items, total } =
       await this.orderClientRepository.findAllByShopIdAndUserId(
         query.shopId,
@@ -88,25 +89,13 @@ export class OrdersClientService extends OrdersStatusService {
         limit,
       );
 
-    return {
-      items,
-      total,
-      page,
-      limit,
-      totalPages: total > 0 ? Math.ceil(total / limit) : 0,
-    };
+    return toListResponse(items, total, page, limit);
   }
 
   async getOrderById(id: string, requester?: JwtPayload): Promise<Order> {
     const order = await this.orderClientRepository.findById(id);
-    this.assertCanAccess(order.userId, requester);
+    assertCanAccessUser(order.userId, requester);
 
     return order;
-  }
-
-  private assertCanAccess(userId: string | null, requester?: JwtPayload): void {
-    if (requester?.role === CLIENT_ROLE_NAME && requester.sub !== userId) {
-      throw new ForbiddenException('Доступ заборонено');
-    }
   }
 }

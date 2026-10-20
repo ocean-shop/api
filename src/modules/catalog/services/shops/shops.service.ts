@@ -1,32 +1,29 @@
 import { Injectable } from '@nestjs/common';
+import { SHOP_MESSAGES } from '../../constants/shop-messages.constants';
 import { CreateShopDto } from '../../dto/shops/create-shop.dto';
 import { ListShopsQueryDto } from '../../dto/shops/list-shops-query.dto';
 import { UpdateShopDto } from '../../dto/shops/update-shop.dto';
 import { Shop } from '../../entities/shop.entity';
+import {
+  resolvePagination,
+  toListResponse,
+} from '../../../../core/response/helpers/list-response.helpers';
+import { MessageResponse } from '../../../../core/response/models/response.models';
 import { ShopListResponse } from '../../models/shop.models';
 import { ShopRepository } from '../../repositories/shop/shop.repository';
-import { PAGINATION_MAX } from '../../constants/pagination.constants';
 
 @Injectable()
 export class ShopsService {
   constructor(private readonly shopRepository: ShopRepository) {}
 
   async listShops(query: ListShopsQueryDto): Promise<ShopListResponse> {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? PAGINATION_MAX;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = resolvePagination(query);
     const { items, total } = await this.shopRepository.findAllPaginated(
       skip,
       limit,
     );
 
-    return {
-      items,
-      total,
-      page,
-      limit,
-      totalPages: total > 0 ? Math.ceil(total / limit) : 0,
-    };
+    return toListResponse(items, total, page, limit);
   }
 
   async getShopById(id: string): Promise<Shop> {
@@ -59,9 +56,9 @@ export class ShopsService {
     return this.shopRepository.save(shop);
   }
 
-  async removeShop(id: string): Promise<{ message: string }> {
+  async removeShop(id: string): Promise<MessageResponse> {
     const shop = await this.shopRepository.findById(id);
     await this.shopRepository.remove(shop);
-    return { message: 'Магазин успішно видалено' };
+    return { message: SHOP_MESSAGES.REMOVED };
   }
 }

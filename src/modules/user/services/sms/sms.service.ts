@@ -5,33 +5,29 @@ import {
   Logger,
   ServiceUnavailableException,
 } from '@nestjs/common';
-
-type TurboSmsResponseItem = {
-  message_id?: string | null;
-  response_code?: number | string;
-  response_status?: string;
-};
-
-type TurboSmsResponse = {
-  response_code?: number | string;
-  response_status?: string;
-  response_result?: TurboSmsResponseItem[];
-};
+import {
+  NORMALIZED_UKRAINIAN_PHONE_REGEX,
+  UKRAINIAN_COUNTRY_CODE_PREFIX,
+} from '../../constants/phone.constants';
+import {
+  SMS_MESSAGES,
+  TURBOSMS_DEFAULT_URL,
+  TURBOSMS_SUCCESS_CODE,
+  TURBOSMS_SUCCESS_STATUS_REGEX,
+} from '../../constants/sms.constants';
+import { TurboSmsResponse } from '../../models/sms.models';
 
 @Injectable()
 export class SmsService {
   private readonly logger = new Logger(SmsService.name);
-  private static readonly TURBOSMS_DEFAULT_URL =
-    'https://api.turbosms.ua/message/send.json';
 
   async sendOtpSms(phone: string, code: string): Promise<void> {
     const token = process.env.TURBOSMS_API_TOKEN;
     const sender = process.env.TURBOSMS_SENDER;
-    const apiUrl =
-      process.env.TURBOSMS_API_URL ?? SmsService.TURBOSMS_DEFAULT_URL;
+    const apiUrl = process.env.TURBOSMS_API_URL ?? TURBOSMS_DEFAULT_URL;
 
     if (!token || !sender) {
-      throw new InternalServerErrorException('Налаштування TurboSMS відсутні');
+      throw new InternalServerErrorException(SMS_MESSAGES.NOT_CONFIGURED);
     }
 
     const normalizedPhone = this.normalizeUkrainianPhone(phone);
@@ -39,7 +35,7 @@ export class SmsService {
       recipients: [normalizedPhone],
       sms: {
         sender,
-        text: `Ваш код підтвердження: ${code}`,
+        text: SMS_MESSAGES.otpText(code),
       },
     };
 
@@ -55,11 +51,11 @@ export class SmsService {
       });
     } catch (error: unknown) {
       const message =
-        error instanceof Error ? error.message : 'Невідома помилка TurboSMS';
+        error instanceof Error ? error.message : SMS_MESSAGES.UNKNOWN_ERROR;
       this.logger.error(
         `Не вдалося надіслати OTP SMS на ${normalizedPhone}: ${message}`,
       );
-      throw new ServiceUnavailableException('Не вдалося надіслати OTP SMS');
+      throw new ServiceUnavailableException(SMS_MESSAGES.SEND_FAILED);
     }
 
     const responseBody = await this.parseResponseBody(response);
@@ -67,7 +63,7 @@ export class SmsService {
       this.logger.error(
         `TurboSMS відхилив OTP SMS для ${normalizedPhone}. Статус: ${response.status}. Тіло: ${JSON.stringify(responseBody)}`,
       );
-      throw new ServiceUnavailableException('Не вдалося надіслати OTP SMS');
+      throw new ServiceUnavailableException(SMS_MESSAGES.SEND_FAILED);
     }
 
     this.logger.log(`Надіслано OTP SMS на ${normalizedPhone}`);
@@ -76,11 +72,11 @@ export class SmsService {
   private normalizeUkrainianPhone(phone: string): string {
     const phoneWithoutPlus = phone.startsWith('+') ? phone.slice(1) : phone;
     const normalized = phoneWithoutPlus.startsWith('0')
-      ? `38${phoneWithoutPlus}`
+      ? `${UKRAINIAN_COUNTRY_CODE_PREFIX}${phoneWithoutPlus}`
       : phoneWithoutPlus;
 
-    if (!/^380\d{9}$/.test(normalized)) {
-      throw new BadRequestException('Некоректний український номер телефону');
+    if (!NORMALIZED_UKRAINIAN_PHONE_REGEX.test(normalized)) {
+      throw new BadRequestException(SMS_MESSAGES.INVALID_PHONE);
     }
 
     return normalized;
@@ -102,7 +98,7 @@ export class SmsService {
     }
 
     if (response.response_code !== undefined) {
-      return Number(response.response_code) === 0;
+      return Number(response.response_code) === TURBOSMS_SUCCESS_CODE;
     }
 
     if (!response.response_result || response.response_result.length === 0) {
@@ -115,14 +111,14 @@ export class SmsService {
       }
 
       if (item.response_code !== undefined) {
-        return Number(item.response_code) === 0;
+        return Number(item.response_code) === TURBOSMS_SUCCESS_CODE;
       }
 
       if (!item.response_status) {
         return false;
       }
 
-      return /accepted|queued|ok|success/i.test(item.response_status);
+      return TURBOSMS_SUCCESS_STATUS_REGEX.test(item.response_status);
     });
   }
 }

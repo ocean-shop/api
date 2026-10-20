@@ -13,7 +13,7 @@ import {
   Min,
 } from 'class-validator';
 import { ProductStatus, ProductType } from '../../entities/enums/product.enum';
-import { SLUG_MAX_LENGTH, SLUG_REGEX } from '../../helpers/slug.helpers';
+import { SLUG_MAX_LENGTH, SLUG_REGEX } from '../../constants/slug.constants';
 
 export class UpdateProductDto {
   @ApiPropertyOptional({ enum: ProductType })

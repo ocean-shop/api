@@ -1,32 +1,23 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { MailService } from '../../../../core/mail/mail.service';
 import {
-  OrderPaymentMethod,
-  OrderPaymentStatus,
-  OrderShippingMethod,
-} from '../../entities/enums/order.enum';
+  ORDER_CREATED_TEMPLATE,
+  ORDER_ID_FALLBACK_LENGTH,
+  SHIPPING_METHOD_LABELS,
+  orderCreatedSubject,
+} from '../../constants/order-email.constants';
+import {
+  formatMoney,
+  formatOrderDate,
+  getPaymentLabel,
+  toKopecks,
+} from '../../helpers/order-email.helpers';
 import { Order } from '../../entities/order.entity';
 import {
   OrderCreatedEmailContext,
   OrderEmailItem,
 } from '../../models/order-email.models';
 import { OrderClientRepository } from '../../repositories/order/client/order-client.repository';
-
-const SHIPPING_METHOD_LABELS: Record<OrderShippingMethod, string> = {
-  [OrderShippingMethod.NOVA]: 'Нова Пошта',
-  [OrderShippingMethod.UKR]: 'Укрпошта',
-};
-
-const moneyFormatter = new Intl.NumberFormat('uk-UA', {
-  maximumFractionDigits: 2,
-});
-
-const dateFormatter = new Intl.DateTimeFormat('uk-UA', {
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-  timeZone: 'Europe/Kyiv',
-});
 
 @Injectable()
 export class OrderEmailService {
@@ -46,8 +37,8 @@ export class OrderEmailService {
 
     await this.mailService.sendMail({
       to: order.email,
-      subject: `Замовлення #${context.orderNumber} прийнято`,
-      template: 'order-created',
+      subject: orderCreatedSubject(context.orderNumber),
+      template: ORDER_CREATED_TEMPLATE,
       context,
     });
     this.logger.log(`Sent order created email for order ${order.id}`);
@@ -87,8 +78,9 @@ export class OrderEmailService {
       .join(' ');
 
     return {
-      orderNumber: order.orderNumber ?? order.id.slice(0, 8),
-      orderDate: dateFormatter.format(order.createdAt).replace(/\s*р\.$/, ''),
+      orderNumber:
+        order.orderNumber ?? order.id.slice(0, ORDER_ID_FALLBACK_LENGTH),
+      orderDate: formatOrderDate(order.createdAt),
       firstName: order.firstName,
       items,
       itemsCount: orderItems.reduce((sum, item) => sum + item.quantity, 0),
@@ -104,22 +96,4 @@ export class OrderEmailService {
       email,
     };
   }
-}
-
-function toKopecks(amount: string | number): number {
-  return Math.round(Number(amount) * 100);
-}
-
-function formatMoney(kopecks: number): string {
-  return `${moneyFormatter.format(kopecks / 100)} ₴`;
-}
-
-function getPaymentLabel(order: Order): string {
-  if (order.paymentMethod === OrderPaymentMethod.COD) {
-    return 'Оплата при отриманні';
-  }
-
-  return order.paymentStatus === OrderPaymentStatus.PAID
-    ? 'Оплачено банківською карткою'
-    : 'Оплата банківською карткою';
 }

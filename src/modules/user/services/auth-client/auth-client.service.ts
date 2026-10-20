@@ -5,20 +5,23 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { isEmail } from 'class-validator';
+import { MessageResponse } from '../../../../core/response/models/response.models';
+import { AUTH_MESSAGES } from '../../constants/auth-messages.constants';
+import { UKRAINIAN_PHONE_REGEX } from '../../constants/phone.constants';
+import { ROLES } from '../../constants/role.constants';
+import { USER_MESSAGES } from '../../constants/user-messages.constants';
 import { User } from '../../entities/user.entity';
 import { RequestClientOtpDto } from '../../dto/request-client-otp.dto';
 import { VerifyClientOtpDto } from '../../dto/verify-client-otp.dto';
 import { OtpPurpose } from '../../entities/enums/auth-otp.enum';
-import { AuthService } from '../auth/auth.service';
-import { RequestOtpService } from '../request-otp/request-otp.service';
-import { AuthClientRepository } from '../../repositories/auth-client/auth-client.repository';
 import {
   buildRefreshTokenExpiryDate,
   hashRefreshToken,
-} from '../session/user-session.helpers';
-
-const CLIENT_ROLE_NAME = 'user';
-const UKRAINIAN_PHONE_REGEX = /^(\+380|380|0)\d{9}$/;
+} from '../../helpers/user-session.helpers';
+import { AuthResponse, LoginIdentity } from '../../models/auth.models';
+import { AuthService } from '../auth/auth.service';
+import { RequestOtpService } from '../request-otp/request-otp.service';
+import { AuthClientRepository } from '../../repositories/auth-client/auth-client.repository';
 
 @Injectable()
 export class AuthClientService {
@@ -28,7 +31,7 @@ export class AuthClientService {
     private readonly requestOtpService: RequestOtpService,
   ) {}
 
-  async requestOtp(dto: RequestClientOtpDto): Promise<{ message: string }> {
+  async requestOtp(dto: RequestClientOtpDto): Promise<MessageResponse> {
     const { email, phone } = this.parseLogin(dto.login);
     const existingUser = await this.authClientRepository.findByEmailOrPhone(
       email,
@@ -50,7 +53,7 @@ export class AuthClientService {
         phone,
         purpose,
       );
-      return { message: 'OTP-код успішно надіслано' };
+      return { message: AUTH_MESSAGES.OTP_SENT };
     }
 
     const newUser = await this.createClient(email, phone);
@@ -60,14 +63,14 @@ export class AuthClientService {
       phone,
       OtpPurpose.REGISTER,
     );
-    return { message: 'OTP-код успішно надіслано' };
+    return { message: AUTH_MESSAGES.OTP_SENT };
   }
 
   async verifyOtp(
     dto: VerifyClientOtpDto,
     userAgent?: string,
     ipAddress?: string,
-  ) {
+  ): Promise<AuthResponse> {
     const { email, phone } = this.parseLogin(dto.login);
     const user = await this.authClientRepository.findByEmailOrPhone(
       email,
@@ -75,7 +78,7 @@ export class AuthClientService {
     );
 
     if (!user) {
-      throw new NotFoundException('Користувача не знайдено');
+      throw new NotFoundException(USER_MESSAGES.NOT_FOUND);
     }
 
     this.assertClient(user);
@@ -102,7 +105,7 @@ export class AuthClientService {
     };
   }
 
-  private parseLogin(login: string): { email?: string; phone?: string } {
+  private parseLogin(login: string): LoginIdentity {
     const value = login.trim();
 
     if (isEmail(value)) {
@@ -113,7 +116,7 @@ export class AuthClientService {
       return { phone: value };
     }
 
-    throw new BadRequestException('Вкажіть коректний email або номер телефону');
+    throw new BadRequestException(AUTH_MESSAGES.INVALID_LOGIN);
   }
 
   private async validateClientAccess(user: User): Promise<void> {
@@ -122,11 +125,11 @@ export class AuthClientService {
   }
 
   private assertClient(user: User): void {
-    if (user.role?.name !== CLIENT_ROLE_NAME) {
-      throw new BadRequestException('Доступ заборонено');
+    if (user.role?.name !== ROLES.USER) {
+      throw new BadRequestException(AUTH_MESSAGES.ACCESS_DENIED);
     }
     if (!user.isActive) {
-      throw new ForbiddenException('Користувача заблоковано');
+      throw new ForbiddenException(AUTH_MESSAGES.USER_BLOCKED);
     }
   }
 
@@ -150,10 +153,11 @@ export class AuthClientService {
   }
 
   private async createClient(email?: string, phone?: string): Promise<User> {
-    const role =
-      await this.authClientRepository.findRoleByName(CLIENT_ROLE_NAME);
+    const role = await this.authClientRepository.findRoleByName(ROLES.USER);
     if (!role) {
-      throw new BadRequestException(`Роль ${CLIENT_ROLE_NAME} не налаштована`);
+      throw new BadRequestException(
+        AUTH_MESSAGES.roleNotConfigured(ROLES.USER),
+      );
     }
 
     return this.authClientRepository.createUser({

@@ -5,6 +5,14 @@ import { RequestOtpService } from '../../../services/request-otp/request-otp.ser
 import { VerifyOtpService } from '../../../services/verify-otp/verify-otp.service';
 import { RefreshTokenService } from '../../../services/refresh-token/refresh-token.service';
 import { LogoutService } from '../../../services/logout/logout.service';
+import { MessageResponse } from '../../../../../core/response/models/response.models';
+import { AUTH_MESSAGES } from '../../../constants/auth-messages.constants';
+import { REFRESH_TOKEN_COOKIE } from '../../../constants/auth.constants';
+import {
+  buildRefreshTokenClearCookieOptions,
+  buildRefreshTokenCookieOptions,
+} from '../../../helpers/auth-cookie.helpers';
+import { AuthResponse } from '../../../models/auth.models';
 import { RequestOtpDto } from '../../../dto/request-otp.dto';
 import { VerifyOtpDto } from '../../../dto/verify-otp.dto';
 
@@ -21,7 +29,9 @@ export class AuthController {
   @Post('admin/request-otp')
   @ApiOperation({ summary: 'Request admin OTP code' })
   @ApiBody({ type: RequestOtpDto })
-  async requestOtp(@Body() requestOtpDto: RequestOtpDto) {
+  async requestOtp(
+    @Body() requestOtpDto: RequestOtpDto,
+  ): Promise<MessageResponse> {
     return await this.requestOtpService.requestAdminOtp(requestOtpDto);
   }
 
@@ -33,7 +43,7 @@ export class AuthController {
     @Headers('user-agent') userAgent: string,
     @Ip() ipAddress: string,
     @Res({ passthrough: true }) response: Response,
-  ) {
+  ): Promise<AuthResponse> {
     const result = await this.verifyOtpService.verifyOtp(
       verifyOtpDto,
       userAgent,
@@ -47,14 +57,14 @@ export class AuthController {
 
   @Post('refresh')
   @ApiOperation({ summary: 'Refresh access token by refresh cookie' })
-  @ApiCookieAuth('refresh_token')
+  @ApiCookieAuth(REFRESH_TOKEN_COOKIE)
   async refresh(
     @Req() request: Request,
     @Headers('user-agent') userAgent: string,
     @Ip() ipAddress: string,
     @Res({ passthrough: true }) response: Response,
-  ) {
-    const refreshToken = request.cookies['refresh_token'] as string;
+  ): Promise<AuthResponse> {
+    const refreshToken = request.cookies[REFRESH_TOKEN_COOKIE] as string;
     const result = await this.refreshTokenService.refreshToken(
       refreshToken,
       userAgent,
@@ -68,29 +78,30 @@ export class AuthController {
 
   @Post('logout')
   @ApiOperation({ summary: 'Logout and clear refresh cookie' })
-  @ApiCookieAuth('refresh_token')
+  @ApiCookieAuth(REFRESH_TOKEN_COOKIE)
   async logout(
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
-  ) {
-    const refreshToken = request.cookies['refresh_token'] as string;
+  ): Promise<MessageResponse> {
+    const refreshToken = request.cookies[REFRESH_TOKEN_COOKIE] as string;
     await this.logoutService.logout(refreshToken);
 
-    response.clearCookie('refresh_token', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-    });
+    response.clearCookie(
+      REFRESH_TOKEN_COOKIE,
+      buildRefreshTokenClearCookieOptions(),
+    );
 
-    return { message: 'Ви успішно вийшли з системи' };
+    return { message: AUTH_MESSAGES.LOGGED_OUT };
   }
 
-  private setRefreshTokenCookie(response: Response, refreshToken: string) {
-    response.cookie('refresh_token', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: parseInt(process.env.REFRESH_EXPIRE_TIME ?? '0', 10),
-    });
+  private setRefreshTokenCookie(
+    response: Response,
+    refreshToken: string,
+  ): void {
+    response.cookie(
+      REFRESH_TOKEN_COOKIE,
+      refreshToken,
+      buildRefreshTokenCookieOptions(),
+    );
   }
 }

@@ -1,10 +1,10 @@
 import { In, Repository, SelectQueryBuilder } from 'typeorm';
 import { Product } from '../../../entities/product.entity';
+import { ProductOrdering } from '../../../models/product.models';
 import {
-  ProductOrdering,
   ProductSortBy,
   ProductSortOrder,
-} from '../../../models/product.models';
+} from '../../../entities/enums/product-sort.enum';
 import { ProductQueryRepository } from './product-query.repository';
 
 class TestProductQueryRepository extends ProductQueryRepository {

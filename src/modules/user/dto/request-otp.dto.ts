@@ -6,6 +6,10 @@ import {
   ValidateIf,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  UKRAINIAN_PHONE_REGEX,
+  VALIDATION_MESSAGES,
+} from '../constants/phone.constants';
 
 export class RequestOtpDto {
   @ApiPropertyOptional({ example: 'admin@shop.com' })
@@ -19,9 +23,8 @@ export class RequestOtpDto {
   })
   @ValidateIf((o: RequestOtpDto) => !o.email)
   @IsString()
-  @Matches(/^(\+380|380|0)\d{9}$/, {
-    message:
-      'Phone must be a valid Ukrainian number in +380XXXXXXXXX, 380XXXXXXXXX, or 0XXXXXXXXX format',
+  @Matches(UKRAINIAN_PHONE_REGEX, {
+    message: VALIDATION_MESSAGES.PHONE,
   })
   readonly phone?: string;
 }

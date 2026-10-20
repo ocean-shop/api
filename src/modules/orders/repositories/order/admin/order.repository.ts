@@ -3,6 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, Repository } from 'typeorm';
 import { Order } from '../../../entities/order.entity';
 import { OrderQueryRepository } from '../common/order-query.repository';
+import { DEFAULT_SORT_ORDER } from '../../../../../core/response/constants/sort.constants';
+import {
+  PaginatedResult,
+  SortOrder,
+} from '../../../../../core/response/models/response.models';
 
 @Injectable()
 export class OrderRepository extends OrderQueryRepository {
@@ -18,8 +23,8 @@ export class OrderRepository extends OrderQueryRepository {
     skip: number,
     take: number,
     name?: string,
-    sortOrder: 'asc' | 'desc' = 'desc',
-  ): Promise<{ items: Order[]; total: number }> {
+    sortOrder: SortOrder = DEFAULT_SORT_ORDER,
+  ): Promise<PaginatedResult<Order>> {
     const [items, total] = await this.repository.findAndCount({
       where: {
         shopId,

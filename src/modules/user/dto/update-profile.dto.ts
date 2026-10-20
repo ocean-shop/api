@@ -6,6 +6,10 @@ import {
   Matches,
   MaxLength,
 } from 'class-validator';
+import {
+  BIRTHDAY_REGEX,
+  VALIDATION_MESSAGES,
+} from '../constants/phone.constants';
 
 export class UpdateProfileDto {
   @ApiPropertyOptional({ maxLength: 300, nullable: true })
@@ -28,8 +32,8 @@ export class UpdateProfileDto {
   })
   @IsOptional()
   @IsDateString({ strict: true })
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
-    message: 'birthday must be in YYYY-MM-DD format',
+  @Matches(BIRTHDAY_REGEX, {
+    message: VALIDATION_MESSAGES.BIRTHDAY,
   })
   birthday?: string | null;
 }

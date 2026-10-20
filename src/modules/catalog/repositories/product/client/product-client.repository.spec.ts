@@ -3,7 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { In } from 'typeorm';
 import { ProductStatus } from '../../../entities/enums/product.enum';
 import { Product } from '../../../entities/product.entity';
-import { CatalogProductSort } from '../../../models/product.models';
+import { CatalogProductSort } from '../../../entities/enums/product-sort.enum';
 import { ProductClientRepository } from './product-client.repository';
 
 describe('ProductClientRepository', () => {

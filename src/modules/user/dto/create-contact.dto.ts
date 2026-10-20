@@ -1,5 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsString, Matches, MaxLength } from 'class-validator';
+import {
+  CONTACT_REGEX,
+  VALIDATION_MESSAGES,
+} from '../constants/phone.constants';
 
 export class CreateContactDto {
   @ApiProperty({ example: 'Іван', maxLength: 255 })
@@ -14,9 +18,8 @@ export class CreateContactDto {
       'Email or Ukrainian phone number in +380XXXXXXXXX, 380XXXXXXXXX, or 0XXXXXXXXX format',
   })
   @IsString()
-  @Matches(/^(?:(?:\+380|380|0)\d{9}|[^\s@]+@[^\s@]+\.[^\s@]+)$/, {
-    message:
-      'Contact must be a valid email or Ukrainian phone number in +380XXXXXXXXX, 380XXXXXXXXX, or 0XXXXXXXXX format',
+  @Matches(CONTACT_REGEX, {
+    message: VALIDATION_MESSAGES.CONTACT,
   })
   @MaxLength(255)
   readonly contact: string;

@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserSessionRepository } from '../../repositories/user-session/user-session.repository';
-import { findSessionByRefreshToken } from '../session/user-session.helpers';
+import { findSessionByRefreshToken } from '../../helpers/user-session.helpers';
+import { RefreshTokenPayload } from '../../models/auth.models';
 
 @Injectable()
 export class LogoutService {
@@ -10,7 +11,7 @@ export class LogoutService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async logout(refreshToken: string) {
+  async logout(refreshToken: string): Promise<void> {
     if (!refreshToken) {
       return;
     }
@@ -24,7 +25,7 @@ export class LogoutService {
   }
 
   private extractUserIdFromToken(refreshToken: string): string {
-    const payload: { sub: string } = this.jwtService.verify(refreshToken, {
+    const payload: RefreshTokenPayload = this.jwtService.verify(refreshToken, {
       ignoreExpiration: true,
     });
     return String(payload.sub);

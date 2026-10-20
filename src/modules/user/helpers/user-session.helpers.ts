@@ -1,10 +1,13 @@
 import * as bcrypt from 'bcryptjs';
-import { UserSession } from '../../entities/user-session.entity';
-
-const DEFAULT_REFRESH_EXPIRE_MS = 7 * 24 * 60 * 60 * 1000;
+import {
+  BCRYPT_SALT_ROUNDS,
+  DEFAULT_REFRESH_EXPIRE_MS,
+} from '../constants/auth.constants';
+import { UserSession } from '../entities/user-session.entity';
+import { SessionLookupOptions } from '../models/auth.models';
 
 export async function hashRefreshToken(refreshToken: string): Promise<string> {
-  const salt = await bcrypt.genSalt(10);
+  const salt = await bcrypt.genSalt(BCRYPT_SALT_ROUNDS);
   return bcrypt.hash(refreshToken, salt);
 }
 
@@ -19,7 +22,7 @@ export function buildRefreshTokenExpiryDate(nowMs = Date.now()): Date {
 export async function findSessionByRefreshToken(
   sessions: UserSession[],
   refreshToken: string,
-  options?: { skipExpired?: boolean },
+  options?: SessionLookupOptions,
 ): Promise<UserSession | null> {
   for (const session of sessions) {
     if (options?.skipExpired && session.expiresAt < new Date()) {

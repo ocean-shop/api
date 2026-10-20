@@ -1,6 +1,8 @@
 import { NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { Order } from '../../../entities/order.entity';
+import { PaginatedResult } from '../../../../../core/response/models/response.models';
+import { ORDER_MESSAGES } from '../../../constants/order-messages.constants';
 
 export abstract class OrderQueryRepository {
   protected constructor(protected readonly repository: Repository<Order>) {}
@@ -17,7 +19,7 @@ export abstract class OrderQueryRepository {
     });
 
     if (!order) {
-      throw new NotFoundException('Замовлення не знайдено');
+      throw new NotFoundException(ORDER_MESSAGES.NOT_FOUND);
     }
 
     return order;
@@ -28,7 +30,7 @@ export abstract class OrderQueryRepository {
     userId: string,
     skip: number,
     take: number,
-  ): Promise<{ items: Order[]; total: number }> {
+  ): Promise<PaginatedResult<Order>> {
     const [items, total] = await this.repository.findAndCount({
       where: { shopId, userId },
       relations: {

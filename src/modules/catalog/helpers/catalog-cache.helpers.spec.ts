@@ -1,8 +1,8 @@
 import {
   CatalogProductFilters,
   CatalogProductSearchFilters,
-  CatalogProductSort,
 } from '../models/product.models';
+import { CatalogProductSort } from '../entities/enums/product-sort.enum';
 import {
   buildCatalogProductSearchCacheSegments,
   buildCatalogProductsCacheSegments,

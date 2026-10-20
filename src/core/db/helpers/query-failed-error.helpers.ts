@@ -1,16 +1,9 @@
 import { QueryFailedError } from 'typeorm';
 
-type QueryFailedErrorDetails = {
-  code?: string;
-  constraint?: string;
-};
-
-type QueryFailedErrorMatcher = {
-  code?: string;
-  constraint?: string;
-  constraintIncludes?: string;
-  constraintIn?: string[];
-};
+import {
+  QueryFailedErrorDetails,
+  QueryFailedErrorMatcher,
+} from '../models/db.models';
 
 export function getQueryFailedErrorDetails(
   error: unknown,

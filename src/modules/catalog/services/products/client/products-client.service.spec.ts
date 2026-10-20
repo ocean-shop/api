@@ -16,7 +16,7 @@ import {
   buildCatalogSearchFiltersCacheSegments,
   buildProductSearchCacheSegments,
 } from '../../../helpers/catalog-cache.helpers';
-import { CatalogProductSort } from '../../../models/product.models';
+import { CatalogProductSort } from '../../../entities/enums/product-sort.enum';
 import { AttributeRepository } from '../../../repositories/attribute/attribute.repository';
 import { CategoryRepository } from '../../../repositories/category/admin/category.repository';
 import { CategoryClientRepository } from '../../../repositories/category/client/category-client.repository';

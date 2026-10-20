@@ -1,7 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
+import { ATTRIBUTE_MESSAGES } from '../../constants/attribute-messages.constants';
 import { Attribute } from '../../entities/attribute.entity';
+import { PaginatedResult } from '../../../../core/response/models/response.models';
 import { ProductStatus } from '../../entities/enums/product.enum';
 import {
   CATEGORY_SUBTREE_CTE,
@@ -22,7 +24,7 @@ export class AttributeRepository {
     const attribute = await this.repository.findOne({ where: { id } });
 
     if (!attribute) {
-      throw new NotFoundException('Атрибут не знайдено');
+      throw new NotFoundException(ATTRIBUTE_MESSAGES.NOT_FOUND);
     }
 
     return attribute;
@@ -33,7 +35,7 @@ export class AttributeRepository {
     shopId: string | undefined,
     skip: number,
     take: number,
-  ): Promise<{ items: Attribute[]; total: number }> {
+  ): Promise<PaginatedResult<Attribute>> {
     const query = this.repository
       .createQueryBuilder('attribute')
       .orderBy('attribute.createdAt', 'DESC')

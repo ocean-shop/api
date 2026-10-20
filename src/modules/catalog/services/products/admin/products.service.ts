@@ -1,6 +1,17 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CacheService } from '../../../../../core/cache/cache.service';
+import { POSTGRES_ERROR_CODES } from '../../../../../core/db/constants/postgres-error.constants';
 import { matchesQueryFailedError } from '../../../../../core/db/helpers/query-failed-error.helpers';
+import { ATTRIBUTE_MESSAGES } from '../../../constants/attribute-messages.constants';
+import { CATEGORY_MESSAGES } from '../../../constants/category-messages.constants';
+import { PRODUCT_CONSTRAINTS } from '../../../constants/product-constraint.constants';
+import { IMAGE_DATA_URI_PREFIX } from '../../../constants/product-image.constants';
+import {
+  PRODUCT_MESSAGES,
+  PRODUCT_VARIATION_MESSAGES,
+} from '../../../constants/product-messages.constants';
+import { PRICE_DECIMALS } from '../../../constants/price.constants';
+import { TAG_MESSAGES } from '../../../constants/tag-messages.constants';
 import { AssignProductAttributeDto } from '../../../dto/attributes/assign-product-attribute.dto';
 import { AssignProductCategoryDto } from '../../../dto/products/assign-product-category.dto';
 import { AssignProductImagesDto } from '../../../dto/products/assign-product-images.dto';
@@ -18,9 +29,15 @@ import { Product } from '../../../entities/product.entity';
 import {
   resolvePagination,
   toListResponse,
-} from '../../../helpers/list-response.helpers';
+} from '../../../../../core/response/helpers/list-response.helpers';
 import { slugify, withSlugSuffix } from '../../../helpers/slug.helpers';
-import { ProductListResponse } from '../../../models/product.models';
+import { MessageResponse } from '../../../../../core/response/models/response.models';
+import { ImagePayload } from '../../../models/product-image.models';
+import {
+  ProductListResponse,
+  ProductRelationAssignment,
+  ShopOwnedEntity,
+} from '../../../models/product.models';
 import { AttributeRepository } from '../../../repositories/attribute/attribute.repository';
 import { CategoryRepository } from '../../../repositories/category/admin/category.repository';
 import { ProductRepository } from '../../../repositories/product/admin/product.repository';
@@ -252,11 +269,11 @@ export class ProductsService {
     }
   }
 
-  async removeProduct(id: string): Promise<{ message: string }> {
+  async removeProduct(id: string): Promise<MessageResponse> {
     const product = await this.productRepository.findById(id);
     await this.productRepository.remove(product);
     await this.cacheService.invalidate(product.shopId);
-    return { message: 'Продукт успішно видалено' };
+    return { message: PRODUCT_MESSAGES.REMOVED };
   }
 
   async assignCategory(
@@ -269,7 +286,7 @@ export class ProductsService {
       relationName: 'categories',
       relationEntity: category,
       assign: dto.assign,
-      crossShopMessage: 'Категорія належить іншому магазину, ніж продукт',
+      crossShopMessage: CATEGORY_MESSAGES.OTHER_SHOP,
     });
   }
 
@@ -280,7 +297,7 @@ export class ProductsService {
       relationName: 'tags',
       relationEntity: tag,
       assign: dto.assign,
-      crossShopMessage: 'Тег належить іншому магазину, ніж продукт',
+      crossShopMessage: TAG_MESSAGES.OTHER_SHOP,
     });
   }
 
@@ -296,7 +313,7 @@ export class ProductsService {
       relationName: 'attributes',
       relationEntity: attribute,
       assign: dto.assign,
-      crossShopMessage: 'Атрибут належить іншому магазину, ніж продукт',
+      crossShopMessage: ATTRIBUTE_MESSAGES.OTHER_SHOP,
     });
   }
 
@@ -335,21 +352,13 @@ export class ProductsService {
     return this.upsertVariation(id, dto, variationId);
   }
 
-  private async assignProductRelation<
-    TEntity extends { id: string; shopId: string },
-  >({
+  private async assignProductRelation({
     productId,
     relationName,
     relationEntity,
     assign,
     crossShopMessage,
-  }: {
-    productId: string;
-    relationName: 'categories' | 'tags' | 'attributes';
-    relationEntity: TEntity;
-    assign: boolean;
-    crossShopMessage: string;
-  }): Promise<Product> {
+  }: ProductRelationAssignment): Promise<Product> {
     const product = await this.productRepository.findById(productId);
 
     if (relationEntity.shopId !== product.shopId) {
@@ -357,7 +366,7 @@ export class ProductsService {
     }
 
     const currentRelations =
-      (product[relationName] as Array<{ id: string }> | undefined) ?? [];
+      (product[relationName] as ShopOwnedEntity[] | undefined) ?? [];
     const alreadyAssigned = currentRelations.some(
       (item) => item.id === relationEntity.id,
     );
@@ -390,9 +399,7 @@ export class ProductsService {
     );
 
     if (existing && existing.id !== excludeProductId) {
-      throw new BadRequestException(
-        'SKU продукту вже існує для цього магазину',
-      );
+      throw new BadRequestException(PRODUCT_MESSAGES.DUPLICATE_SKU);
     }
   }
 
@@ -408,9 +415,7 @@ export class ProductsService {
     );
 
     if (existing && existing.id !== excludeProductId) {
-      throw new BadRequestException(
-        'Слаг продукту вже існує для цього магазину',
-      );
+      throw new BadRequestException(PRODUCT_MESSAGES.DUPLICATE_SLUG);
     }
 
     return slug;
@@ -438,14 +443,12 @@ export class ProductsService {
 
   private assertOldPriceValid(price: number, oldPrice: number | null): void {
     if (oldPrice !== null && oldPrice < price) {
-      throw new BadRequestException(
-        'oldPrice має бути більшим або дорівнювати price',
-      );
+      throw new BadRequestException(PRODUCT_MESSAGES.INVALID_OLD_PRICE);
     }
   }
 
   private toNumericString(value: number): string {
-    return value.toFixed(2);
+    return value.toFixed(PRICE_DECIMALS);
   }
 
   private async ensureProductTypeVariable(product: Product): Promise<void> {
@@ -468,9 +471,7 @@ export class ProductsService {
         );
 
         if (existingAttribute.shopId !== productShopId) {
-          throw new BadRequestException(
-            'Атрибут належить іншому магазину, ніж продукт',
-          );
+          throw new BadRequestException(ATTRIBUTE_MESSAGES.OTHER_SHOP);
         }
 
         return attribute.attributeTypeId;
@@ -525,7 +526,7 @@ export class ProductsService {
     const variation =
       await this.productVariationRepository.findById(variationId);
     if (variation.productId !== productId) {
-      throw new BadRequestException('Варіація не належить вказаному продукту');
+      throw new BadRequestException(PRODUCT_VARIATION_MESSAGES.OTHER_PRODUCT);
     }
 
     return variation;
@@ -533,7 +534,7 @@ export class ProductsService {
 
   private async resolveUploadedImages(
     dto: ProductVariationDto,
-  ): Promise<Array<{ url: string; alt: string | null; sort: number }>> {
+  ): Promise<ImagePayload[]> {
     return Promise.all(
       dto.images.map(async (image, index) => ({
         url: await this.resolveImageUrl(image.image),
@@ -588,7 +589,7 @@ export class ProductsService {
   private async syncVariationRelations(
     variationId: string,
     validatedAttributes: string[],
-    uploadedImages: Array<{ url: string; alt: string | null; sort: number }>,
+    uploadedImages: ImagePayload[],
   ): Promise<void> {
     await this.productVariationRepository.replaceAttributes(
       variationId,
@@ -604,7 +605,7 @@ export class ProductsService {
   }
 
   private async resolveImageUrl(image: string): Promise<string> {
-    if (!image.startsWith('data:image/')) {
+    if (!image.startsWith(IMAGE_DATA_URI_PREFIX)) {
       return image;
     }
 
@@ -612,58 +613,58 @@ export class ProductsService {
   }
 
   private rethrowConstraintError(error: unknown): never {
-    if (matchesQueryFailedError(error, { code: '23503' })) {
-      throw new BadRequestException('Повʼязана сутність не існує');
+    if (
+      matchesQueryFailedError(error, {
+        code: POSTGRES_ERROR_CODES.FOREIGN_KEY_VIOLATION,
+      })
+    ) {
+      throw new BadRequestException(PRODUCT_MESSAGES.RELATED_ENTITY_NOT_FOUND);
     }
 
     if (
       matchesQueryFailedError(error, {
-        code: '23505',
-        constraint: 'uq_products_shop_sku',
+        code: POSTGRES_ERROR_CODES.UNIQUE_VIOLATION,
+        constraint: PRODUCT_CONSTRAINTS.UNIQUE_SKU,
+      })
+    ) {
+      throw new BadRequestException(PRODUCT_MESSAGES.DUPLICATE_SKU);
+    }
+
+    if (
+      matchesQueryFailedError(error, {
+        code: POSTGRES_ERROR_CODES.UNIQUE_VIOLATION,
+        constraint: PRODUCT_CONSTRAINTS.UNIQUE_SLUG,
+      })
+    ) {
+      throw new BadRequestException(PRODUCT_MESSAGES.DUPLICATE_SLUG);
+    }
+
+    if (
+      matchesQueryFailedError(error, {
+        code: POSTGRES_ERROR_CODES.UNIQUE_VIOLATION,
+        constraint: PRODUCT_CONSTRAINTS.UNIQUE_VARIATION_ATTRIBUTE,
       })
     ) {
       throw new BadRequestException(
-        'SKU продукту вже існує для цього магазину',
+        PRODUCT_VARIATION_MESSAGES.DUPLICATE_ATTRIBUTE,
       );
     }
 
     if (
       matchesQueryFailedError(error, {
-        code: '23505',
-        constraint: 'uq_products_shop_slug',
+        code: POSTGRES_ERROR_CODES.CHECK_VIOLATION,
+        constraintIncludes: PRODUCT_CONSTRAINTS.OLD_PRICE_CHECK_FRAGMENT,
       })
     ) {
-      throw new BadRequestException(
-        'Слаг продукту вже існує для цього магазину',
-      );
+      throw new BadRequestException(PRODUCT_MESSAGES.INVALID_OLD_PRICE);
     }
 
     if (
       matchesQueryFailedError(error, {
-        code: '23505',
-        constraint: 'variations_attributes_pkey',
+        code: POSTGRES_ERROR_CODES.CHECK_VIOLATION,
       })
     ) {
-      throw new BadRequestException(
-        'Дублювання призначення атрибутів варіації заборонено',
-      );
-    }
-
-    if (
-      matchesQueryFailedError(error, {
-        code: '23514',
-        constraintIncludes: 'old_price',
-      })
-    ) {
-      throw new BadRequestException(
-        'oldPrice має бути більшим або дорівнювати price',
-      );
-    }
-
-    if (matchesQueryFailedError(error, { code: '23514' })) {
-      throw new BadRequestException(
-        'Дані продукту порушують обмеження бази даних',
-      );
+      throw new BadRequestException(PRODUCT_MESSAGES.CONSTRAINT_VIOLATION);
     }
 
     throw error;

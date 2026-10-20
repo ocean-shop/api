@@ -18,6 +18,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Roles } from '../../../../user/decorators/roles.decorator';
+import { ADMIN_ROLES } from '../../../../user/constants/role.constants';
 import { JwtAuthGuard } from '../../../../user/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../../user/guards/roles.guard';
 import { ListOrdersByUserQueryDto } from '../../../dto/list-orders-by-user-query.dto';
@@ -34,7 +35,7 @@ export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Get()
-  @Roles('admin', 'super')
+  @Roles(...ADMIN_ROLES)
   @ApiOperation({ summary: 'List orders with filters and pagination' })
   @ApiQuery({ name: 'shopId', required: false, type: String, format: 'uuid' })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -44,7 +45,7 @@ export class OrdersController {
   }
 
   @Get('by-user')
-  @Roles('admin', 'super')
+  @Roles(...ADMIN_ROLES)
   @ApiOperation({ summary: 'List orders by user id' })
   @ApiQuery({ name: 'userId', required: true, type: String, format: 'uuid' })
   @ApiQuery({ name: 'shopId', required: false, type: String, format: 'uuid' })
@@ -55,7 +56,7 @@ export class OrdersController {
   }
 
   @Get(':id')
-  @Roles('admin', 'super')
+  @Roles(...ADMIN_ROLES)
   @ApiOperation({ summary: 'Get order by id' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   async getOrderById(@Param('id', ParseUUIDPipe) id: string) {
@@ -63,7 +64,7 @@ export class OrdersController {
   }
 
   @Delete(':id')
-  @Roles('admin', 'super')
+  @Roles(...ADMIN_ROLES)
   @ApiOperation({ summary: 'Delete order by id' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   async removeOrder(@Param('id', ParseUUIDPipe) id: string) {
@@ -71,7 +72,7 @@ export class OrdersController {
   }
 
   @Patch(':id/payment-status')
-  @Roles('admin', 'super')
+  @Roles(...ADMIN_ROLES)
   @ApiOperation({ summary: 'Update order payment status' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiBody({ type: UpdateOrderPaymentStatusDto })
@@ -83,7 +84,7 @@ export class OrdersController {
   }
 
   @Patch(':id/status')
-  @Roles('admin', 'super')
+  @Roles(...ADMIN_ROLES)
   @ApiOperation({ summary: 'Update order status' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiBody({ type: UpdateOrderStatusDto })

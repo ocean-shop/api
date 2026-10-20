@@ -8,7 +8,9 @@ import {
   buildRefreshTokenExpiryDate,
   findSessionByRefreshToken,
   hashRefreshToken,
-} from '../session/user-session.helpers';
+} from '../../helpers/user-session.helpers';
+import { AUTH_MESSAGES } from '../../constants/auth-messages.constants';
+import { AuthResponse, RefreshTokenPayload } from '../../models/auth.models';
 
 @Injectable()
 export class RefreshTokenService {
@@ -23,9 +25,9 @@ export class RefreshTokenService {
     refreshToken: string,
     userAgent?: string,
     ipAddress?: string,
-  ) {
+  ): Promise<AuthResponse> {
     if (!refreshToken) {
-      throw new UnauthorizedException('Потрібен refresh-токен');
+      throw new UnauthorizedException(AUTH_MESSAGES.REFRESH_TOKEN_REQUIRED);
     }
 
     try {
@@ -54,12 +56,12 @@ export class RefreshTokenService {
         },
       };
     } catch {
-      throw new UnauthorizedException('Недійсний refresh-токен');
+      throw new UnauthorizedException(AUTH_MESSAGES.REFRESH_TOKEN_INVALID);
     }
   }
 
   private extractUserIdFromToken(refreshToken: string): string {
-    const payload: { sub: string } = this.jwtService.verify(refreshToken);
+    const payload: RefreshTokenPayload = this.jwtService.verify(refreshToken);
     return String(payload.sub);
   }
 
@@ -81,7 +83,7 @@ export class RefreshTokenService {
       return matchingSession;
     }
 
-    throw new UnauthorizedException('Недійсний refresh-токен');
+    throw new UnauthorizedException(AUTH_MESSAGES.REFRESH_TOKEN_INVALID);
   }
 
   private async updateSession(

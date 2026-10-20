@@ -15,7 +15,8 @@ import {
   parseAttributeFilters,
   parseBoolean,
 } from '../../helpers/catalog-query.helpers';
-import { CatalogFilter, CatalogProductSort } from '../../models/product.models';
+import { CatalogFilter } from '../../models/product.models';
+import { CatalogProductSort } from '../../entities/enums/product-sort.enum';
 
 export class ListCatalogProductsQueryDto {
   @ApiProperty({ type: String, format: 'uuid' })

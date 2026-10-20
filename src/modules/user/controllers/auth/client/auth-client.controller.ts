@@ -2,6 +2,10 @@ import { Controller, Post, Body, Res, Headers, Ip } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { AuthClientService } from '../../../services/auth-client/auth-client.service';
+import { MessageResponse } from '../../../../../core/response/models/response.models';
+import { REFRESH_TOKEN_COOKIE } from '../../../constants/auth.constants';
+import { buildRefreshTokenCookieOptions } from '../../../helpers/auth-cookie.helpers';
+import { AuthResponse } from '../../../models/auth.models';
 import { RequestClientOtpDto } from '../../../dto/request-client-otp.dto';
 import { VerifyClientOtpDto } from '../../../dto/verify-client-otp.dto';
 
@@ -15,7 +19,9 @@ export class AuthClientController {
     summary: 'Request client OTP code (creates user if not exists)',
   })
   @ApiBody({ type: RequestClientOtpDto })
-  async requestOtp(@Body() requestClientOtpDto: RequestClientOtpDto) {
+  async requestOtp(
+    @Body() requestClientOtpDto: RequestClientOtpDto,
+  ): Promise<MessageResponse> {
     return await this.authClientService.requestOtp(requestClientOtpDto);
   }
 
@@ -27,7 +33,7 @@ export class AuthClientController {
     @Headers('user-agent') userAgent: string,
     @Ip() ipAddress: string,
     @Res({ passthrough: true }) response: Response,
-  ) {
+  ): Promise<AuthResponse> {
     const result = await this.authClientService.verifyOtp(
       verifyClientOtpDto,
       userAgent,
@@ -39,12 +45,14 @@ export class AuthClientController {
     return result;
   }
 
-  private setRefreshTokenCookie(response: Response, refreshToken: string) {
-    response.cookie('refresh_token', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: parseInt(process.env.REFRESH_EXPIRE_TIME ?? '0', 10),
-    });
+  private setRefreshTokenCookie(
+    response: Response,
+    refreshToken: string,
+  ): void {
+    response.cookie(
+      REFRESH_TOKEN_COOKIE,
+      refreshToken,
+      buildRefreshTokenCookieOptions(),
+    );
   }
 }

@@ -48,7 +48,7 @@ describe('AttributesService', () => {
       total: 2,
     });
 
-    const result = await service.getAllAttributes({});
+    const result = await service.getAllAttributes({ page: 1, limit: 20 });
 
     expect(attributeRepository.findAllPaginated).toHaveBeenCalledWith(
       undefined,
@@ -154,10 +154,14 @@ describe('AttributesService', () => {
     } as any;
     jest.mocked(attributeRepository.create).mockReturnValue(payload);
     jest.mocked(attributeRepository.save).mockRejectedValue(
-      new QueryFailedError('INSERT INTO attribute_types', [], {
-        code: '23505',
-        constraint: 'attribute_types_shop_id_name_value_key',
-      }),
+      new QueryFailedError(
+        'INSERT INTO attribute_types',
+        [],
+        Object.assign(new Error(), {
+          code: '23505',
+          constraint: 'attribute_types_shop_id_name_value_key',
+        }),
+      ),
     );
 
     await expect(

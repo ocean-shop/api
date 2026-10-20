@@ -1,9 +1,11 @@
 import { createHash } from 'node:crypto';
+import { CATALOG_CACHE_SEGMENTS } from '../constants/catalog-cache.constants';
 import {
   CatalogFilter,
   CatalogProductFilters,
   CatalogProductSearchFilters,
   CommonCatalogProductFilters,
+  SearchCacheKeyParts,
 } from '../models/product.models';
 
 /**
@@ -21,7 +23,7 @@ export function buildCatalogProductsCacheSegments(
 ): string[] {
   // The category id stays readable so a key can be traced back in redis-cli.
   return [
-    'products',
+    CATALOG_CACHE_SEGMENTS.PRODUCTS,
     filters.categoryId,
     hashCatalogFilters(filters, page, limit),
   ];
@@ -41,7 +43,7 @@ export function buildCatalogProductSearchCacheSegments(
   limit: number,
 ): string[] {
   return [
-    'products-search',
+    CATALOG_CACHE_SEGMENTS.PRODUCTS_SEARCH,
     hashCatalogFilters(filters, page, limit, {
       term: filters.term,
       categoryIds: filters.categoryIds,
@@ -57,7 +59,7 @@ export function buildCatalogProductSearchCacheSegments(
  * terms differing only in case or spacing share one key.
  */
 export function buildProductSearchCacheSegments(term: string): string[] {
-  return ['search', hashTerm(term)];
+  return [CATALOG_CACHE_SEGMENTS.SEARCH, hashTerm(term)];
 }
 
 /**
@@ -68,7 +70,7 @@ export function buildProductSearchCacheSegments(term: string): string[] {
  * options for every combination.
  */
 export function buildCatalogSearchFiltersCacheSegments(term: string): string[] {
-  return ['filters-search', hashTerm(term)];
+  return [CATALOG_CACHE_SEGMENTS.FILTERS_SEARCH, hashTerm(term)];
 }
 
 /**
@@ -81,18 +83,12 @@ export function buildCatalogSearchFiltersCacheSegments(term: string): string[] {
 export function buildCatalogSearchCategoriesCacheSegments(
   term: string,
 ): string[] {
-  return ['categories-search', hashTerm(term)];
+  return [CATALOG_CACHE_SEGMENTS.CATEGORIES_SEARCH, hashTerm(term)];
 }
 
 function hashTerm(term: string): string {
   return createHash('sha1').update(term).digest('hex');
 }
-
-/** What a search narrows by on top of the filters every listing shares. */
-type SearchCacheKeyParts = {
-  term: string;
-  categoryIds?: string[];
-};
 
 /** Hashes everything a listing varies by, in a form independent of its spelling. */
 function hashCatalogFilters(

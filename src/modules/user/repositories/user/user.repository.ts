@@ -2,6 +2,8 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../entities/user.entity';
+import { USER_MESSAGES } from '../../constants/user-messages.constants';
+import { PaginatedResult } from '../../../../core/response/models/response.models';
 
 @Injectable()
 export class UserRepository {
@@ -21,7 +23,7 @@ export class UserRepository {
     });
 
     if (!user) {
-      throw new NotFoundException('Користувача не знайдено');
+      throw new NotFoundException(USER_MESSAGES.NOT_FOUND);
     }
 
     return user;
@@ -34,7 +36,7 @@ export class UserRepository {
     });
 
     if (!user) {
-      throw new NotFoundException('Користувача не знайдено');
+      throw new NotFoundException(USER_MESSAGES.NOT_FOUND);
     }
 
     return user;
@@ -62,7 +64,7 @@ export class UserRepository {
     roles: string[],
     skip: number,
     take: number,
-  ): Promise<{ items: User[]; total: number }> {
+  ): Promise<PaginatedResult<User>> {
     const [items, total] = await this.repository
       .createQueryBuilder('user')
       .leftJoinAndSelect('user.role', 'role')
@@ -86,7 +88,7 @@ export class UserRepository {
       .getOne();
 
     if (!user) {
-      throw new NotFoundException('Адміністратора не знайдено');
+      throw new NotFoundException(USER_MESSAGES.ADMIN_NOT_FOUND);
     }
 
     return user;

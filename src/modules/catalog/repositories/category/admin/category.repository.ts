@@ -1,8 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, IsNull, LessThan, MoreThan, Repository } from 'typeorm';
+import { CATEGORY_MESSAGES } from '../../../constants/category-messages.constants';
 import { Category } from '../../../entities/category.entity';
 import { CategoryFilters } from '../../../models/category.models';
+import { PaginatedResult } from '../../../../../core/response/models/response.models';
+import { SortDirection } from '../../../models/sort.models';
 import { CategoryQueryRepository } from '../common/category-query.repository';
 
 @Injectable()
@@ -18,7 +21,7 @@ export class CategoryRepository extends CategoryQueryRepository {
     filters: CategoryFilters,
     skip: number,
     take: number,
-  ): Promise<{ items: Category[]; total: number }> {
+  ): Promise<PaginatedResult<Category>> {
     return this.findPaginated(filters, skip, take);
   }
 
@@ -26,7 +29,7 @@ export class CategoryRepository extends CategoryQueryRepository {
     const category = await this.repository.findOne({ where: { id } });
 
     if (!category) {
-      throw new NotFoundException('Категорію не знайдено');
+      throw new NotFoundException(CATEGORY_MESSAGES.NOT_FOUND);
     }
 
     return category;
@@ -70,7 +73,7 @@ export class CategoryRepository extends CategoryQueryRepository {
 
   async findAdjacentSibling(
     category: Category,
-    direction: 'up' | 'down',
+    direction: SortDirection,
   ): Promise<Category | null> {
     const where: Record<string, unknown> = {
       shopId: category.shopId,

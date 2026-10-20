@@ -1,9 +1,5 @@
-import {
-  SLUG_MAX_LENGTH,
-  SLUG_REGEX,
-  slugify,
-  withSlugSuffix,
-} from './slug.helpers';
+import { SLUG_MAX_LENGTH, SLUG_REGEX } from '../constants/slug.constants';
+import { slugify, withSlugSuffix } from './slug.helpers';
 
 describe('slug helpers', () => {
   describe('slugify', () => {

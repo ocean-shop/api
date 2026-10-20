@@ -189,10 +189,14 @@ describe('CategoriesService', () => {
 
     jest.mocked(categoryRepository.create).mockReturnValue(payload);
     jest.mocked(categoryRepository.save).mockRejectedValue(
-      new QueryFailedError('INSERT INTO categories', [], {
-        code: '23505',
-        constraint: 'uq_categories_shop_root_slug',
-      }),
+      new QueryFailedError(
+        'INSERT INTO categories',
+        [],
+        Object.assign(new Error(), {
+          code: '23505',
+          constraint: 'uq_categories_shop_root_slug',
+        }),
+      ),
     );
 
     await expect(
@@ -327,10 +331,14 @@ describe('CategoriesService', () => {
 
     jest.mocked(categoryRepository.findById).mockResolvedValue(existing);
     jest.mocked(categoryRepository.save).mockRejectedValue(
-      new QueryFailedError('UPDATE categories', [], {
-        code: '23505',
-        constraint: 'uq_categories_shop_root_slug',
-      }),
+      new QueryFailedError(
+        'UPDATE categories',
+        [],
+        Object.assign(new Error(), {
+          code: '23505',
+          constraint: 'uq_categories_shop_root_slug',
+        }),
+      ),
     );
 
     await expect(

@@ -1,15 +1,16 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { assertCanAccessUser } from '../../helpers/access.helpers';
 import { FavoriteProductRepository } from '../../../catalog/repositories/favorite-product/favorite-product.repository';
+import {
+  LAST_ACTIVE_ORDERS_LIMIT,
+  LAST_FAVORITE_PRODUCTS_LIMIT,
+} from '../../constants/dashboard.constants';
 import { DashboardQueryDto } from '../../dto/dashboard-query.dto';
 import { JwtPayload } from '../../models/auth-request.models';
 import { DashboardResponse } from '../../models/dashboard.models';
 import { DashboardRepository } from '../../repositories/dashboard/dashboard.repository';
 import { ShippingRepository } from '../../repositories/shipping/shipping.repository';
 import { UserRepository } from '../../repositories/user/user.repository';
-
-const CLIENT_ROLE_NAME = 'user';
-const LAST_ACTIVE_ORDERS_LIMIT = 3;
-const LAST_FAVORITE_PRODUCTS_LIMIT = 4;
 
 @Injectable()
 export class DashboardService {
@@ -25,7 +26,7 @@ export class DashboardService {
     query: DashboardQueryDto,
     requester?: JwtPayload,
   ): Promise<DashboardResponse> {
-    this.assertCanAccess(userId, requester);
+    assertCanAccessUser(userId, requester);
     await this.userRepository.findById(userId);
 
     const [ordersCount, activeOrders, mainShipping, favoriteProducts] =
@@ -53,11 +54,5 @@ export class DashboardService {
       mainShipping,
       lastFavoriteProducts: favoriteProducts.items,
     };
-  }
-
-  private assertCanAccess(userId: string, requester?: JwtPayload): void {
-    if (requester?.role === CLIENT_ROLE_NAME && requester.sub !== userId) {
-      throw new ForbiddenException('Доступ заборонено');
-    }
   }
 }

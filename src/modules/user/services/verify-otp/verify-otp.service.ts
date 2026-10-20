@@ -7,7 +7,8 @@ import { UserSessionRepository } from '../../repositories/user-session/user-sess
 import {
   buildRefreshTokenExpiryDate,
   hashRefreshToken,
-} from '../session/user-session.helpers';
+} from '../../helpers/user-session.helpers';
+import { AuthResponse } from '../../models/auth.models';
 
 @Injectable()
 export class VerifyOtpService {
@@ -17,7 +18,11 @@ export class VerifyOtpService {
     private readonly authService: AuthService,
   ) {}
 
-  async verifyOtp(dto: VerifyOtpDto, userAgent?: string, ipAddress?: string) {
+  async verifyOtp(
+    dto: VerifyOtpDto,
+    userAgent?: string,
+    ipAddress?: string,
+  ): Promise<AuthResponse> {
     const user = await this.userRepository.findByEmailOrPhone(
       dto.email,
       dto.phone,
@@ -62,7 +67,7 @@ export class VerifyOtpService {
     refreshToken: string,
     userAgent?: string,
     ipAddress?: string,
-  ) {
+  ): Promise<void> {
     const refreshTokenHash = await hashRefreshToken(refreshToken);
     const session = this.userSessionRepository.create({
       userId,

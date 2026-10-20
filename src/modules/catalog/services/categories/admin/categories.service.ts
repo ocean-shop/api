@@ -4,9 +4,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { CacheService } from '../../../../../core/cache/cache.service';
+import { POSTGRES_ERROR_CODES } from '../../../../../core/db/constants/postgres-error.constants';
 import { matchesQueryFailedError } from '../../../../../core/db/helpers/query-failed-error.helpers';
+import { CATEGORY_MESSAGES } from '../../../constants/category-messages.constants';
 import { Category } from '../../../entities/category.entity';
 import { CategoryListResponse } from '../../../models/category.models';
+import { MessageResponse } from '../../../../../core/response/models/response.models';
 import { CategoryRepository } from '../../../repositories/category/admin/category.repository';
 import { ChangeCategorySortDto } from '../../../dto/categories/change-category-sort.dto';
 import { CreateCategoryDto } from '../../../dto/categories/create-category.dto';
@@ -15,15 +18,11 @@ import { ListCategoriesQueryDto } from '../../../dto/categories/list-categories-
 import {
   resolvePagination,
   toListResponse,
-} from '../../../helpers/list-response.helpers';
+} from '../../../../../core/response/helpers/list-response.helpers';
+import { CATEGORY_DUPLICATE_SLUG_CONSTRAINTS } from '../../../constants/category-constraint.constants';
 
 @Injectable()
 export class CategoriesService {
-  private readonly duplicateSlugConstraintNames = [
-    'uq_categories_shop_root_slug',
-    'uq_categories_shop_parent_slug',
-  ];
-
   constructor(
     private readonly categoryRepository: CategoryRepository,
     private readonly cacheService: CacheService,
@@ -55,12 +54,10 @@ export class CategoriesService {
     if (parentId) {
       const parent = await this.categoryRepository.findOneById(parentId);
       if (!parent) {
-        throw new NotFoundException('Батьківську категорію не знайдено');
+        throw new NotFoundException(CATEGORY_MESSAGES.PARENT_NOT_FOUND);
       }
       if (parent.shopId !== dto.shopId) {
-        throw new BadRequestException(
-          'Батьківська категорія належить іншому магазину',
-        );
+        throw new BadRequestException(CATEGORY_MESSAGES.PARENT_OTHER_SHOP);
       }
     }
 
@@ -90,19 +87,15 @@ export class CategoriesService {
 
     if (dto.parentId !== undefined) {
       if (dto.parentId === id) {
-        throw new BadRequestException(
-          'Категорія не може бути батьківською сама для себе',
-        );
+        throw new BadRequestException(CATEGORY_MESSAGES.SELF_PARENT);
       }
 
       const parent = await this.categoryRepository.findOneById(dto.parentId);
       if (!parent) {
-        throw new NotFoundException('Батьківську категорію не знайдено');
+        throw new NotFoundException(CATEGORY_MESSAGES.PARENT_NOT_FOUND);
       }
       if (parent.shopId !== category.shopId) {
-        throw new BadRequestException(
-          'Батьківська категорія належить іншому магазину',
-        );
+        throw new BadRequestException(CATEGORY_MESSAGES.PARENT_OTHER_SHOP);
       }
 
       if (category.parentId !== dto.parentId) {
@@ -146,8 +139,8 @@ export class CategoriesService {
     if (!sibling) {
       throw new BadRequestException(
         dto.direction === 'up'
-          ? 'Категорія вже на початку'
-          : 'Категорія вже в кінці',
+          ? CATEGORY_MESSAGES.ALREADY_FIRST
+          : CATEGORY_MESSAGES.ALREADY_LAST,
       );
     }
 
@@ -156,12 +149,12 @@ export class CategoriesService {
     return this.categoryRepository.swapSort(category, sibling);
   }
 
-  async removeCategory(id: string): Promise<{ message: string }> {
+  async removeCategory(id: string): Promise<MessageResponse> {
     const category = await this.categoryRepository.findById(id);
     const descendantIds = await this.collectDescendantIds(category.id);
     await this.categoryRepository.removeByIds([category.id, ...descendantIds]);
     await this.cacheService.invalidate(category.shopId);
-    return { message: 'Категорію успішно видалено' };
+    return { message: CATEGORY_MESSAGES.REMOVED };
   }
 
   private async collectDescendantIds(parentId: string): Promise<string[]> {
@@ -198,7 +191,7 @@ export class CategoriesService {
     } catch (error) {
       if (this.isDuplicateSlugError(error)) {
         throw new BadRequestException(
-          'Слаг категорії вже існує для цього магазину та батьківської категорії',
+          CATEGORY_MESSAGES.DUPLICATE_SLUG_IN_PARENT,
         );
       }
 
@@ -217,16 +210,14 @@ export class CategoriesService {
     );
 
     if (existing && existing.id !== excludeCategoryId) {
-      throw new BadRequestException(
-        'Слаг категорії вже існує для цього магазину',
-      );
+      throw new BadRequestException(CATEGORY_MESSAGES.DUPLICATE_SLUG);
     }
   }
 
   private isDuplicateSlugError(error: unknown): boolean {
     return matchesQueryFailedError(error, {
-      code: '23505',
-      constraintIn: this.duplicateSlugConstraintNames,
+      code: POSTGRES_ERROR_CODES.UNIQUE_VIOLATION,
+      constraintIn: CATEGORY_DUPLICATE_SLUG_CONSTRAINTS,
     });
   }
 }
