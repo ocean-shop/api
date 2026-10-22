@@ -1,78 +1,65 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcryptjs';
+import { UnauthorizedException } from '@nestjs/common';
 import { LogoutService } from './logout.service';
-import { UserSession } from '../../entities/user-session.entity';
-import { UserSessionRepository } from '../../repositories/user-session/user-session.repository';
-
-jest.mock('bcryptjs', () => ({
-  compare: jest.fn(),
-}));
+import { AuthService } from '../auth/auth.service';
+import { UserSessionService } from '../user-session/user-session.service';
 
 describe('LogoutService', () => {
   let service: LogoutService;
-  let userSessionRepository: any;
-  let jwtService: any;
+  let authService: any;
+  let userSessionService: any;
 
   beforeEach(async () => {
-    userSessionRepository = {
-      findActiveSessionsByUserId: jest.fn(),
-      save: jest.fn(),
+    authService = {
+      verifyRefreshToken: jest
+        .fn()
+        .mockReturnValue({ sub: 'uuid', sid: 'session-id', type: 'refresh' }),
     };
-
-    jwtService = {
-      verify: jest.fn().mockReturnValue({ sub: 'uuid' }),
-    };
+    userSessionService = { revokeSession: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         LogoutService,
-        {
-          provide: UserSessionRepository,
-          useValue: userSessionRepository,
-        },
-        { provide: JwtService, useValue: jwtService },
+        { provide: AuthService, useValue: authService },
+        { provide: UserSessionService, useValue: userSessionService },
       ],
     }).compile();
 
     service = module.get<LogoutService>(LogoutService);
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
+  it('should do nothing without a token', async () => {
+    await service.logout('');
+
+    expect(authService.verifyRefreshToken).not.toHaveBeenCalled();
+    expect(userSessionService.revokeSession).not.toHaveBeenCalled();
   });
 
-  describe('logout', () => {
-    it('should return early if no token', async () => {
-      await service.logout('');
-      expect(jwtService.verify).not.toHaveBeenCalled();
+  it('should revoke the session the token was issued for, even if expired', async () => {
+    await service.logout('refresh-token');
+
+    expect(authService.verifyRefreshToken).toHaveBeenCalledWith(
+      'refresh-token',
+      { ignoreExpiration: true },
+    );
+    expect(userSessionService.revokeSession).toHaveBeenCalledWith(
+      'session-id',
+      'uuid',
+    );
+  });
+
+  it('should swallow an invalid token', async () => {
+    authService.verifyRefreshToken.mockImplementation(() => {
+      throw new UnauthorizedException();
     });
 
-    it('should successfully revoke session', async () => {
-      const session = {
-        refreshTokenHash: 'hash',
-        revokedAt: null,
-      };
-      userSessionRepository.findActiveSessionsByUserId.mockResolvedValue([
-        session,
-      ]);
-      jest.mocked(bcrypt.compare).mockResolvedValue(true as never);
+    await expect(service.logout('garbage')).resolves.toBeUndefined();
+    expect(userSessionService.revokeSession).not.toHaveBeenCalled();
+  });
 
-      await service.logout('token');
+  it('should swallow a storage error', async () => {
+    userSessionService.revokeSession.mockRejectedValue(new Error('db down'));
 
-      expect(session.revokedAt).toBeDefined();
-      expect(userSessionRepository.save).toHaveBeenCalledWith(session);
-    });
-
-    it('should ignore errors during logout', async () => {
-      jwtService.verify.mockImplementation(() => {
-        throw new Error('Invalid token');
-      });
-
-      await expect(service.logout('invalid-token')).resolves.not.toThrow();
-      expect(
-        userSessionRepository.findActiveSessionsByUserId,
-      ).not.toHaveBeenCalled();
-    });
+    await expect(service.logout('refresh-token')).resolves.toBeUndefined();
   });
 });

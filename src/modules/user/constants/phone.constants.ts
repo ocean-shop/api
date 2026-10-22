@@ -4,6 +4,8 @@ export const UKRAINIAN_PHONE_REGEX = /^(\+380|380|0)\d{9}$/;
 /** The only form TurboSMS accepts: 380XXXXXXXXX. */
 export const NORMALIZED_UKRAINIAN_PHONE_REGEX = /^380\d{9}$/;
 export const UKRAINIAN_COUNTRY_CODE_PREFIX = '38';
+/** Digits after the `0` / `380` prefix; equal in every accepted spelling of a number. */
+export const UA_PHONE_SUBSCRIBER_DIGITS = 9;
 
 export const CONTACT_REGEX =
   /^(?:(?:\+380|380|0)\d{9}|[^\s@]+@[^\s@]+\.[^\s@]+)$/;

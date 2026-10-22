@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Role } from '../../entities/role.entity';
-import { UserSession } from '../../entities/user-session.entity';
 import { User } from '../../entities/user.entity';
 import { AuthClientRepository } from './auth-client.repository';
 
@@ -9,7 +8,6 @@ describe('AuthClientRepository', () => {
   let repository: AuthClientRepository;
   let userRepository: any;
   let roleRepository: any;
-  let sessionRepository: any;
 
   beforeEach(async () => {
     userRepository = {
@@ -18,22 +16,12 @@ describe('AuthClientRepository', () => {
       save: jest.fn((entity) => Promise.resolve({ id: 'user-1', ...entity })),
     };
     roleRepository = { findOne: jest.fn() };
-    sessionRepository = {
-      create: jest.fn((payload) => payload),
-      save: jest.fn((entity) =>
-        Promise.resolve({ id: 'session-1', ...entity }),
-      ),
-    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthClientRepository,
         { provide: getRepositoryToken(User), useValue: userRepository },
         { provide: getRepositoryToken(Role), useValue: roleRepository },
-        {
-          provide: getRepositoryToken(UserSession),
-          useValue: sessionRepository,
-        },
       ],
     }).compile();
 
@@ -81,15 +69,5 @@ describe('AuthClientRepository', () => {
     expect(userRepository.create).toHaveBeenCalledWith({ email: 'a@b.com' });
     expect(userRepository.save).toHaveBeenCalledWith({ email: 'a@b.com' });
     expect(result).toEqual({ id: 'user-1', email: 'a@b.com' });
-  });
-
-  it('should create and save a session', async () => {
-    const payload = { userId: 'user-1', refreshTokenHash: 'hash' };
-
-    const result = await repository.createSession(payload);
-
-    expect(sessionRepository.create).toHaveBeenCalledWith(payload);
-    expect(sessionRepository.save).toHaveBeenCalledWith(payload);
-    expect(result).toEqual({ id: 'session-1', ...payload });
   });
 });

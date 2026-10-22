@@ -1,6 +1,4 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CategoriesController } from './controllers/categories/admin/categories.controller';
 import { ProductsController } from './controllers/products/admin/products.controller';
@@ -57,13 +55,6 @@ import { FavoritesClientService } from './services/favorites/client/favorites-cl
       VariationImage,
       UserFavoriteProduct,
     ]),
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET') || 'default-secret-key',
-      }),
-      inject: [ConfigService],
-    }),
   ],
   controllers: [
     ShopsController,

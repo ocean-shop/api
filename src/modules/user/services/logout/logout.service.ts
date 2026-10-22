@@ -1,50 +1,30 @@
 import { Injectable } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { UserSessionRepository } from '../../repositories/user-session/user-session.repository';
-import { findSessionByRefreshToken } from '../../helpers/user-session.helpers';
-import { RefreshTokenPayload } from '../../models/auth.models';
+import { AuthService } from '../auth/auth.service';
+import { UserSessionService } from '../user-session/user-session.service';
 
 @Injectable()
 export class LogoutService {
   constructor(
-    private readonly userSessionRepository: UserSessionRepository,
-    private readonly jwtService: JwtService,
+    private readonly authService: AuthService,
+    private readonly userSessionService: UserSessionService,
   ) {}
 
+  /**
+   * Revokes the session the token was issued for. An expired or already
+   * rotated token still identifies it, so logout always ends that session.
+   */
   async logout(refreshToken: string): Promise<void> {
     if (!refreshToken) {
       return;
     }
 
     try {
-      const userId = this.extractUserIdFromToken(refreshToken);
-      await this.revokeMatchingSession(userId, refreshToken);
+      const { sub, sid } = this.authService.verifyRefreshToken(refreshToken, {
+        ignoreExpiration: true,
+      });
+      await this.userSessionService.revokeSession(sid, sub);
     } catch {
-      // Ignore errors during logout
-    }
-  }
-
-  private extractUserIdFromToken(refreshToken: string): string {
-    const payload: RefreshTokenPayload = this.jwtService.verify(refreshToken, {
-      ignoreExpiration: true,
-    });
-    return String(payload.sub);
-  }
-
-  private async revokeMatchingSession(
-    userId: string,
-    refreshToken: string,
-  ): Promise<void> {
-    const sessions =
-      await this.userSessionRepository.findActiveSessionsByUserId(userId);
-
-    const matchingSession = await findSessionByRefreshToken(
-      sessions,
-      refreshToken,
-    );
-    if (matchingSession) {
-      matchingSession.revokedAt = new Date();
-      await this.userSessionRepository.save(matchingSession);
+      // Logout never fails: the cookie is cleared either way.
     }
   }
 }

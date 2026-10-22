@@ -1,42 +1,41 @@
-import * as bcrypt from 'bcryptjs';
+import { createHash, timingSafeEqual } from 'crypto';
 import {
-  BCRYPT_SALT_ROUNDS,
   DEFAULT_REFRESH_EXPIRE_MS,
+  REFRESH_TOKEN_HASH_ALGORITHM,
+  REFRESH_TOKEN_HASH_ENCODING,
 } from '../constants/auth.constants';
-import { UserSession } from '../entities/user-session.entity';
-import { SessionLookupOptions } from '../models/auth.models';
+import { User } from '../entities/user.entity';
+import { AuthUser } from '../models/auth.models';
 
-export async function hashRefreshToken(refreshToken: string): Promise<string> {
-  const salt = await bcrypt.genSalt(BCRYPT_SALT_ROUNDS);
-  return bcrypt.hash(refreshToken, salt);
+/** Hashes the whole token, unlike bcrypt, which reads only its first 72 bytes. */
+export function hashRefreshToken(refreshToken: string): string {
+  return createHash(REFRESH_TOKEN_HASH_ALGORITHM)
+    .update(refreshToken)
+    .digest(REFRESH_TOKEN_HASH_ENCODING);
 }
 
-export function buildRefreshTokenExpiryDate(nowMs = Date.now()): Date {
-  const refreshExpireMs = process.env.REFRESH_EXPIRE_TIME
-    ? parseInt(process.env.REFRESH_EXPIRE_TIME, 10)
-    : DEFAULT_REFRESH_EXPIRE_MS;
+export function isRefreshTokenMatch(
+  refreshToken: string,
+  storedHash: string,
+): boolean {
+  const actual = Buffer.from(hashRefreshToken(refreshToken));
+  const expected = Buffer.from(storedHash);
 
+  return actual.length === expected.length && timingSafeEqual(actual, expected);
+}
+
+export function buildRefreshTokenExpiryDate(
+  refreshExpireMs = DEFAULT_REFRESH_EXPIRE_MS,
+  nowMs = Date.now(),
+): Date {
   return new Date(nowMs + refreshExpireMs);
 }
 
-export async function findSessionByRefreshToken(
-  sessions: UserSession[],
-  refreshToken: string,
-  options?: SessionLookupOptions,
-): Promise<UserSession | null> {
-  for (const session of sessions) {
-    if (options?.skipExpired && session.expiresAt < new Date()) {
-      continue;
-    }
-
-    const isValid = await bcrypt.compare(
-      refreshToken,
-      session.refreshTokenHash,
-    );
-    if (isValid) {
-      return session;
-    }
-  }
-
-  return null;
+export function toAuthUser(user: User): AuthUser {
+  return {
+    id: user.id,
+    email: user.email,
+    mobileNumber: user.mobileNumber,
+    role: user.role?.name ?? null,
+  };
 }

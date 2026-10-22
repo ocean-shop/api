@@ -4,6 +4,7 @@ import { AuthClientService } from '../../../services/auth-client/auth-client.ser
 import { RequestClientOtpDto } from '../../../dto/request-client-otp.dto';
 import { VerifyClientOtpDto } from '../../../dto/verify-client-otp.dto';
 import type { Response } from 'express';
+import { ThrottlerGuard } from '@nestjs/throttler';
 
 describe('AuthClientController', () => {
   let controller: AuthClientController;
@@ -20,7 +21,10 @@ describe('AuthClientController', () => {
       providers: [
         { provide: AuthClientService, useValue: authClientServiceMock },
       ],
-    }).compile();
+    })
+      .overrideGuard(ThrottlerGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<AuthClientController>(AuthClientController);
     authClientService = module.get<AuthClientService>(AuthClientService);
@@ -83,7 +87,11 @@ describe('AuthClientController', () => {
         'refresh',
         expect.objectContaining({ httpOnly: true, sameSite: 'strict' }),
       );
-      expect(result).toEqual(expectedResult);
+      expect(result).toEqual({
+        accessToken: 'access',
+        user: expectedResult.user,
+      });
+      expect(result).not.toHaveProperty('refreshToken');
     });
   });
 });

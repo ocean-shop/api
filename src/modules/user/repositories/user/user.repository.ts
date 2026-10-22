@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../entities/user.entity';
 import { USER_MESSAGES } from '../../constants/user-messages.constants';
+import { UserAuthState } from '../../models/auth-request.models';
 import { PaginatedResult } from '../../../../core/response/models/response.models';
 
 @Injectable()
@@ -40,6 +41,21 @@ export class UserRepository {
     }
 
     return user;
+  }
+
+  /** The current status and role, read fresh on every authenticated request. */
+  async findAuthState(id: string): Promise<UserAuthState | null> {
+    const user = await this.repository.findOne({
+      where: { id },
+      select: { id: true, isActive: true, role: { name: true } },
+      relations: { role: true },
+    });
+
+    if (!user) {
+      return null;
+    }
+
+    return { isActive: user.isActive, role: user.role?.name ?? null };
   }
 
   create(payload: Partial<User>): User {

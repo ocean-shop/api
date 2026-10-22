@@ -8,7 +8,8 @@ import { SmsService } from '../sms/sms.service';
 import { UserRepository } from '../../repositories/user/user.repository';
 import { MessageResponse } from '../../../../core/response/models/response.models';
 import { AUTH_MESSAGES } from '../../constants/auth-messages.constants';
-import { ROLES } from '../../constants/role.constants';
+import { ADMIN_ROLES } from '../../constants/role.constants';
+import { assertCanSignIn } from '../../helpers/access.helpers';
 import { USER_MESSAGES } from '../../constants/user-messages.constants';
 
 @Injectable()
@@ -42,9 +43,7 @@ export class RequestOtpService {
     email?: string,
     phone?: string,
   ): Promise<void> {
-    if (user.role?.name !== ROLES.ADMIN && user.role?.name !== ROLES.SUPER) {
-      throw new BadRequestException(AUTH_MESSAGES.ACCESS_DENIED);
-    }
+    assertCanSignIn(user, ADMIN_ROLES);
     await this.authService.checkActiveOtpRequest(user.id);
     if (!this.authService.isUserVerified(user, email, phone)) {
       throw new BadRequestException(USER_MESSAGES.NOT_FOUND);

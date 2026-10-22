@@ -1,101 +1,80 @@
-import * as bcrypt from 'bcryptjs';
-import {
-  BCRYPT_SALT_ROUNDS,
-  DEFAULT_REFRESH_EXPIRE_MS,
-} from '../constants/auth.constants';
-import { UserSession } from '../entities/user-session.entity';
+import { createHash } from 'crypto';
+import { DEFAULT_REFRESH_EXPIRE_MS } from '../constants/auth.constants';
+import { User } from '../entities/user.entity';
 import {
   buildRefreshTokenExpiryDate,
-  findSessionByRefreshToken,
   hashRefreshToken,
+  isRefreshTokenMatch,
+  toAuthUser,
 } from './user-session.helpers';
 
-jest.mock('bcryptjs', () => ({
-  genSalt: jest.fn(),
-  hash: jest.fn(),
-  compare: jest.fn(),
-}));
-
-const sessionOf = (id: string, expiresAt: Date): UserSession =>
-  ({ id, refreshTokenHash: `hash-${id}`, expiresAt }) as UserSession;
+const sha256 = (value: string): string =>
+  createHash('sha256').update(value).digest('hex');
 
 describe('user-session.helpers', () => {
-  const originalEnv = { ...process.env };
+  describe('hashRefreshToken', () => {
+    it('should return the sha256 hex digest of the token', () => {
+      expect(hashRefreshToken('token')).toBe(sha256('token'));
+    });
 
-  afterEach(() => {
-    process.env = { ...originalEnv };
-    jest.clearAllMocks();
+    it('should tell apart tokens that share a long common prefix', () => {
+      const prefix = 'x'.repeat(100);
+
+      expect(hashRefreshToken(`${prefix}a`)).not.toBe(
+        hashRefreshToken(`${prefix}b`),
+      );
+    });
   });
 
-  describe('hashRefreshToken', () => {
-    it('should hash the token with a fresh salt', async () => {
-      jest.mocked(bcrypt.genSalt).mockResolvedValue('salt' as never);
-      jest.mocked(bcrypt.hash).mockResolvedValue('hashed' as never);
+  describe('isRefreshTokenMatch', () => {
+    it('should match a token against its own hash', () => {
+      expect(isRefreshTokenMatch('token', sha256('token'))).toBe(true);
+    });
 
-      await expect(hashRefreshToken('token')).resolves.toBe('hashed');
-      expect(bcrypt.genSalt).toHaveBeenCalledWith(BCRYPT_SALT_ROUNDS);
-      expect(bcrypt.hash).toHaveBeenCalledWith('token', 'salt');
+    it('should reject a different token', () => {
+      expect(isRefreshTokenMatch('other', sha256('token'))).toBe(false);
+    });
+
+    it('should reject a hash of another length, such as a legacy bcrypt hash', () => {
+      expect(isRefreshTokenMatch('token', '$2b$10$legacy')).toBe(false);
     });
   });
 
   describe('buildRefreshTokenExpiryDate', () => {
-    it('should use the configured lifetime', () => {
-      process.env.REFRESH_EXPIRE_TIME = '1000';
-
-      expect(buildRefreshTokenExpiryDate(5000)).toEqual(new Date(6000));
+    it('should add the given lifetime to now', () => {
+      expect(buildRefreshTokenExpiryDate(1000, 5000)).toEqual(new Date(6000));
     });
 
     it('should fall back to the default lifetime', () => {
-      delete process.env.REFRESH_EXPIRE_TIME;
+      const now = Date.now();
 
-      expect(buildRefreshTokenExpiryDate(0)).toEqual(
-        new Date(DEFAULT_REFRESH_EXPIRE_MS),
+      expect(buildRefreshTokenExpiryDate(undefined, now)).toEqual(
+        new Date(now + DEFAULT_REFRESH_EXPIRE_MS),
       );
     });
   });
 
-  describe('findSessionByRefreshToken', () => {
-    const future = new Date(Date.now() + 60_000);
-    const past = new Date(Date.now() - 60_000);
+  describe('toAuthUser', () => {
+    it('should expose the public user fields with the role name', () => {
+      const user = {
+        id: 'user-id',
+        email: 'a@b.c',
+        mobileNumber: null,
+        role: { name: 'user' },
+      } as User;
 
-    it('should return the session whose hash matches the token', async () => {
-      const sessions = [sessionOf('a', future), sessionOf('b', future)];
-      jest
-        .mocked(bcrypt.compare)
-        .mockResolvedValueOnce(false as never)
-        .mockResolvedValueOnce(true as never);
-
-      await expect(findSessionByRefreshToken(sessions, 'token')).resolves.toBe(
-        sessions[1],
-      );
-      expect(bcrypt.compare).toHaveBeenCalledWith('token', 'hash-b');
+      expect(toAuthUser(user)).toEqual({
+        id: 'user-id',
+        email: 'a@b.c',
+        mobileNumber: null,
+        role: 'user',
+      });
     });
 
-    it('should return null when no session matches', async () => {
-      jest.mocked(bcrypt.compare).mockResolvedValue(false as never);
+    it('should return a null role when the user has none', () => {
+      const user = { id: 'user-id', email: null, mobileNumber: null } as User;
 
-      await expect(
-        findSessionByRefreshToken([sessionOf('a', future)], 'token'),
-      ).resolves.toBeNull();
-    });
-
-    it('should skip expired sessions when asked to', async () => {
-      jest.mocked(bcrypt.compare).mockResolvedValue(true as never);
-      const sessions = [sessionOf('expired', past), sessionOf('live', future)];
-
-      await expect(
-        findSessionByRefreshToken(sessions, 'token', { skipExpired: true }),
-      ).resolves.toBe(sessions[1]);
-      expect(bcrypt.compare).toHaveBeenCalledTimes(1);
-    });
-
-    it('should match expired sessions by default', async () => {
-      jest.mocked(bcrypt.compare).mockResolvedValue(true as never);
-      const sessions = [sessionOf('expired', past)];
-
-      await expect(findSessionByRefreshToken(sessions, 'token')).resolves.toBe(
-        sessions[0],
-      );
+      expect(toAuthUser(user).role).toBeNull();
     });
   });
 });

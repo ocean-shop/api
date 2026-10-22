@@ -22,6 +22,7 @@ import { AUTH_MESSAGES } from '../../constants/auth-messages.constants';
 import { ADMIN_ROLES, ROLES } from '../../constants/role.constants';
 import { USER_MESSAGES } from '../../constants/user-messages.constants';
 import { AdminRoleName } from '../../models/role.models';
+import { UserSessionService } from '../user-session/user-session.service';
 
 @Injectable()
 export class AdminsService {
@@ -33,6 +34,7 @@ export class AdminsService {
     private readonly roleRepository: Repository<Role>,
     @InjectRepository(Shop)
     private readonly shopRepository: Repository<Shop>,
+    private readonly userSessionService: UserSessionService,
   ) {}
 
   async listAdmins(query: ListAdminsQueryDto): Promise<AdminListResponse> {
@@ -88,6 +90,10 @@ export class AdminsService {
     await this.applyShopsUpdate(dto.shopIds, admin);
 
     const savedAdmin = await this.userRepository.save(admin);
+    if (dto.isActive === false) {
+      await this.userSessionService.revokeAllSessions(id);
+    }
+
     return this.getAdminById(savedAdmin.id);
   }
 

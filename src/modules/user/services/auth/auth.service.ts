@@ -1,31 +1,52 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
+import { randomUUID } from 'crypto';
 import { AUTH_MESSAGES } from '../../constants/auth-messages.constants';
 import {
   ACCESS_TOKEN_EXPIRES_IN,
   BCRYPT_SALT_ROUNDS,
+  JWT_REFRESH_SECRET_KEY,
   OTP_ATTEMPTS_LIMIT,
   OTP_BLOCK_WINDOW_MS,
   OTP_CODE_MIN,
   OTP_CODE_RANGE,
   REFRESH_TOKEN_EXPIRES_IN,
+  TOKEN_TYPES,
 } from '../../constants/auth.constants';
 import { DEFAULT_OTP_EXPIRE_MS } from '../../constants/email.constants';
 import { User } from '../../entities/user.entity';
 import { AuthOtp } from '../../entities/auth-otp.entity';
 import { OtpChannel, OtpPurpose } from '../../entities/enums/auth-otp.enum';
-import { AuthTokens, OtpCode } from '../../models/auth.models';
+import {
+  AuthTokens,
+  OtpCode,
+  RefreshTokenPayload,
+  RefreshTokenVerifyOptions,
+} from '../../models/auth.models';
+import { JwtPayload } from '../../models/auth-request.models';
 import { UserRepository } from '../../repositories/user/user.repository';
 import { AuthOtpRepository } from '../../repositories/auth-otp/auth-otp.repository';
 
 @Injectable()
 export class AuthService {
+  private readonly refreshSecret: string;
+
   constructor(
     private readonly userRepository: UserRepository,
     private readonly authOtpRepository: AuthOtpRepository,
     private readonly jwtService: JwtService,
-  ) {}
+    configService: ConfigService,
+  ) {
+    this.refreshSecret = configService.getOrThrow<string>(
+      JWT_REFRESH_SECRET_KEY,
+    );
+  }
 
   async generateOtpCodeAndHash(): Promise<OtpCode> {
     const code = Math.floor(
@@ -87,42 +108,35 @@ export class AuthService {
     return latestOtp;
   }
 
-  async validateOtpCode(code: string, latestOtp: AuthOtp): Promise<void> {
-    await this.resetOtpAttemptsIfBlockExpired(latestOtp);
+  /**
+   * Checks the code and marks it used. The attempt is counted before the
+   * check and the code is used conditionally, both in single updates, so
+   * concurrent requests can neither exceed the limit nor use one code twice.
+   */
+  async consumeOtp(code: string, otp: AuthOtp): Promise<void> {
+    const attempts = await this.authOtpRepository.reserveAttempt(
+      otp.id,
+      OTP_ATTEMPTS_LIMIT,
+      new Date(Date.now() + OTP_BLOCK_WINDOW_MS),
+    );
 
-    if (latestOtp.blockedUntil && latestOtp.blockedUntil > new Date()) {
+    if (attempts === null) {
       throw new BadRequestException(AUTH_MESSAGES.OTP_BLOCKED);
     }
 
-    const isValid = await bcrypt.compare(code, latestOtp.codeHash);
+    const isValid = await bcrypt.compare(code, otp.codeHash);
     if (!isValid) {
-      latestOtp.attempts += 1;
-
-      if (latestOtp.attempts >= OTP_ATTEMPTS_LIMIT) {
-        latestOtp.blockedUntil = new Date(Date.now() + OTP_BLOCK_WINDOW_MS);
-        await this.authOtpRepository.save(latestOtp);
-        throw new BadRequestException(AUTH_MESSAGES.OTP_BLOCKED);
-      }
-
-      await this.authOtpRepository.save(latestOtp);
-      throw new BadRequestException(AUTH_MESSAGES.OTP_INVALID);
-    }
-  }
-
-  private async resetOtpAttemptsIfBlockExpired(
-    latestOtp: AuthOtp,
-  ): Promise<void> {
-    if (!latestOtp.blockedUntil) {
-      return;
+      throw new BadRequestException(
+        attempts >= OTP_ATTEMPTS_LIMIT
+          ? AUTH_MESSAGES.OTP_BLOCKED
+          : AUTH_MESSAGES.OTP_INVALID,
+      );
     }
 
-    if (latestOtp.blockedUntil > new Date()) {
-      return;
+    const isUsed = await this.authOtpRepository.markUsed(otp.id);
+    if (!isUsed) {
+      throw new BadRequestException(AUTH_MESSAGES.OTP_NOT_FOUND);
     }
-
-    latestOtp.attempts = 0;
-    latestOtp.blockedUntil = null;
-    await this.authOtpRepository.save(latestOtp);
   }
 
   async verifyUserIfRegistered(
@@ -138,24 +152,51 @@ export class AuthService {
     }
   }
 
-  async saveAuthOtp(otp: AuthOtp): Promise<void> {
-    await this.authOtpRepository.save(otp);
-  }
-
-  generateTokens(user: User): AuthTokens {
-    const payload = {
+  generateTokens(user: User, sessionId: string): AuthTokens {
+    const accessPayload: JwtPayload = {
       sub: user.id,
       email: user.email,
       role: user.role?.name,
       mobileNumber: user.mobileNumber,
+      type: TOKEN_TYPES.ACCESS,
     };
-    const accessToken = this.jwtService.sign(payload, {
+    const refreshPayload: RefreshTokenPayload = {
+      sub: user.id,
+      sid: sessionId,
+      type: TOKEN_TYPES.REFRESH,
+    };
+
+    const accessToken = this.jwtService.sign(accessPayload, {
       expiresIn: ACCESS_TOKEN_EXPIRES_IN,
     });
-    const refreshToken = this.jwtService.sign(payload, {
+    // A unique id makes every rotation produce a new token, even within the same second.
+    const refreshToken = this.jwtService.sign(refreshPayload, {
+      secret: this.refreshSecret,
       expiresIn: REFRESH_TOKEN_EXPIRES_IN,
+      jwtid: randomUUID(),
     });
 
     return { accessToken, refreshToken };
+  }
+
+  verifyRefreshToken(
+    refreshToken: string,
+    options: RefreshTokenVerifyOptions = {},
+  ): RefreshTokenPayload {
+    let payload: RefreshTokenPayload;
+    try {
+      payload = this.jwtService.verify<RefreshTokenPayload>(refreshToken, {
+        secret: this.refreshSecret,
+        ignoreExpiration: options.ignoreExpiration,
+      });
+    } catch {
+      throw new UnauthorizedException(AUTH_MESSAGES.REFRESH_TOKEN_INVALID);
+    }
+
+    if (payload.type !== TOKEN_TYPES.REFRESH || !payload.sid) {
+      throw new UnauthorizedException(AUTH_MESSAGES.REFRESH_TOKEN_INVALID);
+    }
+
+    return payload;
   }
 }

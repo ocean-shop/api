@@ -7,6 +7,8 @@ import { LogoutService } from '../../../services/logout/logout.service';
 import { RequestOtpDto } from '../../../dto/request-otp.dto';
 import { VerifyOtpDto } from '../../../dto/verify-otp.dto';
 import { Response, Request } from 'express';
+import { ThrottlerGuard } from '@nestjs/throttler';
+import { DEFAULT_REFRESH_EXPIRE_MS } from '../../../constants/auth.constants';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -40,7 +42,10 @@ describe('AuthController', () => {
         { provide: RefreshTokenService, useValue: refreshTokenServiceMock },
         { provide: LogoutService, useValue: logoutServiceMock },
       ],
-    }).compile();
+    })
+      .overrideGuard(ThrottlerGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<AuthController>(AuthController);
     requestOtpService = module.get<RequestOtpService>(RequestOtpService);
@@ -120,7 +125,11 @@ describe('AuthController', () => {
           maxAge: 604800000,
         },
       );
-      expect(result).toEqual(expectedResult);
+      expect(result).toEqual({
+        accessToken: expectedResult.accessToken,
+        user: expectedResult.user,
+      });
+      expect(result).not.toHaveProperty('refreshToken');
     });
 
     it('should handle production environment and missing REFRESH_EXPIRE_TIME', async () => {
@@ -151,7 +160,7 @@ describe('AuthController', () => {
           httpOnly: true,
           secure: true, // NODE_ENV is production
           sameSite: 'strict',
-          maxAge: 0, // REFRESH_EXPIRE_TIME is missing
+          maxAge: DEFAULT_REFRESH_EXPIRE_MS, // REFRESH_EXPIRE_TIME is missing
         },
       );
     });
@@ -207,7 +216,11 @@ describe('AuthController', () => {
           maxAge: 604800000,
         },
       );
-      expect(result).toEqual(expectedResult);
+      expect(result).toEqual({
+        accessToken: expectedResult.accessToken,
+        user: expectedResult.user,
+      });
+      expect(result).not.toHaveProperty('refreshToken');
     });
   });
 

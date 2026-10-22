@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -14,13 +13,11 @@ import { User } from '../../entities/user.entity';
 import { RequestClientOtpDto } from '../../dto/request-client-otp.dto';
 import { VerifyClientOtpDto } from '../../dto/verify-client-otp.dto';
 import { OtpPurpose } from '../../entities/enums/auth-otp.enum';
-import {
-  buildRefreshTokenExpiryDate,
-  hashRefreshToken,
-} from '../../helpers/user-session.helpers';
-import { AuthResponse, LoginIdentity } from '../../models/auth.models';
+import { assertCanSignIn } from '../../helpers/access.helpers';
+import { AuthSession, LoginIdentity } from '../../models/auth.models';
 import { AuthService } from '../auth/auth.service';
 import { RequestOtpService } from '../request-otp/request-otp.service';
+import { UserSessionService } from '../user-session/user-session.service';
 import { AuthClientRepository } from '../../repositories/auth-client/auth-client.repository';
 
 @Injectable()
@@ -29,6 +26,7 @@ export class AuthClientService {
     private readonly authClientRepository: AuthClientRepository,
     private readonly authService: AuthService,
     private readonly requestOtpService: RequestOtpService,
+    private readonly userSessionService: UserSessionService,
   ) {}
 
   async requestOtp(dto: RequestClientOtpDto): Promise<MessageResponse> {
@@ -70,7 +68,7 @@ export class AuthClientService {
     dto: VerifyClientOtpDto,
     userAgent?: string,
     ipAddress?: string,
-  ): Promise<AuthResponse> {
+  ): Promise<AuthSession> {
     const { email, phone } = this.parseLogin(dto.login);
     const user = await this.authClientRepository.findByEmailOrPhone(
       email,
@@ -84,25 +82,7 @@ export class AuthClientService {
     this.assertClient(user);
     await this.processOtp(user, dto.code, email, phone);
 
-    const { accessToken, refreshToken } = this.authService.generateTokens(user);
-    await this.authClientRepository.createSession({
-      userId: user.id,
-      refreshTokenHash: await hashRefreshToken(refreshToken),
-      userAgent: userAgent || null,
-      ipAddress: ipAddress || null,
-      expiresAt: buildRefreshTokenExpiryDate(),
-    });
-
-    return {
-      accessToken,
-      refreshToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        mobileNumber: user.mobileNumber,
-        role: user.role.name,
-      },
-    };
+    return this.userSessionService.startSession(user, { userAgent, ipAddress });
   }
 
   private parseLogin(login: string): LoginIdentity {
@@ -125,12 +105,7 @@ export class AuthClientService {
   }
 
   private assertClient(user: User): void {
-    if (user.role?.name !== ROLES.USER) {
-      throw new BadRequestException(AUTH_MESSAGES.ACCESS_DENIED);
-    }
-    if (!user.isActive) {
-      throw new ForbiddenException(AUTH_MESSAGES.USER_BLOCKED);
-    }
+    assertCanSignIn(user, [ROLES.USER]);
   }
 
   private async processOtp(
@@ -140,10 +115,7 @@ export class AuthClientService {
     phone?: string,
   ): Promise<void> {
     const latestOtp = await this.authService.findAndValidateLatestOtp(user.id);
-    await this.authService.validateOtpCode(code, latestOtp);
-
-    latestOtp.usedAt = new Date();
-    await this.authService.saveAuthOtp(latestOtp);
+    await this.authService.consumeOtp(code, latestOtp);
     await this.authService.verifyUserIfRegistered(
       latestOtp,
       user,

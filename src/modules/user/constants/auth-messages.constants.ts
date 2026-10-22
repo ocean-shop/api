@@ -15,6 +15,7 @@ export const AUTH_MESSAGES = {
   REFRESH_TOKEN_REQUIRED: 'Потрібен refresh-токен',
   REFRESH_TOKEN_INVALID: 'Недійсний refresh-токен',
   LOGGED_OUT: 'Ви успішно вийшли з системи',
+  TOO_MANY_REQUESTS: 'Забагато запитів. Спробуйте пізніше.',
   ROLE_INFO_MISSING: 'Інформацію про роль користувача не знайдено',
   roleRequired: (roles: readonly string[]): string =>
     `Для цієї дії потрібна одна з ролей: ${roles.join(', ')}`,

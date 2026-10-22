@@ -1,7 +1,8 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { User } from './entities/user.entity';
 import { Role } from './entities/role.entity';
 import { Permission } from './entities/permission.entity';
@@ -38,6 +39,7 @@ import { RequestOtpService } from './services/request-otp/request-otp.service';
 import { VerifyOtpService } from './services/verify-otp/verify-otp.service';
 import { RefreshTokenService } from './services/refresh-token/refresh-token.service';
 import { LogoutService } from './services/logout/logout.service';
+import { UserSessionService } from './services/user-session/user-session.service';
 import { EmailService } from './services/email/email.service';
 import { SmsService } from './services/sms/sms.service';
 import { SettingsService } from './services/settings/settings.service';
@@ -51,7 +53,21 @@ import { EmailProcessor } from './processors/email.processor';
 import { isEmailQueueEnabled } from '../../core/queue/helpers/queue.helpers';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
+import {
+  ACCESS_TOKEN_EXPIRES_IN,
+  JWT_ACCESS_SECRET_KEY,
+  OTP_REQUEST_THROTTLE_LIMIT,
+  OTP_THROTTLE_WINDOW_MS,
+  OTP_THROTTLER,
+} from './constants/auth.constants';
+import { AUTH_MESSAGES } from './constants/auth-messages.constants';
+import { resolveOtpThrottleTracker } from './helpers/otp-throttle.helpers';
 
+/**
+ * Global because every feature module guards its routes with `JwtAuthGuard`,
+ * which needs `UserRepository`, and catalog and user import each other.
+ */
+@Global()
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -67,12 +83,27 @@ import { RolesGuard } from './guards/roles.guard';
       Shop,
       Order,
     ]),
+    // Registered once for the whole app; startup fails without a secret.
     JwtModule.registerAsync({
+      global: true,
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET') || 'default-secret-key',
+        secret: configService.getOrThrow<string>(JWT_ACCESS_SECRET_KEY),
+        signOptions: { expiresIn: ACCESS_TOKEN_EXPIRES_IN },
       }),
       inject: [ConfigService],
+    }),
+    // In-memory counters; routes opt in with ThrottlerGuard and @Throttle.
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          name: OTP_THROTTLER,
+          limit: OTP_REQUEST_THROTTLE_LIMIT,
+          ttl: OTP_THROTTLE_WINDOW_MS,
+        },
+      ],
+      getTracker: resolveOtpThrottleTracker,
+      errorMessage: AUTH_MESSAGES.TOO_MANY_REQUESTS,
     }),
     CatalogModule,
   ],
@@ -103,6 +134,7 @@ import { RolesGuard } from './guards/roles.guard';
     VerifyOtpService,
     RefreshTokenService,
     LogoutService,
+    UserSessionService,
     EmailService,
     SmsService,
     SettingsService,
@@ -132,6 +164,9 @@ import { RolesGuard } from './guards/roles.guard';
     AdminsService,
     UsersRepository,
     UsersService,
+    UserSessionService,
+    JwtAuthGuard,
+    RolesGuard,
   ],
 })
 export class UserModule {}

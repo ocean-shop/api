@@ -1,5 +1,21 @@
-import { Controller, Post, Body, Res, Req, Headers, Ip } from '@nestjs/common';
-import { ApiBody, ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  Controller,
+  Post,
+  Body,
+  Res,
+  Req,
+  Headers,
+  Ip,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBody,
+  ApiCookieAuth,
+  ApiOperation,
+  ApiTags,
+  ApiTooManyRequestsResponse,
+} from '@nestjs/swagger';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import type { Response, Request } from 'express';
 import { RequestOtpService } from '../../../services/request-otp/request-otp.service';
 import { VerifyOtpService } from '../../../services/verify-otp/verify-otp.service';
@@ -7,10 +23,16 @@ import { RefreshTokenService } from '../../../services/refresh-token/refresh-tok
 import { LogoutService } from '../../../services/logout/logout.service';
 import { MessageResponse } from '../../../../../core/response/models/response.models';
 import { AUTH_MESSAGES } from '../../../constants/auth-messages.constants';
-import { REFRESH_TOKEN_COOKIE } from '../../../constants/auth.constants';
+import {
+  OTP_REQUEST_THROTTLE_LIMIT,
+  OTP_THROTTLE_WINDOW_MS,
+  OTP_THROTTLER,
+  OTP_VERIFY_THROTTLE_LIMIT,
+  REFRESH_TOKEN_COOKIE,
+} from '../../../constants/auth.constants';
 import {
   buildRefreshTokenClearCookieOptions,
-  buildRefreshTokenCookieOptions,
+  sendAuthSession,
 } from '../../../helpers/auth-cookie.helpers';
 import { AuthResponse } from '../../../models/auth.models';
 import { RequestOtpDto } from '../../../dto/request-otp.dto';
@@ -27,8 +49,16 @@ export class AuthController {
   ) {}
 
   @Post('admin/request-otp')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({
+    [OTP_THROTTLER]: {
+      limit: OTP_REQUEST_THROTTLE_LIMIT,
+      ttl: OTP_THROTTLE_WINDOW_MS,
+    },
+  })
   @ApiOperation({ summary: 'Request admin OTP code' })
   @ApiBody({ type: RequestOtpDto })
+  @ApiTooManyRequestsResponse({ description: AUTH_MESSAGES.TOO_MANY_REQUESTS })
   async requestOtp(
     @Body() requestOtpDto: RequestOtpDto,
   ): Promise<MessageResponse> {
@@ -36,23 +66,31 @@ export class AuthController {
   }
 
   @Post('verify-otp')
-  @ApiOperation({ summary: 'Verify OTP and issue tokens' })
+  @UseGuards(ThrottlerGuard)
+  @Throttle({
+    [OTP_THROTTLER]: {
+      limit: OTP_VERIFY_THROTTLE_LIMIT,
+      ttl: OTP_THROTTLE_WINDOW_MS,
+    },
+  })
+  @ApiOperation({
+    summary: 'Verify admin OTP; the refresh token is set as an httpOnly cookie',
+  })
   @ApiBody({ type: VerifyOtpDto })
+  @ApiTooManyRequestsResponse({ description: AUTH_MESSAGES.TOO_MANY_REQUESTS })
   async verifyOtp(
     @Body() verifyOtpDto: VerifyOtpDto,
     @Headers('user-agent') userAgent: string,
     @Ip() ipAddress: string,
     @Res({ passthrough: true }) response: Response,
   ): Promise<AuthResponse> {
-    const result = await this.verifyOtpService.verifyOtp(
+    const session = await this.verifyOtpService.verifyOtp(
       verifyOtpDto,
       userAgent,
       ipAddress,
     );
 
-    this.setRefreshTokenCookie(response, result.refreshToken);
-
-    return result;
+    return sendAuthSession(response, session);
   }
 
   @Post('refresh')
@@ -65,15 +103,13 @@ export class AuthController {
     @Res({ passthrough: true }) response: Response,
   ): Promise<AuthResponse> {
     const refreshToken = request.cookies[REFRESH_TOKEN_COOKIE] as string;
-    const result = await this.refreshTokenService.refreshToken(
+    const session = await this.refreshTokenService.refreshToken(
       refreshToken,
       userAgent,
       ipAddress,
     );
 
-    this.setRefreshTokenCookie(response, result.refreshToken);
-
-    return result;
+    return sendAuthSession(response, session);
   }
 
   @Post('logout')
@@ -92,16 +128,5 @@ export class AuthController {
     );
 
     return { message: AUTH_MESSAGES.LOGGED_OUT };
-  }
-
-  private setRefreshTokenCookie(
-    response: Response,
-    refreshToken: string,
-  ): void {
-    response.cookie(
-      REFRESH_TOKEN_COOKIE,
-      refreshToken,
-      buildRefreshTokenCookieOptions(),
-    );
   }
 }

@@ -7,6 +7,7 @@ import {
 import { AuthClientService } from './auth-client.service';
 import { AuthService } from '../auth/auth.service';
 import { RequestOtpService } from '../request-otp/request-otp.service';
+import { UserSessionService } from '../user-session/user-session.service';
 import { AuthClientRepository } from '../../repositories/auth-client/auth-client.repository';
 import { OtpPurpose } from '../../entities/enums/auth-otp.enum';
 
@@ -15,6 +16,7 @@ describe('AuthClientService', () => {
   let authClientRepository: any;
   let authService: any;
   let requestOtpService: any;
+  let userSessionService: any;
 
   beforeEach(async () => {
     authClientRepository = {
@@ -27,23 +29,31 @@ describe('AuthClientService', () => {
         .mockImplementation((payload) =>
           Promise.resolve({ id: 'new-uuid', ...payload }),
         ),
-      createSession: jest.fn().mockResolvedValue(undefined),
     };
 
     authService = {
       checkActiveOtpRequest: jest.fn(),
       isUserVerified: jest.fn(),
       findAndValidateLatestOtp: jest.fn(),
-      validateOtpCode: jest.fn().mockResolvedValue(undefined),
-      saveAuthOtp: jest.fn().mockResolvedValue(undefined),
+      consumeOtp: jest.fn().mockResolvedValue(undefined),
       verifyUserIfRegistered: jest.fn().mockResolvedValue(undefined),
-      generateTokens: jest
-        .fn()
-        .mockReturnValue({ accessToken: 'access', refreshToken: 'refresh' }),
     };
 
     requestOtpService = {
       createAndSendOtp: jest.fn().mockResolvedValue(undefined),
+    };
+
+    userSessionService = {
+      startSession: jest.fn().mockResolvedValue({
+        accessToken: 'access',
+        refreshToken: 'refresh',
+        user: {
+          id: 'uuid',
+          email: 'client@example.com',
+          mobileNumber: null,
+          role: 'user',
+        },
+      }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -52,6 +62,7 @@ describe('AuthClientService', () => {
         { provide: AuthClientRepository, useValue: authClientRepository },
         { provide: AuthService, useValue: authService },
         { provide: RequestOtpService, useValue: requestOtpService },
+        { provide: UserSessionService, useValue: userSessionService },
       ],
     }).compile();
 
@@ -196,28 +207,17 @@ describe('AuthClientService', () => {
         '127.0.0.1',
       );
 
-      expect(authService.validateOtpCode).toHaveBeenCalledWith(
-        '1234',
-        latestOtp,
-      );
-      expect(authService.saveAuthOtp).toHaveBeenCalledWith(
-        expect.objectContaining({ usedAt: expect.any(Date) }),
-      );
+      expect(authService.consumeOtp).toHaveBeenCalledWith('1234', latestOtp);
       expect(authService.verifyUserIfRegistered).toHaveBeenCalledWith(
         latestOtp,
         client,
         'client@example.com',
         undefined,
       );
-      expect(authClientRepository.createSession).toHaveBeenCalledWith(
-        expect.objectContaining({
-          userId: 'uuid',
-          refreshTokenHash: expect.any(String),
-          userAgent: 'agent',
-          ipAddress: '127.0.0.1',
-          expiresAt: expect.any(Date),
-        }),
-      );
+      expect(userSessionService.startSession).toHaveBeenCalledWith(client, {
+        userAgent: 'agent',
+        ipAddress: '127.0.0.1',
+      });
       expect(result).toEqual({
         accessToken: 'access',
         refreshToken: 'refresh',
@@ -249,7 +249,7 @@ describe('AuthClientService', () => {
         service.verifyOtp({ login: 'admin@example.com', code: '1234' }),
       ).rejects.toThrow(new BadRequestException('Доступ заборонено'));
       expect(authService.findAndValidateLatestOtp).not.toHaveBeenCalled();
-      expect(authService.generateTokens).not.toHaveBeenCalled();
+      expect(userSessionService.startSession).not.toHaveBeenCalled();
     });
 
     it('should throw ForbiddenException if client is blocked', async () => {
@@ -261,19 +261,18 @@ describe('AuthClientService', () => {
       await expect(
         service.verifyOtp({ login: 'client@example.com', code: '1234' }),
       ).rejects.toThrow(ForbiddenException);
-      expect(authService.generateTokens).not.toHaveBeenCalled();
+      expect(userSessionService.startSession).not.toHaveBeenCalled();
     });
 
     it('should not issue tokens if OTP code is invalid', async () => {
-      authService.validateOtpCode.mockRejectedValue(
+      authService.consumeOtp.mockRejectedValue(
         new BadRequestException('Неправильний OTP-код'),
       );
 
       await expect(
         service.verifyOtp({ login: 'client@example.com', code: '0000' }),
       ).rejects.toThrow(BadRequestException);
-      expect(authService.generateTokens).not.toHaveBeenCalled();
-      expect(authClientRepository.createSession).not.toHaveBeenCalled();
+      expect(userSessionService.startSession).not.toHaveBeenCalled();
     });
   });
 });
