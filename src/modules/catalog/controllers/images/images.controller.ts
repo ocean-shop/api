@@ -14,6 +14,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Roles } from '../../../user/decorators/roles.decorator';
+import { ADMIN_ROLES } from '../../../user/constants/role.constants';
 import { JwtAuthGuard } from '../../../user/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../user/guards/roles.guard';
 import { ChangeProductImageSortDto } from '../../dto/images/change-product-image-sort.dto';
@@ -27,7 +28,7 @@ export class ImagesController {
   constructor(private readonly imagesService: ImagesService) {}
 
   @Patch(':id/sort')
-  @Roles('admin', 'super')
+  @Roles(...ADMIN_ROLES)
   @ApiOperation({ summary: 'Change product image sort order' })
   @ApiParam({
     name: 'id',
@@ -43,7 +44,7 @@ export class ImagesController {
   }
 
   @Delete(':id')
-  @Roles('admin', 'super')
+  @Roles(...ADMIN_ROLES)
   @ApiOperation({ summary: 'Delete image by id' })
   @ApiParam({
     name: 'id',

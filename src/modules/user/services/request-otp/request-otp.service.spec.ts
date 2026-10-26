@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { RequestOtpService } from './request-otp.service';
 import { AuthService } from '../auth/auth.service';
 import { EmailService } from '../email/email.service';
@@ -94,10 +98,25 @@ describe('RequestOtpService', () => {
       ).rejects.toThrow(new BadRequestException('Доступ заборонено'));
     });
 
+    it('should throw ForbiddenException and send nothing if the admin is blocked', async () => {
+      userRepository.findByEmailOrPhone.mockResolvedValue({
+        id: 'uuid',
+        role: { name: 'admin' },
+        isActive: false,
+      });
+
+      await expect(
+        service.requestAdminOtp({ email: 'test@example.com' }),
+      ).rejects.toThrow(ForbiddenException);
+      expect(authService.saveOtp).not.toHaveBeenCalled();
+      expect(emailService.sendOtpEmail).not.toHaveBeenCalled();
+    });
+
     it('should throw BadRequestException if user is not verified', async () => {
       const existingUser = {
         id: 'uuid',
         role: { name: 'admin' },
+        isActive: true,
       };
       userRepository.findByEmailOrPhone.mockResolvedValue(existingUser);
       authService.isUserVerified.mockReturnValue(false);
@@ -108,7 +127,11 @@ describe('RequestOtpService', () => {
     });
 
     it('should successfully handle an existing verified user with email', async () => {
-      const existingUser = { id: 'uuid', role: { name: 'admin' } };
+      const existingUser = {
+        id: 'uuid',
+        role: { name: 'admin' },
+        isActive: true,
+      };
       userRepository.findByEmailOrPhone.mockResolvedValue(existingUser);
       authService.isUserVerified.mockReturnValue(true);
 
@@ -125,7 +148,11 @@ describe('RequestOtpService', () => {
     });
 
     it('should successfully handle an existing verified user with phone', async () => {
-      const existingUser = { id: 'uuid', role: { name: 'admin' } };
+      const existingUser = {
+        id: 'uuid',
+        role: { name: 'admin' },
+        isActive: true,
+      };
       userRepository.findByEmailOrPhone.mockResolvedValue(existingUser);
       authService.isUserVerified.mockReturnValue(true);
 
@@ -139,7 +166,11 @@ describe('RequestOtpService', () => {
     });
 
     it('should throw if SMS sending fails for phone flow', async () => {
-      const existingUser = { id: 'uuid', role: { name: 'admin' } };
+      const existingUser = {
+        id: 'uuid',
+        role: { name: 'admin' },
+        isActive: true,
+      };
       userRepository.findByEmailOrPhone.mockResolvedValue(existingUser);
       authService.isUserVerified.mockReturnValue(true);
       smsService.sendOtpSms.mockRejectedValue(new Error('TurboSMS failed'));

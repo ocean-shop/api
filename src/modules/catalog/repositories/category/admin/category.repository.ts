@@ -1,0 +1,125 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { In, IsNull, LessThan, MoreThan, Repository } from 'typeorm';
+import { CATEGORY_MESSAGES } from '../../../constants/category-messages.constants';
+import { Category } from '../../../entities/category.entity';
+import { CategoryFilters } from '../../../models/category.models';
+import { PaginatedResult } from '../../../../../core/response/models/response.models';
+import { SortDirection } from '../../../models/sort.models';
+import { CategoryQueryRepository } from '../common/category-query.repository';
+
+@Injectable()
+export class CategoryRepository extends CategoryQueryRepository {
+  constructor(
+    @InjectRepository(Category)
+    repository: Repository<Category>,
+  ) {
+    super(repository);
+  }
+
+  async findAllPaginated(
+    filters: CategoryFilters,
+    skip: number,
+    take: number,
+  ): Promise<PaginatedResult<Category>> {
+    return this.findPaginated(filters, skip, take);
+  }
+
+  async findById(id: string): Promise<Category> {
+    const category = await this.repository.findOne({ where: { id } });
+
+    if (!category) {
+      throw new NotFoundException(CATEGORY_MESSAGES.NOT_FOUND);
+    }
+
+    return category;
+  }
+
+  async findOneById(id: string): Promise<Category | null> {
+    return this.repository.findOne({ where: { id } });
+  }
+
+  async findByShopIdAndSlug(
+    shopId: string,
+    slug: string,
+  ): Promise<Category | null> {
+    return this.repository.findOne({ where: { shopId, slug } });
+  }
+
+  async findByParentId(parentId: string): Promise<Category[]> {
+    return this.repository.find({
+      where: { parentId },
+      select: { id: true },
+    });
+  }
+
+  async getMaxSort(shopId: string, parentId: string | null): Promise<number> {
+    const query = this.repository
+      .createQueryBuilder('category')
+      .select('MAX(category.sort)', 'max')
+      .where('category.shopId = :shopId', { shopId });
+
+    if (parentId === null) {
+      query.andWhere('category.parentId IS NULL');
+    } else {
+      query.andWhere('category.parentId = :parentId', { parentId });
+    }
+
+    const result = await query.getRawOne<{ max: string | null }>();
+    return result?.max !== null && result?.max !== undefined
+      ? Number(result.max)
+      : -1;
+  }
+
+  async findAdjacentSibling(
+    category: Category,
+    direction: SortDirection,
+  ): Promise<Category | null> {
+    const where: Record<string, unknown> = {
+      shopId: category.shopId,
+      parentId: category.parentId === null ? IsNull() : category.parentId,
+      sort:
+        direction === 'up' ? LessThan(category.sort) : MoreThan(category.sort),
+    };
+
+    return this.repository.findOne({
+      where,
+      order: {
+        sort: direction === 'up' ? 'DESC' : 'ASC',
+      },
+    });
+  }
+
+  async swapSort(category: Category, sibling: Category): Promise<Category> {
+    const categorySort = category.sort;
+    const siblingSort = sibling.sort;
+
+    return this.repository.manager.transaction(async (manager) => {
+      category.sort = siblingSort;
+      sibling.sort = categorySort;
+
+      await manager.save([sibling, category]);
+      return category;
+    });
+  }
+
+  create(payload: Partial<Category>): Category {
+    return this.repository.create(payload);
+  }
+
+  async save(category: Category): Promise<Category> {
+    return this.repository.save(category);
+  }
+
+  async remove(category: Category): Promise<Category> {
+    return this.repository.remove(category);
+  }
+
+  async removeByIds(ids: string[]): Promise<void> {
+    if (ids.length === 0) {
+      return;
+    }
+
+    await this.repository.delete({ id: In(ids) });
+  }
+}

@@ -10,6 +10,8 @@ import { isEmailQueueEnabled } from '../../../../core/queue/helpers/queue.helper
 import {
   DEFAULT_OTP_EXPIRE_MS,
   MS_PER_MINUTE,
+  OTP_EMAIL_SUBJECT,
+  OTP_EMAIL_TEMPLATE,
 } from '../../constants/email.constants';
 import { SendOtpEmailJobData } from '../../models/email.models';
 
@@ -38,8 +40,8 @@ export class EmailService {
   async sendOtpEmailNow(email: string, code: string): Promise<void> {
     await this.mailService.sendMail({
       to: email,
-      subject: 'Ваш код підтвердження',
-      template: 'otp-code',
+      subject: OTP_EMAIL_SUBJECT,
+      template: OTP_EMAIL_TEMPLATE,
       context: {
         code,
         expiresInMinutes: this.getOtpExpiryMinutes(),

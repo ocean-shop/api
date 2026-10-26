@@ -8,6 +8,8 @@ import {
   IsUUID,
   ValidateIf,
 } from 'class-validator';
+import { ADMIN_ROLES } from '../constants/role.constants';
+import type { AdminRoleName } from '../models/role.models';
 
 export class CreateAdminDto {
   @ValidateIf((o: CreateAdminDto) => !o.mobileNumber)
@@ -23,8 +25,8 @@ export class CreateAdminDto {
   readonly isActive?: boolean;
 
   @IsOptional()
-  @IsIn(['admin', 'super'])
-  readonly role?: 'admin' | 'super';
+  @IsIn(ADMIN_ROLES)
+  readonly role?: AdminRoleName;
 
   @IsOptional()
   @IsArray()

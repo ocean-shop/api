@@ -1,9 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { PRODUCT_VARIATION_MESSAGES } from '../../constants/product-messages.constants';
 import { ProductVariation } from '../../entities/product-variation.entity';
 import { VariationAttribute } from '../../entities/variation-attribute.entity';
 import { VariationImage } from '../../entities/variation-image.entity';
+import {
+  ImagePayload,
+  VariationAttributePayload,
+} from '../../models/product-image.models';
 
 @Injectable()
 export class ProductVariationRepository {
@@ -32,7 +37,7 @@ export class ProductVariationRepository {
     });
 
     if (!variation) {
-      throw new NotFoundException('Варіацію продукта не знайдено');
+      throw new NotFoundException(PRODUCT_VARIATION_MESSAGES.NOT_FOUND);
     }
 
     return variation;
@@ -40,7 +45,7 @@ export class ProductVariationRepository {
 
   async replaceAttributes(
     variationId: string,
-    attributes: Array<{ attributeTypeId: string }>,
+    attributes: VariationAttributePayload[],
   ): Promise<VariationAttribute[]> {
     await this.attributeRepository.delete({ variationId });
 
@@ -60,7 +65,7 @@ export class ProductVariationRepository {
 
   async replaceImages(
     variationId: string,
-    images: Array<{ url: string; sort: number }>,
+    images: ImagePayload[],
   ): Promise<VariationImage[]> {
     await this.imageRepository.delete({ variationId });
 
@@ -72,6 +77,7 @@ export class ProductVariationRepository {
       this.imageRepository.create({
         variationId,
         url: image.url,
+        alt: image.alt,
         sort: image.sort,
       }),
     );

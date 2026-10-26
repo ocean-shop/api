@@ -1,0 +1,42 @@
+/**
+ * TTLs are a safety net, not the primary invalidation mechanism: admin writes
+ * bump the shop's cache version immediately. They bound how long a response can
+ * stay stale if a write path ever forgets to invalidate.
+ */
+
+/** Popular products change only when an admin flags a product. */
+export const POPULAR_PRODUCTS_CACHE_TTL_SECONDS = 300;
+
+/** Filter options change only when attributes or category membership change. */
+export const CATALOG_FILTERS_CACHE_TTL_SECONDS = 300;
+
+/**
+ * Shorter than the others: the filter/page combinations form a long tail, so a
+ * tight TTL keeps rarely repeated keys from accumulating in Redis.
+ */
+export const CATALOG_PRODUCTS_CACHE_TTL_SECONDS = 60;
+
+/** A product page changes only when an admin edits that product. */
+export const CATALOG_PRODUCT_CACHE_TTL_SECONDS = 300;
+
+/**
+ * Search terms are typed character by character, so the same prefixes repeat
+ * within seconds. Short like the catalog pages: the terms form a long tail and
+ * rarely repeated keys should not pile up in Redis.
+ */
+export const PRODUCT_SEARCH_CACHE_TTL_SECONDS = 60;
+
+/** The first segment of every catalog cache key, naming what the entry holds. */
+export const CATALOG_CACHE_SEGMENTS = {
+  POPULAR: 'popular',
+  PRODUCTS: 'products',
+  PRODUCTS_SEARCH: 'products-search',
+  SEARCH: 'search',
+  FILTERS: 'filters',
+  FILTERS_SEARCH: 'filters-search',
+  CATEGORIES_SEARCH: 'categories-search',
+  PRODUCT: 'product',
+  PRODUCT_SLUG: 'product-slug',
+  SITEMAP: 'sitemap',
+  MAIN_BANNER: 'main-banner',
+} as const;

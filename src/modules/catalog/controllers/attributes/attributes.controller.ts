@@ -18,6 +18,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Roles } from '../../../user/decorators/roles.decorator';
+import { ADMIN_ROLES } from '../../../user/constants/role.constants';
 import { JwtAuthGuard } from '../../../user/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../user/guards/roles.guard';
 import { CreateAttributeDto } from '../../dto/attributes/create-attribute.dto';
@@ -32,7 +33,7 @@ export class AttributesController {
   constructor(private readonly attributesService: AttributesService) {}
 
   @Get()
-  @Roles('admin', 'super')
+  @Roles(...ADMIN_ROLES)
   @ApiOperation({ summary: 'List attributes with filters and pagination' })
   @ApiQuery({ name: 'shopId', required: false, type: String, format: 'uuid' })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -42,7 +43,7 @@ export class AttributesController {
   }
 
   @Post()
-  @Roles('admin', 'super')
+  @Roles(...ADMIN_ROLES)
   @ApiOperation({ summary: 'Create attribute' })
   @ApiBody({ type: CreateAttributeDto })
   async createAttribute(@Body() dto: CreateAttributeDto) {
@@ -50,7 +51,7 @@ export class AttributesController {
   }
 
   @Delete(':id')
-  @Roles('admin', 'super')
+  @Roles(...ADMIN_ROLES)
   @ApiOperation({ summary: 'Delete attribute by id' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   async removeAttribute(@Param('id', ParseUUIDPipe) id: string) {

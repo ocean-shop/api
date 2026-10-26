@@ -93,6 +93,43 @@ describe('UserRepository', () => {
     });
   });
 
+  describe('findAuthState', () => {
+    it('should return the current status and role name', async () => {
+      typeOrmRepository.findOne.mockResolvedValue({
+        id: 'uuid',
+        isActive: false,
+        role: { name: 'admin' },
+      });
+
+      const result = await repository.findAuthState('uuid');
+
+      expect(typeOrmRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 'uuid' },
+        select: { id: true, isActive: true, role: { name: true } },
+        relations: { role: true },
+      });
+      expect(result).toEqual({ isActive: false, role: 'admin' });
+    });
+
+    it('should return a null role when the user has none', async () => {
+      typeOrmRepository.findOne.mockResolvedValue({
+        id: 'uuid',
+        isActive: true,
+      });
+
+      await expect(repository.findAuthState('uuid')).resolves.toEqual({
+        isActive: true,
+        role: null,
+      });
+    });
+
+    it('should return null when the user no longer exists', async () => {
+      typeOrmRepository.findOne.mockResolvedValue(null);
+
+      await expect(repository.findAuthState('uuid')).resolves.toBeNull();
+    });
+  });
+
   describe('save', () => {
     it('should save user', async () => {
       const user = { id: 'uuid', email: 'test@example.com' } as User;

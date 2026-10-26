@@ -5,12 +5,14 @@ import { AdminsService } from './admins.service';
 import { UserRepository } from '../../repositories/user/user.repository';
 import { Role } from '../../entities/role.entity';
 import { Shop } from '../../../catalog/entities/shop.entity';
+import { UserSessionService } from '../user-session/user-session.service';
 
 describe('AdminsService', () => {
   let service: AdminsService;
   let userRepository: UserRepository;
   let roleRepository: { findOne: jest.Mock };
   let shopRepository: { find: jest.Mock };
+  let userSessionService: { revokeAllSessions: jest.Mock };
 
   beforeEach(async () => {
     const userRepositoryMock = {
@@ -29,6 +31,7 @@ describe('AdminsService', () => {
     const shopRepositoryMock = {
       find: jest.fn(),
     };
+    userSessionService = { revokeAllSessions: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -36,6 +39,7 @@ describe('AdminsService', () => {
         { provide: UserRepository, useValue: userRepositoryMock },
         { provide: getRepositoryToken(Role), useValue: roleRepositoryMock },
         { provide: getRepositoryToken(Shop), useValue: shopRepositoryMock },
+        { provide: UserSessionService, useValue: userSessionService },
       ],
     }).compile();
 
@@ -175,6 +179,23 @@ describe('AdminsService', () => {
       expect.objectContaining({ shops: [] }),
     );
     expect(result).toEqual({ ...admin, shops: [] });
+    expect(userSessionService.revokeAllSessions).not.toHaveBeenCalled();
+  });
+
+  it('should end every session of an admin who gets blocked', async () => {
+    const admin = { id: 'u1', role: { name: 'admin' }, isActive: true } as any;
+    jest
+      .mocked(userRepository.findByIdAndRoles)
+      .mockResolvedValueOnce(admin)
+      .mockResolvedValueOnce({ ...admin, isActive: false });
+    jest.mocked(userRepository.save).mockResolvedValue({ id: 'u1' } as any);
+
+    await service.updateAdmin('u1', { isActive: false });
+
+    expect(userRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({ isActive: false }),
+    );
+    expect(userSessionService.revokeAllSessions).toHaveBeenCalledWith('u1');
   });
 
   it('should fail if one of shop ids does not exist', async () => {

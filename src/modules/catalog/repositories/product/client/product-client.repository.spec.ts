@@ -1,0 +1,541 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { In } from 'typeorm';
+import { ProductStatus } from '../../../entities/enums/product.enum';
+import { Product } from '../../../entities/product.entity';
+import { CatalogProductSort } from '../../../entities/enums/product-sort.enum';
+import { ProductClientRepository } from './product-client.repository';
+
+describe('ProductClientRepository', () => {
+  let repository: ProductClientRepository;
+  let typeOrmRepository: any;
+  let queryBuilder: any;
+
+  beforeEach(async () => {
+    queryBuilder = {
+      andWhere: jest.fn().mockReturnThis(),
+      innerJoin: jest.fn().mockReturnThis(),
+      distinct: jest.fn().mockReturnThis(),
+      clone: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      addOrderBy: jest.fn().mockReturnThis(),
+      offset: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      getCount: jest.fn(),
+      getRawMany: jest.fn(),
+    };
+
+    typeOrmRepository = {
+      createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
+      find: jest.fn(),
+      findOne: jest.fn(),
+      query: jest.fn(),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        ProductClientRepository,
+        {
+          provide: getRepositoryToken(Product),
+          useValue: typeOrmRepository,
+        },
+      ],
+    }).compile();
+
+    repository = module.get<ProductClientRepository>(ProductClientRepository);
+  });
+
+  it('should be defined', () => {
+    expect(repository).toBeDefined();
+  });
+
+  it('should find catalog products restricted to active status', async () => {
+    const products = [{ id: '1' }] as Product[];
+    queryBuilder.getCount.mockResolvedValue(1);
+    queryBuilder.getRawMany.mockResolvedValue([{ id: '1' }]);
+    typeOrmRepository.find.mockResolvedValue(products);
+
+    const result = await repository.findCatalogPaginated(
+      { shopId: 'shop-id', categoryId: 'category-id' },
+      0,
+      20,
+    );
+
+    expect(typeOrmRepository.createQueryBuilder).toHaveBeenCalledWith(
+      'product',
+    );
+    expect(queryBuilder.distinct).toHaveBeenCalledWith(true);
+    expect(queryBuilder.innerJoin).toHaveBeenCalledWith(
+      'product.categories',
+      'category',
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      expect.stringContaining('category.id IN ('),
+      { categoryId: 'category-id' },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'product.shopId = :shopId',
+      { shopId: 'shop-id' },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'product.status = :status',
+      { status: ProductStatus.ACTIVE },
+    );
+    expect(queryBuilder.orderBy).toHaveBeenCalledWith(
+      'product.createdAt',
+      'DESC',
+    );
+    expect(queryBuilder.offset).toHaveBeenCalledWith(0);
+    expect(queryBuilder.limit).toHaveBeenCalledWith(20);
+    expect(typeOrmRepository.find).toHaveBeenCalledWith({
+      where: { id: In(['1']) },
+      relations: {
+        categories: true,
+        tags: true,
+        attributes: true,
+        images: true,
+      },
+      relationLoadStrategy: 'query',
+    });
+    expect(result).toEqual({ items: products, total: 1 });
+  });
+
+  it('should include products of nested categories', async () => {
+    queryBuilder.getCount.mockResolvedValue(0);
+    queryBuilder.getRawMany.mockResolvedValue([]);
+
+    await repository.findCatalogPaginated(
+      { shopId: 'shop-id', categoryId: 'parent-id' },
+      0,
+      20,
+    );
+
+    const [condition] = queryBuilder.andWhere.mock.calls.find(
+      ([sql]: [string]) => sql.includes('category.id IN ('),
+    );
+
+    expect(condition).toContain('WITH RECURSIVE category_subtree');
+    expect(condition).toContain('child.parent_id = parent.id');
+  });
+
+  it('should filter catalog products by availability and price range', async () => {
+    queryBuilder.getCount.mockResolvedValue(0);
+    queryBuilder.getRawMany.mockResolvedValue([]);
+
+    const result = await repository.findCatalogPaginated(
+      {
+        shopId: 'shop-id',
+        categoryId: 'category-id',
+        available: true,
+        priceFrom: 60,
+        priceTo: 6000,
+      },
+      0,
+      20,
+    );
+
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'product.available = :available',
+      { available: true },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      expect.stringContaining('>= :priceFrom'),
+      { priceFrom: 60 },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      expect.stringContaining('<= :priceTo'),
+      { priceTo: 6000 },
+    );
+    expect(typeOrmRepository.find).not.toHaveBeenCalled();
+    expect(result).toEqual({ items: [], total: 0 });
+  });
+
+  it('should filter catalog products by each attribute group', async () => {
+    queryBuilder.getCount.mockResolvedValue(0);
+    queryBuilder.getRawMany.mockResolvedValue([]);
+
+    await repository.findCatalogPaginated(
+      {
+        shopId: 'shop-id',
+        categoryId: 'category-id',
+        attributes: [
+          { name: 'color', values: ['Red', 'Blue'] },
+          { name: 'screen', values: ['6'] },
+        ],
+      },
+      0,
+      20,
+    );
+
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      expect.stringContaining(':attributeName0'),
+      { attributeName0: 'color', attributeValues0: ['Red', 'Blue'] },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      expect.stringContaining(':attributeName1'),
+      { attributeName1: 'screen', attributeValues1: ['6'] },
+    );
+  });
+
+  it('should sort catalog products by popularity', async () => {
+    queryBuilder.getCount.mockResolvedValue(0);
+    queryBuilder.getRawMany.mockResolvedValue([]);
+
+    await repository.findCatalogPaginated(
+      {
+        shopId: 'shop-id',
+        categoryId: 'category-id',
+        sort: CatalogProductSort.POPULAR,
+      },
+      0,
+      20,
+    );
+
+    expect(queryBuilder.orderBy).toHaveBeenCalledWith(
+      'product.isPopular',
+      'DESC',
+    );
+    expect(queryBuilder.addOrderBy).toHaveBeenCalledWith(
+      'product.createdAt',
+      'DESC',
+    );
+  });
+
+  it('should sort catalog products by price', async () => {
+    queryBuilder.getCount.mockResolvedValue(0);
+    queryBuilder.getRawMany.mockResolvedValue([]);
+
+    await repository.findCatalogPaginated(
+      {
+        shopId: 'shop-id',
+        categoryId: 'category-id',
+        sort: CatalogProductSort.CHEAPER,
+      },
+      0,
+      20,
+    );
+
+    expect(queryBuilder.orderBy).toHaveBeenCalledWith(
+      expect.stringContaining('MIN(catalog_variation.price)'),
+      'ASC',
+    );
+
+    await repository.findCatalogPaginated(
+      {
+        shopId: 'shop-id',
+        categoryId: 'category-id',
+        sort: CatalogProductSort.EXPENSIVE,
+      },
+      0,
+      20,
+    );
+
+    expect(queryBuilder.orderBy).toHaveBeenCalledWith(
+      expect.stringContaining('MIN(catalog_variation.price)'),
+      'DESC',
+    );
+  });
+
+  it('should preserve catalog product order when loading relations', async () => {
+    queryBuilder.getCount.mockResolvedValue(2);
+    queryBuilder.getRawMany.mockResolvedValue([{ id: '2' }, { id: '1' }]);
+    typeOrmRepository.find.mockResolvedValue([
+      { id: '1' },
+      { id: '2' },
+    ] as Product[]);
+
+    const result = await repository.findCatalogPaginated(
+      { shopId: 'shop-id', categoryId: 'category-id' },
+      0,
+      20,
+    );
+
+    expect(result.items.map((item) => item.id)).toEqual(['2', '1']);
+  });
+
+  it('should find a page of products matching a search term', async () => {
+    const products = [{ id: '1' }] as Product[];
+    queryBuilder.getCount.mockResolvedValue(1);
+    queryBuilder.getRawMany.mockResolvedValue([{ id: '1' }]);
+    typeOrmRepository.find.mockResolvedValue(products);
+
+    const result = await repository.findSearchPaginated(
+      { shopId: 'shop-id', term: 'ocean tee' },
+      0,
+      20,
+    );
+
+    expect(queryBuilder.innerJoin).not.toHaveBeenCalled();
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      expect.stringContaining('product.name ILIKE'),
+      { term: 'ocean tee' },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'product.shopId = :shopId',
+      { shopId: 'shop-id' },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'product.status = :status',
+      { status: ProductStatus.ACTIVE },
+    );
+    expect(queryBuilder.offset).toHaveBeenCalledWith(0);
+    expect(queryBuilder.limit).toHaveBeenCalledWith(20);
+    expect(result).toEqual({ items: products, total: 1 });
+  });
+
+  it('should escape the like wildcards of a searched page term', async () => {
+    queryBuilder.getCount.mockResolvedValue(0);
+    queryBuilder.getRawMany.mockResolvedValue([]);
+
+    await repository.findSearchPaginated(
+      { shopId: 'shop-id', term: '50% off_1' },
+      0,
+      20,
+    );
+
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      expect.stringContaining('product.name ILIKE'),
+      { term: '50\\% off\\_1' },
+    );
+  });
+
+  it('should filter and sort a searched page like the category page', async () => {
+    queryBuilder.getCount.mockResolvedValue(0);
+    queryBuilder.getRawMany.mockResolvedValue([]);
+
+    await repository.findSearchPaginated(
+      {
+        shopId: 'shop-id',
+        term: 'ocean',
+        available: true,
+        priceFrom: 60,
+        priceTo: 6000,
+        attributes: [{ name: 'color', values: ['Red'] }],
+        sort: CatalogProductSort.CHEAPER,
+      },
+      0,
+      20,
+    );
+
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'product.available = :available',
+      { available: true },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      expect.stringContaining('>= :priceFrom'),
+      { priceFrom: 60 },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      expect.stringContaining('<= :priceTo'),
+      { priceTo: 6000 },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      expect.stringContaining(':attributeName0'),
+      { attributeName0: 'color', attributeValues0: ['Red'] },
+    );
+    expect(queryBuilder.orderBy).toHaveBeenCalledWith(
+      expect.stringContaining('MIN(catalog_variation.price)'),
+      'ASC',
+    );
+  });
+
+  it('should sort a searched page by relevance when no sort is given', async () => {
+    queryBuilder.getCount.mockResolvedValue(0);
+    queryBuilder.getRawMany.mockResolvedValue([]);
+
+    await repository.findSearchPaginated(
+      { shopId: 'shop-id', term: 'ocean' },
+      0,
+      20,
+    );
+
+    expect(queryBuilder.orderBy).toHaveBeenCalledWith(
+      expect.stringContaining('WHEN product.name ILIKE :term THEN 0'),
+      'ASC',
+    );
+    expect(queryBuilder.addOrderBy).toHaveBeenCalledWith(
+      'product.isPopular',
+      'DESC',
+    );
+    expect(queryBuilder.addOrderBy).toHaveBeenCalledWith(
+      'length(product.name)',
+      'ASC',
+    );
+    expect(queryBuilder.addOrderBy).toHaveBeenCalledWith('product.id', 'ASC');
+  });
+
+  it('should find an active product of a shop with its relations', async () => {
+    typeOrmRepository.findOne.mockResolvedValue({
+      id: 'product-id',
+      images: [],
+      variations: [],
+    });
+
+    const result = await repository.findActiveByShopIdAndId(
+      'shop-id',
+      'product-id',
+    );
+
+    expect(typeOrmRepository.findOne).toHaveBeenCalledWith({
+      where: {
+        id: 'product-id',
+        shopId: 'shop-id',
+        status: ProductStatus.ACTIVE,
+      },
+      relations: {
+        tags: true,
+        images: true,
+        variations: {
+          images: true,
+        },
+      },
+      relationLoadStrategy: 'query',
+    });
+    expect(result).toEqual({ id: 'product-id', images: [], variations: [] });
+  });
+
+  it('should sort product images, variations and variation images', async () => {
+    typeOrmRepository.findOne.mockResolvedValue({
+      id: 'product-id',
+      images: [{ sort: 2 }, { sort: 1 }],
+      variations: [
+        {
+          id: 'second',
+          createdAt: new Date('2024-02-01T00:00:00.000Z'),
+          images: [{ sort: 3 }, { sort: 1 }],
+        },
+        {
+          id: 'first',
+          createdAt: new Date('2024-01-01T00:00:00.000Z'),
+          images: [],
+        },
+      ],
+    });
+
+    const result = await repository.findActiveByShopIdAndId(
+      'shop-id',
+      'product-id',
+    );
+
+    expect(result?.images.map((image) => image.sort)).toEqual([1, 2]);
+    expect(result?.variations.map((variation) => variation.id)).toEqual([
+      'first',
+      'second',
+    ]);
+    expect(
+      result?.variations
+        .find((variation) => variation.id === 'second')
+        ?.images.map((image) => image.sort),
+    ).toEqual([1, 3]);
+  });
+
+  it('should return null for a product that is missing, draft or of another shop', async () => {
+    typeOrmRepository.findOne.mockResolvedValue(null);
+
+    const result = await repository.findActiveByShopIdAndId(
+      'shop-id',
+      'product-id',
+    );
+
+    expect(result).toBeNull();
+  });
+
+  it('should find popular products limited to the requested amount', async () => {
+    const products = [{ id: '1', isPopular: true }] as Product[];
+    queryBuilder.getCount.mockResolvedValue(1);
+    queryBuilder.getRawMany.mockResolvedValue([{ id: '1' }]);
+    typeOrmRepository.find.mockResolvedValue(products);
+
+    const result = await repository.findPopular(6);
+
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'product.isPopular = :isPopular',
+      { isPopular: true },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'product.status = :status',
+      { status: ProductStatus.ACTIVE },
+    );
+    expect(queryBuilder.offset).toHaveBeenCalledWith(0);
+    expect(queryBuilder.limit).toHaveBeenCalledWith(6);
+    expect(result).toEqual(products);
+  });
+
+  it('should search active products of a shop and report the total', async () => {
+    typeOrmRepository.query.mockResolvedValue([
+      {
+        id: '1',
+        slug: 'ocean-tee',
+        name: 'Ocean Tee',
+        price: '100.00',
+        oldPrice: '120.00',
+        image: 'https://cdn/main.png',
+        total: '42',
+      },
+    ]);
+
+    const result = await repository.searchActive('shop-id', 'ocean', 5);
+
+    expect(typeOrmRepository.query).toHaveBeenCalledWith(
+      expect.stringContaining('COUNT(*) OVER ()'),
+      ['shop-id', ProductStatus.ACTIVE, 'ocean', 5],
+    );
+    expect(result).toEqual({
+      total: 42,
+      items: [
+        {
+          id: '1',
+          slug: 'ocean-tee',
+          name: 'Ocean Tee',
+          price: '100.00',
+          oldPrice: '120.00',
+          image: 'https://cdn/main.png',
+        },
+      ],
+    });
+  });
+
+  it('should escape the like wildcards of a search term', async () => {
+    typeOrmRepository.query.mockResolvedValue([]);
+
+    await repository.searchActive('shop-id', '50% off_1', 5);
+
+    const [, parameters] = typeOrmRepository.query.mock.calls[0];
+
+    expect(parameters[2]).toBe('50\\% off\\_1');
+  });
+
+  it('should report no matches for a search without results', async () => {
+    typeOrmRepository.query.mockResolvedValue([]);
+
+    const result = await repository.searchActive('shop-id', 'ocean', 5);
+
+    expect(result).toEqual({ total: 0, items: [] });
+  });
+
+  it('should find popular products filtered by shop id', async () => {
+    const shopId = '98f21967-fce6-4ceb-af61-304913f593a7';
+    const products = [{ id: '1', isPopular: true }] as Product[];
+    queryBuilder.getCount.mockResolvedValue(1);
+    queryBuilder.getRawMany.mockResolvedValue([{ id: '1' }]);
+    typeOrmRepository.find.mockResolvedValue(products);
+
+    const result = await repository.findPopular(6, shopId);
+
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'product.isPopular = :isPopular',
+      { isPopular: true },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'product.status = :status',
+      { status: ProductStatus.ACTIVE },
+    );
+    expect(queryBuilder.andWhere).toHaveBeenCalledWith(
+      'product.shopId = :shopId',
+      { shopId },
+    );
+    expect(result).toEqual(products);
+  });
+});

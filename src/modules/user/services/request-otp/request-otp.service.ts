@@ -6,6 +6,11 @@ import { AuthService } from '../auth/auth.service';
 import { EmailService } from '../email/email.service';
 import { SmsService } from '../sms/sms.service';
 import { UserRepository } from '../../repositories/user/user.repository';
+import { MessageResponse } from '../../../../core/response/models/response.models';
+import { AUTH_MESSAGES } from '../../constants/auth-messages.constants';
+import { ADMIN_ROLES } from '../../constants/role.constants';
+import { assertCanSignIn } from '../../helpers/access.helpers';
+import { USER_MESSAGES } from '../../constants/user-messages.constants';
 
 @Injectable()
 export class RequestOtpService {
@@ -16,7 +21,7 @@ export class RequestOtpService {
     private readonly smsService: SmsService,
   ) {}
 
-  async requestAdminOtp(dto: RequestOtpDto) {
+  async requestAdminOtp(dto: RequestOtpDto): Promise<MessageResponse> {
     this.validateContactInfo(dto.email, dto.phone);
     const user = await this.userRepository.findByEmailOrPhone(
       dto.email,
@@ -24,12 +29,12 @@ export class RequestOtpService {
     );
     await this.validateAdminAccess(user, dto.email, dto.phone);
     await this.handleExistingUserOtp(user, dto.email, dto.phone);
-    return { message: 'OTP-код успішно надіслано' };
+    return { message: AUTH_MESSAGES.OTP_SENT };
   }
 
   private validateContactInfo(email?: string, phone?: string): void {
     if (!email && !phone) {
-      throw new BadRequestException('Потрібно вказати email або телефон');
+      throw new BadRequestException(AUTH_MESSAGES.CONTACT_REQUIRED);
     }
   }
 
@@ -38,12 +43,10 @@ export class RequestOtpService {
     email?: string,
     phone?: string,
   ): Promise<void> {
-    if (user.role?.name !== 'admin' && user.role?.name !== 'super') {
-      throw new BadRequestException('Доступ заборонено');
-    }
+    assertCanSignIn(user, ADMIN_ROLES);
     await this.authService.checkActiveOtpRequest(user.id);
     if (!this.authService.isUserVerified(user, email, phone)) {
-      throw new BadRequestException('Користувача не знайдено');
+      throw new BadRequestException(USER_MESSAGES.NOT_FOUND);
     }
   }
 
@@ -51,17 +54,17 @@ export class RequestOtpService {
     user: User,
     email: string | undefined,
     phone: string | undefined,
-  ) {
+  ): Promise<void> {
     const purpose = OtpPurpose.LOGIN;
     await this.createAndSendOtp(user.id, email, phone, purpose);
   }
 
-  private async createAndSendOtp(
+  async createAndSendOtp(
     userId: string,
     email: string | undefined,
     phone: string | undefined,
     purpose: OtpPurpose,
-  ) {
+  ): Promise<void> {
     const { code, codeHash } = await this.authService.generateOtpCodeAndHash();
     await this.authService.saveOtp(userId, codeHash, email, purpose);
 
@@ -71,7 +74,7 @@ export class RequestOtpService {
     }
 
     if (!phone) {
-      throw new BadRequestException('Потрібно вказати email або телефон');
+      throw new BadRequestException(AUTH_MESSAGES.CONTACT_REQUIRED);
     }
 
     await this.smsService.sendOtpSms(phone, code);

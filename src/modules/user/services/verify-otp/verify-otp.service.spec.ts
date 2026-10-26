@@ -1,53 +1,61 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { JwtService } from '@nestjs/jwt';
-import { NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { VerifyOtpService } from './verify-otp.service';
 import { AuthService } from '../auth/auth.service';
-import { UserSessionRepository } from '../../repositories/user-session/user-session.repository';
+import { UserSessionService } from '../user-session/user-session.service';
 import { UserRepository } from '../../repositories/user/user.repository';
-import * as bcrypt from 'bcryptjs';
-
-jest.mock('bcryptjs');
 
 describe('VerifyOtpService', () => {
   let service: VerifyOtpService;
   let userRepository: any;
-  let userSessionRepository: any;
   let authService: any;
+  let userSessionService: any;
+
+  const session = {
+    accessToken: 'access',
+    refreshToken: 'refresh',
+    user: {
+      id: 'uuid',
+      email: 'test@example.com',
+      mobileNumber: null,
+      role: 'admin',
+    },
+  };
+
+  const adminOf = (overrides: Record<string, unknown> = {}) => ({
+    id: 'uuid',
+    email: 'test@example.com',
+    mobileNumber: null,
+    isActive: true,
+    role: { name: 'admin' },
+    ...overrides,
+  });
 
   beforeEach(async () => {
     userRepository = {
       findByEmailOrPhone: jest.fn(),
     };
 
-    userSessionRepository = {
-      create: jest.fn().mockImplementation((dto) => dto),
-      save: jest.fn(),
-    };
-
     authService = {
       findAndValidateLatestOtp: jest.fn().mockResolvedValue({ id: 'otp-id' }),
-      validateOtpCode: jest.fn(),
-      saveAuthOtp: jest.fn(),
+      consumeOtp: jest.fn(),
       verifyUserIfRegistered: jest.fn(),
-      generateTokens: jest.fn().mockReturnValue({
-        accessToken: 'mocked-access-token',
-        refreshToken: 'mocked-refresh-token',
-      }),
     };
 
-    (bcrypt.genSalt as jest.Mock).mockResolvedValue('mockSalt');
-    (bcrypt.hash as jest.Mock).mockResolvedValue('mockHash');
+    userSessionService = {
+      startSession: jest.fn().mockResolvedValue(session),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         VerifyOtpService,
         { provide: UserRepository, useValue: userRepository },
-        {
-          provide: UserSessionRepository,
-          useValue: userSessionRepository,
-        },
         { provide: AuthService, useValue: authService },
+        { provide: UserSessionService, useValue: userSessionService },
       ],
     }).compile();
 
@@ -56,7 +64,6 @@ describe('VerifyOtpService', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
-    delete process.env.REFRESH_EXPIRE_TIME;
   });
 
   it('should be defined', () => {
@@ -90,42 +97,42 @@ describe('VerifyOtpService', () => {
       );
     });
 
-    it('should successfully verify, create tokens and save session with default expiration and null agent/ip', async () => {
-      const user = {
-        id: 'uuid',
-        email: 'test@example.com',
-        mobileNumber: null,
-      };
-      userRepository.findByEmailOrPhone.mockResolvedValue(user);
-
-      const result = await service.verifyOtp({
-        email: 'test@example.com',
-        code: '1234',
-      });
-
-      expect(authService.findAndValidateLatestOtp).toHaveBeenCalledWith('uuid');
-      expect(authService.validateOtpCode).toHaveBeenCalled();
-      expect(authService.generateTokens).toHaveBeenCalledWith(user);
-      expect(userSessionRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          userId: 'uuid',
-          refreshTokenHash: 'mockHash',
-          userAgent: null,
-          ipAddress: null,
-        }),
+    it('should reject a non-admin user before touching the OTP', async () => {
+      userRepository.findByEmailOrPhone.mockResolvedValue(
+        adminOf({ role: { name: 'user' } }),
       );
-      expect(userSessionRepository.save).toHaveBeenCalled();
-      expect(result.user.role).toBeNull();
+
+      await expect(
+        service.verifyOtp({ email: 'test@example.com', code: '1234' }),
+      ).rejects.toThrow(BadRequestException);
+      expect(authService.consumeOtp).not.toHaveBeenCalled();
+      expect(userSessionService.startSession).not.toHaveBeenCalled();
     });
 
-    it('should successfully verify, create tokens and save session with custom expiration and provided agent/ip', async () => {
-      process.env.REFRESH_EXPIRE_TIME = '1000000';
-      const user = {
-        id: 'uuid',
-        email: 'test@example.com',
-        mobileNumber: null,
-        role: { name: 'admin' },
-      };
+    it('should reject a blocked admin', async () => {
+      userRepository.findByEmailOrPhone.mockResolvedValue(
+        adminOf({ isActive: false }),
+      );
+
+      await expect(
+        service.verifyOtp({ email: 'test@example.com', code: '1234' }),
+      ).rejects.toThrow(ForbiddenException);
+      expect(userSessionService.startSession).not.toHaveBeenCalled();
+    });
+
+    it('should not open a session when the code is wrong', async () => {
+      userRepository.findByEmailOrPhone.mockResolvedValue(adminOf());
+      authService.consumeOtp.mockRejectedValue(new BadRequestException());
+
+      await expect(
+        service.verifyOtp({ email: 'test@example.com', code: '0000' }),
+      ).rejects.toThrow(BadRequestException);
+      expect(userSessionService.startSession).not.toHaveBeenCalled();
+    });
+
+    it('should consume the code and open a session', async () => {
+      const user = adminOf();
+      const otp = { id: 'otp-id' };
       userRepository.findByEmailOrPhone.mockResolvedValue(user);
 
       const result = await service.verifyOtp(
@@ -135,18 +142,18 @@ describe('VerifyOtpService', () => {
       );
 
       expect(authService.findAndValidateLatestOtp).toHaveBeenCalledWith('uuid');
-      expect(authService.validateOtpCode).toHaveBeenCalled();
-      expect(authService.generateTokens).toHaveBeenCalledWith(user);
-      expect(userSessionRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          userId: 'uuid',
-          refreshTokenHash: 'mockHash',
-          userAgent: 'agent',
-          ipAddress: 'ip',
-        }),
+      expect(authService.consumeOtp).toHaveBeenCalledWith('1234', otp);
+      expect(authService.verifyUserIfRegistered).toHaveBeenCalledWith(
+        otp,
+        user,
+        'test@example.com',
+        undefined,
       );
-      expect(userSessionRepository.save).toHaveBeenCalled();
-      expect(result.user.role).toBe('admin');
+      expect(userSessionService.startSession).toHaveBeenCalledWith(user, {
+        userAgent: 'agent',
+        ipAddress: 'ip',
+      });
+      expect(result).toBe(session);
     });
   });
 });

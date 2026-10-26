@@ -1,0 +1,703 @@
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import {
+  CacheDescriptor,
+  CacheService,
+} from '../../../../../core/cache/cache.service';
+import { CACHE_SCOPE_ALL } from '../../../../../core/cache/constants/cache.constants';
+import { CATALOG_FILTERS_CACHE_TTL_SECONDS } from '../../../constants/catalog-cache.constants';
+import {
+  POPULAR_PRODUCTS_LIMIT,
+  PRODUCT_SEARCH_LIMIT,
+} from '../../../constants/pagination.constants';
+import {
+  buildCatalogProductSearchCacheSegments,
+  buildCatalogSearchCategoriesCacheSegments,
+  buildCatalogSearchFiltersCacheSegments,
+  buildProductSearchCacheSegments,
+} from '../../../helpers/catalog-cache.helpers';
+import { CatalogProductSort } from '../../../entities/enums/product-sort.enum';
+import { AttributeRepository } from '../../../repositories/attribute/attribute.repository';
+import { CategoryRepository } from '../../../repositories/category/admin/category.repository';
+import { CategoryClientRepository } from '../../../repositories/category/client/category-client.repository';
+import { ProductClientRepository } from '../../../repositories/product/client/product-client.repository';
+import { ProductsClientService } from './products-client.service';
+
+describe('ProductsClientService', () => {
+  let service: ProductsClientService;
+  let productClientRepository: ProductClientRepository;
+  let categoryRepository: CategoryRepository;
+  let categoryClientRepository: CategoryClientRepository;
+  let attributeRepository: AttributeRepository;
+  let cacheService: CacheService;
+
+  beforeEach(async () => {
+    const productClientRepositoryMock = {
+      findCatalogPaginated: jest.fn(),
+      findSearchPaginated: jest.fn(),
+      findPopular: jest.fn(),
+      findActiveByShopIdAndId: jest.fn(),
+      searchActive: jest.fn(),
+    };
+
+    const categoryRepositoryMock = {
+      findById: jest.fn(),
+    };
+
+    const categoryClientRepositoryMock = {
+      findSearchCategories: jest.fn().mockResolvedValue([]),
+    };
+
+    const attributeRepositoryMock = {
+      findCategoryFilterOptions: jest.fn(),
+      findSearchFilterOptions: jest.fn().mockResolvedValue([]),
+    };
+
+    // Stands in for a permanent cache miss, so the existing expectations keep
+    // describing what the repositories are asked for.
+    const cacheServiceMock = {
+      wrap: jest.fn(
+        <TValue>(_descriptor: CacheDescriptor, load: () => Promise<TValue>) =>
+          load(),
+      ),
+      invalidate: jest.fn(),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        ProductsClientService,
+        {
+          provide: ProductClientRepository,
+          useValue: productClientRepositoryMock,
+        },
+        { provide: CategoryRepository, useValue: categoryRepositoryMock },
+        {
+          provide: CategoryClientRepository,
+          useValue: categoryClientRepositoryMock,
+        },
+        { provide: AttributeRepository, useValue: attributeRepositoryMock },
+        { provide: CacheService, useValue: cacheServiceMock },
+      ],
+    }).compile();
+
+    service = module.get<ProductsClientService>(ProductsClientService);
+    productClientRepository = module.get<ProductClientRepository>(
+      ProductClientRepository,
+    );
+    categoryRepository = module.get<CategoryRepository>(CategoryRepository);
+    categoryClientRepository = module.get<CategoryClientRepository>(
+      CategoryClientRepository,
+    );
+    attributeRepository = module.get<AttributeRepository>(AttributeRepository);
+    cacheService = module.get<CacheService>(CacheService);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
+  it('should list popular products', async () => {
+    const popularProducts = [{ id: '1', isPopular: true }] as any;
+    jest
+      .mocked(productClientRepository.findPopular)
+      .mockResolvedValue(popularProducts);
+
+    const result = await service.listPopularProducts();
+
+    expect(productClientRepository.findPopular).toHaveBeenCalledWith(
+      POPULAR_PRODUCTS_LIMIT,
+      undefined,
+    );
+    expect(result).toEqual(popularProducts);
+  });
+
+  it('should list popular products filtered by shop id', async () => {
+    const shopId = '98f21967-fce6-4ceb-af61-304913f593a7';
+    const popularProducts = [{ id: '1', isPopular: true }] as any;
+    jest
+      .mocked(productClientRepository.findPopular)
+      .mockResolvedValue(popularProducts);
+
+    const result = await service.listPopularProducts(shopId);
+
+    expect(productClientRepository.findPopular).toHaveBeenCalledWith(
+      POPULAR_PRODUCTS_LIMIT,
+      shopId,
+    );
+    expect(result).toEqual(popularProducts);
+  });
+
+  it('should list catalog products with filters, sorting and pagination', async () => {
+    jest
+      .mocked(productClientRepository.findCatalogPaginated)
+      .mockResolvedValue({ items: [{ id: '1' }] as any, total: 1 });
+
+    const result = await service.listCatalogProducts('category-id', {
+      shopId: 'shop-id',
+      page: 2,
+      limit: 20,
+      attributes: [
+        { name: 'color', values: ['Red'] },
+        { name: 'screen', values: ['6'] },
+      ],
+      priceFrom: 60,
+      priceTo: 6000,
+      available: true,
+      sort: CatalogProductSort.CHEAPER,
+    });
+
+    expect(productClientRepository.findCatalogPaginated).toHaveBeenCalledWith(
+      {
+        shopId: 'shop-id',
+        categoryId: 'category-id',
+        attributes: [
+          { name: 'color', values: ['Red'] },
+          { name: 'screen', values: ['6'] },
+        ],
+        priceFrom: 60,
+        priceTo: 6000,
+        available: true,
+        sort: CatalogProductSort.CHEAPER,
+      },
+      20,
+      20,
+    );
+    expect(result).toEqual({
+      items: [{ id: '1' }],
+      total: 1,
+      page: 2,
+      limit: 20,
+      totalPages: 1,
+    });
+  });
+
+  it('should list catalog products without filters', async () => {
+    jest
+      .mocked(productClientRepository.findCatalogPaginated)
+      .mockResolvedValue({ items: [], total: 0 });
+
+    const result = await service.listCatalogProducts('category-id', {
+      shopId: 'shop-id',
+      page: 1,
+      limit: 20,
+    });
+
+    expect(productClientRepository.findCatalogPaginated).toHaveBeenCalledWith(
+      {
+        shopId: 'shop-id',
+        categoryId: 'category-id',
+        attributes: undefined,
+        priceFrom: undefined,
+        priceTo: undefined,
+        available: undefined,
+        sort: undefined,
+      },
+      0,
+      20,
+    );
+    expect(result.totalPages).toBe(0);
+  });
+
+  it('should list a searched page with filters, sorting and pagination', async () => {
+    jest
+      .mocked(productClientRepository.findSearchPaginated)
+      .mockResolvedValue({ items: [{ id: '1' }] as any, total: 1 });
+    jest.mocked(attributeRepository.findSearchFilterOptions).mockResolvedValue([
+      { name: 'Color', value: 'Blue' },
+      { name: 'Color', value: 'Red' },
+      { name: 'Size', value: 'M' },
+    ]);
+    jest
+      .mocked(categoryClientRepository.findSearchCategories)
+      .mockResolvedValue([
+        { id: 'category-1', name: 'Tees', slug: 'tees', parentId: null },
+        {
+          id: 'category-2',
+          name: 'Long sleeves',
+          slug: 'long-sleeves',
+          parentId: 'category-1',
+        },
+      ]);
+
+    const result = await service.listCatalogProductsBySearch({
+      shopId: 'shop-id',
+      query: 'ocean tee',
+      page: 2,
+      limit: 20,
+      attributes: [{ name: 'color', values: ['Red'] }],
+      priceFrom: 60,
+      priceTo: 6000,
+      available: true,
+      sort: CatalogProductSort.CHEAPER,
+    });
+
+    expect(productClientRepository.findSearchPaginated).toHaveBeenCalledWith(
+      {
+        shopId: 'shop-id',
+        term: 'ocean tee',
+        attributes: [{ name: 'color', values: ['Red'] }],
+        priceFrom: 60,
+        priceTo: 6000,
+        available: true,
+        sort: CatalogProductSort.CHEAPER,
+      },
+      20,
+      20,
+    );
+    // The filters come from the term alone: the applied attribute and price
+    // filters must not narrow the panel they are ticked in.
+    expect(attributeRepository.findSearchFilterOptions).toHaveBeenCalledWith(
+      'shop-id',
+      'ocean tee',
+    );
+    // Same for the categories, and they are scoped to the shop.
+    expect(categoryClientRepository.findSearchCategories).toHaveBeenCalledWith(
+      'shop-id',
+      'ocean tee',
+    );
+    expect(result).toEqual({
+      items: [{ id: '1' }],
+      total: 1,
+      page: 2,
+      limit: 20,
+      totalPages: 1,
+      filters: [
+        { name: 'Color', values: ['Blue', 'Red'] },
+        { name: 'Size', values: ['M'] },
+      ],
+      categories: [
+        { id: 'category-1', name: 'Tees', slug: 'tees', parentId: null },
+        {
+          id: 'category-2',
+          name: 'Long sleeves',
+          slug: 'long-sleeves',
+          parentId: 'category-1',
+        },
+      ],
+    });
+  });
+
+  it('should list a searched page with no filters and no categories when the term matches nothing', async () => {
+    jest
+      .mocked(productClientRepository.findSearchPaginated)
+      .mockResolvedValue({ items: [], total: 0 });
+    jest
+      .mocked(attributeRepository.findSearchFilterOptions)
+      .mockResolvedValue([]);
+    jest
+      .mocked(categoryClientRepository.findSearchCategories)
+      .mockResolvedValue([]);
+
+    const result = await service.listCatalogProductsBySearch({
+      shopId: 'shop-id',
+      query: 'ocean',
+      page: 1,
+      limit: 20,
+    });
+
+    expect(result.filters).toEqual([]);
+    expect(result.categories).toEqual([]);
+  });
+
+  it('should reject a searched page price range when priceFrom is greater than priceTo', async () => {
+    await expect(
+      service.listCatalogProductsBySearch({
+        shopId: 'shop-id',
+        query: 'ocean',
+        page: 1,
+        limit: 20,
+        priceFrom: 6000,
+        priceTo: 60,
+      }),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(productClientRepository.findSearchPaginated).not.toHaveBeenCalled();
+    expect(attributeRepository.findSearchFilterOptions).not.toHaveBeenCalled();
+    expect(
+      categoryClientRepository.findSearchCategories,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('should cache a searched page under the shop scope', async () => {
+    jest
+      .mocked(productClientRepository.findSearchPaginated)
+      .mockResolvedValue({ items: [], total: 0 });
+
+    await service.listCatalogProductsBySearch({
+      shopId: 'shop-id',
+      query: 'ocean',
+      page: 1,
+      limit: 20,
+    });
+
+    expect(cacheService.wrap).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scope: 'shop-id',
+        segments: buildCatalogProductSearchCacheSegments(
+          { shopId: 'shop-id', term: 'ocean' },
+          1,
+          20,
+        ),
+      }),
+      expect.any(Function),
+    );
+  });
+
+  it('should cache the filters of a search under the term alone', async () => {
+    jest
+      .mocked(productClientRepository.findSearchPaginated)
+      .mockResolvedValue({ items: [], total: 0 });
+
+    await service.listCatalogProductsBySearch({
+      shopId: 'shop-id',
+      query: 'ocean',
+      page: 3,
+      limit: 20,
+      sort: CatalogProductSort.CHEAPER,
+    });
+
+    expect(cacheService.wrap).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scope: 'shop-id',
+        segments: buildCatalogSearchFiltersCacheSegments('ocean'),
+        ttlSeconds: CATALOG_FILTERS_CACHE_TTL_SECONDS,
+      }),
+      expect.any(Function),
+    );
+  });
+
+  it('should cache the categories of a search under the term alone', async () => {
+    jest
+      .mocked(productClientRepository.findSearchPaginated)
+      .mockResolvedValue({ items: [], total: 0 });
+
+    await service.listCatalogProductsBySearch({
+      shopId: 'shop-id',
+      query: 'ocean',
+      page: 3,
+      limit: 20,
+      sort: CatalogProductSort.CHEAPER,
+    });
+
+    expect(cacheService.wrap).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scope: 'shop-id',
+        segments: buildCatalogSearchCategoriesCacheSegments('ocean'),
+        ttlSeconds: CATALOG_FILTERS_CACHE_TTL_SECONDS,
+      }),
+      expect.any(Function),
+    );
+  });
+
+  it('should cache a searched page apart from its filters and from the suggestions of the same term', async () => {
+    jest
+      .mocked(productClientRepository.findSearchPaginated)
+      .mockResolvedValue({ items: [], total: 0 });
+    jest
+      .mocked(productClientRepository.searchActive)
+      .mockResolvedValue({ total: 0, items: [] });
+
+    await service.listCatalogProductsBySearch({
+      shopId: 'shop-id',
+      query: 'ocean',
+      page: 1,
+      limit: 20,
+    });
+    await service.searchProducts('shop-id', 'ocean');
+
+    const segments = jest
+      .mocked(cacheService.wrap)
+      .mock.calls.map(([descriptor]) => descriptor.segments.join(':'));
+
+    expect(new Set(segments).size).toBe(segments.length);
+  });
+
+  it('should reject catalog price range when priceFrom is greater than priceTo', async () => {
+    await expect(
+      service.listCatalogProducts('category-id', {
+        shopId: 'shop-id',
+        page: 1,
+        limit: 20,
+        priceFrom: 6000,
+        priceTo: 60,
+      }),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(productClientRepository.findCatalogPaginated).not.toHaveBeenCalled();
+  });
+
+  it('should return an empty page for an unknown category without looking it up', async () => {
+    jest
+      .mocked(productClientRepository.findCatalogPaginated)
+      .mockResolvedValue({ items: [], total: 0 });
+
+    const result = await service.listCatalogProducts('missing-id', {
+      shopId: 'shop-id',
+      page: 1,
+      limit: 20,
+    });
+
+    expect(categoryRepository.findById).not.toHaveBeenCalled();
+    expect(result.items).toEqual([]);
+    expect(result.total).toBe(0);
+  });
+
+  it('should group category filters by attribute name', async () => {
+    const categoryId = '11111111-1111-4111-8111-111111111111';
+    jest
+      .mocked(categoryRepository.findById)
+      .mockResolvedValue({ shopId: 'shop-id' } as any);
+    jest
+      .mocked(attributeRepository.findCategoryFilterOptions)
+      .mockResolvedValue([
+        { name: 'Color', value: 'Blue' },
+        { name: 'Color', value: 'Red' },
+        { name: 'Size', value: 'M' },
+      ]);
+
+    const result = await service.getFiltersByCategoryId(categoryId, 'shop-id');
+
+    expect(categoryRepository.findById).toHaveBeenCalledWith(categoryId);
+    expect(attributeRepository.findCategoryFilterOptions).toHaveBeenCalledWith(
+      categoryId,
+    );
+    expect(result).toEqual([
+      { name: 'Color', values: ['Blue', 'Red'] },
+      { name: 'Size', values: ['M'] },
+    ]);
+  });
+
+  it('should return no filters when category has no attribute options', async () => {
+    jest
+      .mocked(categoryRepository.findById)
+      .mockResolvedValue({ shopId: 'shop-id' } as any);
+    jest
+      .mocked(attributeRepository.findCategoryFilterOptions)
+      .mockResolvedValue([]);
+
+    const result = await service.getFiltersByCategoryId(
+      'category-id',
+      'shop-id',
+    );
+
+    expect(result).toEqual([]);
+  });
+
+  it('should reject category filters when the category belongs to another shop', async () => {
+    jest
+      .mocked(categoryRepository.findById)
+      .mockResolvedValue({ shopId: 'other-shop-id' } as any);
+
+    await expect(
+      service.getFiltersByCategoryId('category-id', 'shop-id'),
+    ).rejects.toThrow(NotFoundException);
+
+    expect(
+      attributeRepository.findCategoryFilterOptions,
+    ).not.toHaveBeenCalled();
+  });
+
+  it('should get a product with its images, tags and variations', async () => {
+    const product = {
+      id: 'product-id',
+      images: [{ id: 'image-id' }],
+      tags: [{ id: 'tag-id' }],
+      variations: [{ id: 'variation-id', images: [{ id: 'variation-image' }] }],
+    } as any;
+    jest
+      .mocked(productClientRepository.findActiveByShopIdAndId)
+      .mockResolvedValue(product);
+
+    const result = await service.getProductById('product-id', 'shop-id');
+
+    expect(
+      productClientRepository.findActiveByShopIdAndId,
+    ).toHaveBeenCalledWith('shop-id', 'product-id');
+    expect(result).toEqual(product);
+  });
+
+  it('should reject a product that is missing, draft or of another shop', async () => {
+    jest
+      .mocked(productClientRepository.findActiveByShopIdAndId)
+      .mockResolvedValue(null);
+
+    await expect(
+      service.getProductById('product-id', 'shop-id'),
+    ).rejects.toThrow(NotFoundException);
+  });
+
+  it('should search products and return the count with the top matches', async () => {
+    const searchResult = {
+      total: 42,
+      items: [
+        {
+          id: '1',
+          slug: 'ocean-tee',
+          name: 'ocean tee',
+          price: '100.00',
+          oldPrice: null,
+          image: 'https://cdn/main.png',
+        },
+      ],
+    };
+    jest
+      .mocked(productClientRepository.searchActive)
+      .mockResolvedValue(searchResult);
+
+    const result = await service.searchProducts('shop-id', 'ocean');
+
+    expect(productClientRepository.searchActive).toHaveBeenCalledWith(
+      'shop-id',
+      'ocean',
+      PRODUCT_SEARCH_LIMIT,
+    );
+    expect(result).toEqual(searchResult);
+  });
+
+  it('should cache search results under the shop scope', async () => {
+    jest
+      .mocked(productClientRepository.searchActive)
+      .mockResolvedValue({ total: 0, items: [] });
+
+    await service.searchProducts('shop-id', 'ocean');
+
+    expect(cacheService.wrap).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scope: 'shop-id',
+        segments: buildProductSearchCacheSegments('ocean'),
+      }),
+      expect.any(Function),
+    );
+  });
+
+  it('should cache different search terms under different keys', async () => {
+    jest
+      .mocked(productClientRepository.searchActive)
+      .mockResolvedValue({ total: 0, items: [] });
+
+    await service.searchProducts('shop-id', 'ocean');
+    await service.searchProducts('shop-id', 'tee');
+
+    const [first, second] = jest
+      .mocked(cacheService.wrap)
+      .mock.calls.map(([descriptor]) => descriptor.segments);
+
+    expect(first).not.toEqual(second);
+  });
+
+  it('should cache a product under the shop scope', async () => {
+    jest
+      .mocked(productClientRepository.findActiveByShopIdAndId)
+      .mockResolvedValue({ id: 'product-id' } as any);
+
+    await service.getProductById('product-id', 'shop-id');
+
+    expect(cacheService.wrap).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scope: 'shop-id',
+        segments: ['product', 'product-id'],
+      }),
+      expect.any(Function),
+    );
+  });
+
+  it('should cache popular products under the shop scope', async () => {
+    jest.mocked(productClientRepository.findPopular).mockResolvedValue([]);
+
+    await service.listPopularProducts('shop-id');
+
+    expect(cacheService.wrap).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scope: 'shop-id',
+        segments: ['popular', 'shop-id'],
+      }),
+      expect.any(Function),
+    );
+  });
+
+  it('should cache popular products of all shops under the cross-shop scope', async () => {
+    jest.mocked(productClientRepository.findPopular).mockResolvedValue([]);
+
+    await service.listPopularProducts();
+
+    expect(cacheService.wrap).toHaveBeenCalledWith(
+      expect.objectContaining({ scope: CACHE_SCOPE_ALL }),
+      expect.any(Function),
+    );
+  });
+
+  it('should cache category filters under the shop scope', async () => {
+    jest
+      .mocked(categoryRepository.findById)
+      .mockResolvedValue({ shopId: 'shop-id' } as any);
+    jest
+      .mocked(attributeRepository.findCategoryFilterOptions)
+      .mockResolvedValue([]);
+
+    await service.getFiltersByCategoryId('category-id', 'shop-id');
+
+    expect(cacheService.wrap).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scope: 'shop-id',
+        segments: ['filters', 'category-id'],
+      }),
+      expect.any(Function),
+    );
+  });
+
+  it('should reuse one catalog cache key for equivalent attribute filters', async () => {
+    jest
+      .mocked(productClientRepository.findCatalogPaginated)
+      .mockResolvedValue({ items: [], total: 0 });
+
+    await service.listCatalogProducts('category-id', {
+      shopId: 'shop-id',
+      page: 1,
+      limit: 20,
+      attributes: [
+        { name: 'screen', values: ['6'] },
+        { name: 'color', values: ['Red', 'Blue'] },
+      ],
+    });
+
+    await service.listCatalogProducts('category-id', {
+      shopId: 'shop-id',
+      page: 1,
+      limit: 20,
+      attributes: [
+        { name: 'color', values: ['Blue', 'Red'] },
+        { name: 'screen', values: ['6'] },
+      ],
+    });
+
+    const [first, second] = jest
+      .mocked(cacheService.wrap)
+      .mock.calls.map(([descriptor]) => descriptor.segments);
+
+    expect(first).toEqual(second);
+  });
+
+  it('should cache different catalog pages under different keys', async () => {
+    jest
+      .mocked(productClientRepository.findCatalogPaginated)
+      .mockResolvedValue({ items: [], total: 0 });
+
+    await service.listCatalogProducts('category-id', {
+      shopId: 'shop-id',
+      page: 1,
+      limit: 20,
+    });
+
+    await service.listCatalogProducts('category-id', {
+      shopId: 'shop-id',
+      page: 2,
+      limit: 20,
+    });
+
+    const [first, second] = jest
+      .mocked(cacheService.wrap)
+      .mock.calls.map(([descriptor]) => descriptor.segments);
+
+    expect(first).not.toEqual(second);
+  });
+});

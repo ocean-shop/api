@@ -1,187 +1,179 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { JwtService } from '@nestjs/jwt';
-import { UnauthorizedException } from '@nestjs/common';
-import * as bcrypt from 'bcryptjs';
+import { NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { RefreshTokenService } from './refresh-token.service';
+import { AuthService } from '../auth/auth.service';
+import { UserSessionService } from '../user-session/user-session.service';
 import { UserRepository } from '../../repositories/user/user.repository';
 import { UserSessionRepository } from '../../repositories/user-session/user-session.repository';
-import { AuthService } from '../auth/auth.service';
-
-jest.mock('bcryptjs', () => ({
-  genSalt: jest.fn().mockResolvedValue('mock-salt'),
-  hash: jest.fn().mockResolvedValue('mock-hash'),
-  compare: jest.fn(),
-}));
+import { hashRefreshToken } from '../../helpers/user-session.helpers';
+import { AUTH_MESSAGES } from '../../constants/auth-messages.constants';
 
 describe('RefreshTokenService', () => {
   let service: RefreshTokenService;
   let userRepository: any;
   let userSessionRepository: any;
-  let jwtService: any;
   let authService: any;
+  let userSessionService: any;
+
+  const session = {
+    id: 'session-id',
+    userId: 'uuid',
+    refreshTokenHash: hashRefreshToken('current-token'),
+  };
+  const user = { id: 'uuid', isActive: true, role: { name: 'user' } };
+  const rotated = {
+    accessToken: 'new-access',
+    refreshToken: 'new-refresh',
+    user: { id: 'uuid', email: null, mobileNumber: null, role: 'user' },
+  };
+  const invalid = new UnauthorizedException(
+    AUTH_MESSAGES.REFRESH_TOKEN_INVALID,
+  );
+  const CLIENT = ['user'];
+  const ADMIN = ['admin', 'super'];
 
   beforeEach(async () => {
-    userRepository = {
-      findById: jest.fn(),
-    };
-
+    userRepository = { findById: jest.fn().mockResolvedValue(user) };
     userSessionRepository = {
-      findActiveSessionsByUserId: jest.fn(),
-      save: jest.fn(),
+      findActiveById: jest.fn().mockResolvedValue(session),
     };
-
-    jwtService = {
-      verify: jest.fn().mockReturnValue({ sub: 'uuid' }),
-    };
-
     authService = {
-      generateTokens: jest.fn().mockReturnValue({
-        accessToken: 'new-token',
-        refreshToken: 'new-refresh-token',
-      }),
+      verifyRefreshToken: jest
+        .fn()
+        .mockReturnValue({ sub: 'uuid', sid: 'session-id', type: 'refresh' }),
+    };
+    userSessionService = {
+      rotateSession: jest.fn().mockResolvedValue(rotated),
+      revokeSession: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         RefreshTokenService,
         { provide: UserRepository, useValue: userRepository },
-        {
-          provide: UserSessionRepository,
-          useValue: userSessionRepository,
-        },
-        { provide: JwtService, useValue: jwtService },
+        { provide: UserSessionRepository, useValue: userSessionRepository },
         { provide: AuthService, useValue: authService },
+        { provide: UserSessionService, useValue: userSessionService },
       ],
     }).compile();
 
     service = module.get<RefreshTokenService>(RefreshTokenService);
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-    delete process.env.REFRESH_EXPIRE_TIME;
+  it('should require a refresh token', async () => {
+    await expect(service.refreshToken('', CLIENT)).rejects.toThrow(
+      new UnauthorizedException(AUTH_MESSAGES.REFRESH_TOKEN_REQUIRED),
+    );
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
+  it('should rotate the session the token belongs to', async () => {
+    const result = await service.refreshToken(
+      'current-token',
+      CLIENT,
+      'agent',
+      'ip',
+    );
+
+    expect(authService.verifyRefreshToken).toHaveBeenCalledWith(
+      'current-token',
+    );
+    expect(userSessionRepository.findActiveById).toHaveBeenCalledWith(
+      'session-id',
+      'uuid',
+    );
+    expect(userSessionService.rotateSession).toHaveBeenCalledWith(
+      session,
+      user,
+      { userAgent: 'agent', ipAddress: 'ip' },
+    );
+    expect(result).toBe(rotated);
   });
 
-  describe('refreshToken', () => {
-    it('should throw UnauthorizedException if token is missing', async () => {
-      await expect(service.refreshToken('')).rejects.toThrow(
-        UnauthorizedException,
-      );
+  it('should propagate an invalid or wrongly typed token', async () => {
+    authService.verifyRefreshToken.mockImplementation(() => {
+      throw invalid;
     });
 
-    it('should throw UnauthorizedException if user not found', async () => {
-      userRepository.findById.mockRejectedValue(
-        new UnauthorizedException('Користувача не знайдено'),
-      );
-      await expect(service.refreshToken('token')).rejects.toThrow(
-        UnauthorizedException,
-      );
+    await expect(service.refreshToken('access-token', CLIENT)).rejects.toThrow(
+      invalid,
+    );
+    expect(userSessionRepository.findActiveById).not.toHaveBeenCalled();
+  });
+
+  it('should reject when the session is revoked, expired or unknown', async () => {
+    userSessionRepository.findActiveById.mockResolvedValue(null);
+
+    await expect(service.refreshToken('current-token', CLIENT)).rejects.toThrow(
+      invalid,
+    );
+    expect(userSessionService.rotateSession).not.toHaveBeenCalled();
+  });
+
+  it('should reject a token that was already rotated out', async () => {
+    await expect(
+      service.refreshToken('previous-token', CLIENT),
+    ).rejects.toThrow(invalid);
+    expect(userSessionService.rotateSession).not.toHaveBeenCalled();
+  });
+
+  it('should revoke the session and refuse a blocked user', async () => {
+    userRepository.findById.mockResolvedValue({ ...user, isActive: false });
+
+    await expect(service.refreshToken('current-token', CLIENT)).rejects.toThrow(
+      invalid,
+    );
+    expect(userSessionService.revokeSession).toHaveBeenCalledWith(
+      'session-id',
+      'uuid',
+    );
+    expect(userSessionService.rotateSession).not.toHaveBeenCalled();
+  });
+
+  it('should revoke the session of a deleted user', async () => {
+    userRepository.findById.mockRejectedValue(new NotFoundException());
+
+    await expect(service.refreshToken('current-token', CLIENT)).rejects.toThrow(
+      invalid,
+    );
+    expect(userSessionService.revokeSession).toHaveBeenCalledWith(
+      'session-id',
+      'uuid',
+    );
+  });
+
+  it('should refuse a client session in the admin panel without revoking it', async () => {
+    await expect(service.refreshToken('current-token', ADMIN)).rejects.toThrow(
+      invalid,
+    );
+    expect(userSessionService.revokeSession).not.toHaveBeenCalled();
+    expect(userSessionService.rotateSession).not.toHaveBeenCalled();
+  });
+
+  it('should refuse an admin session in the shop', async () => {
+    userRepository.findById.mockResolvedValue({
+      ...user,
+      role: { name: 'admin' },
     });
 
-    it('should throw UnauthorizedException if session is invalid (empty)', async () => {
-      userRepository.findById.mockResolvedValue({ id: 'uuid' });
-      userSessionRepository.findActiveSessionsByUserId.mockResolvedValue([]);
+    await expect(service.refreshToken('current-token', CLIENT)).rejects.toThrow(
+      invalid,
+    );
+    expect(userSessionService.rotateSession).not.toHaveBeenCalled();
+  });
 
-      await expect(service.refreshToken('token')).rejects.toThrow(
-        UnauthorizedException,
-      );
-    });
+  it('should refuse a user without a role', async () => {
+    userRepository.findById.mockResolvedValue({ ...user, role: null });
 
-    it('should throw UnauthorizedException if session is expired', async () => {
-      userRepository.findById.mockResolvedValue({ id: 'uuid' });
-      const session = {
-        expiresAt: new Date(Date.now() - 10000), // Expired
-        refreshTokenHash: 'hash',
-      };
-      userSessionRepository.findActiveSessionsByUserId.mockResolvedValue([
-        session,
-      ]);
+    await expect(service.refreshToken('current-token', CLIENT)).rejects.toThrow(
+      invalid,
+    );
+  });
 
-      await expect(service.refreshToken('token')).rejects.toThrow(
-        UnauthorizedException,
-      );
-    });
+  it('should propagate a lost rotation race', async () => {
+    userSessionService.rotateSession.mockRejectedValue(invalid);
 
-    it('should throw UnauthorizedException if hash does not match', async () => {
-      userRepository.findById.mockResolvedValue({ id: 'uuid' });
-      const session = {
-        expiresAt: new Date(Date.now() + 10000),
-        refreshTokenHash: 'hash',
-      };
-      userSessionRepository.findActiveSessionsByUserId.mockResolvedValue([
-        session,
-      ]);
-      jest.mocked(bcrypt.compare).mockResolvedValue(false as never);
-
-      await expect(service.refreshToken('token')).rejects.toThrow(
-        UnauthorizedException,
-      );
-    });
-
-    it('should successfully refresh token with default expiration and null agent/ip', async () => {
-      userRepository.findById.mockResolvedValue({ id: 'uuid', role: null });
-      const session = {
-        expiresAt: new Date(Date.now() + 10000),
-        refreshTokenHash: 'hash',
-      };
-      userSessionRepository.findActiveSessionsByUserId.mockResolvedValue([
-        session,
-      ]);
-      jest.mocked(bcrypt.compare).mockResolvedValue(true as never);
-
-      const result = await service.refreshToken('token');
-
-      expect(authService.generateTokens).toHaveBeenCalledWith({
-        id: 'uuid',
-        role: null,
-      });
-      expect(userSessionRepository.save).toHaveBeenCalledWith(
-        expect.objectContaining({
-          refreshTokenHash: 'mock-hash',
-        }),
-      );
-      expect(result).toBeDefined();
-      expect(result.accessToken).toBe('new-token');
-      expect(result.refreshToken).toBe('new-refresh-token');
-      expect(result.user.role).toBeNull();
-    });
-
-    it('should successfully refresh token with custom expiration and provided agent/ip', async () => {
-      process.env.REFRESH_EXPIRE_TIME = '1000000';
-      userRepository.findById.mockResolvedValue({
-        id: 'uuid',
-        role: { name: 'admin' },
-      });
-      const session = {
-        expiresAt: new Date(Date.now() + 10000),
-        refreshTokenHash: 'hash',
-      };
-      userSessionRepository.findActiveSessionsByUserId.mockResolvedValue([
-        session,
-      ]);
-      jest.mocked(bcrypt.compare).mockResolvedValue(true as never);
-
-      const result = await service.refreshToken('token', 'agent', 'ip');
-
-      expect(authService.generateTokens).toHaveBeenCalledWith({
-        id: 'uuid',
-        role: { name: 'admin' },
-      });
-      expect(userSessionRepository.save).toHaveBeenCalledWith(
-        expect.objectContaining({
-          refreshTokenHash: 'mock-hash',
-          userAgent: 'agent',
-          ipAddress: 'ip',
-        }),
-      );
-      expect(result).toBeDefined();
-      expect(result.accessToken).toBe('new-token');
-      expect(result.refreshToken).toBe('new-refresh-token');
-      expect(result.user.role).toBe('admin');
-    });
+    await expect(service.refreshToken('current-token', CLIENT)).rejects.toThrow(
+      invalid,
+    );
   });
 });

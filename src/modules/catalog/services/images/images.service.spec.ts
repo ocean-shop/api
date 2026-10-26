@@ -1,7 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ChangeProductImageSortDto } from '../../dto/images/change-product-image-sort.dto';
-import { ProductRepository } from '../../repositories/product/product.repository';
+import { ProductRepository } from '../../repositories/product/admin/product.repository';
 import { ImagesService } from './images.service';
 
 describe('ImagesService', () => {

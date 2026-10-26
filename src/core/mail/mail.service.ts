@@ -4,13 +4,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import * as Handlebars from 'handlebars';
 import { Resend } from 'resend';
-
-export interface SendMailOptions {
-  to: string;
-  subject: string;
-  template: string;
-  context: Record<string, unknown>;
-}
+import { SendMailOptions } from './models/mail.models';
 
 @Injectable()
 export class MailService {

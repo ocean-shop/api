@@ -30,6 +30,28 @@ export class Category {
   @Column({ type: 'int', default: 0 })
   sort: number;
 
+  @Column({ type: 'varchar', length: 255, name: 'meta_title', nullable: true })
+  metaTitle: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 500,
+    name: 'meta_description',
+    nullable: true,
+  })
+  metaDescription: string | null;
+
+  @Column({
+    type: 'varchar',
+    length: 500,
+    name: 'canonical_url',
+    nullable: true,
+  })
+  canonicalUrl: string | null;
+
+  @Column({ type: 'boolean', default: false, name: 'no_index' })
+  noIndex: boolean;
+
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 

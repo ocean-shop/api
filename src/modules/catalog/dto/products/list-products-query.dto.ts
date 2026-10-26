@@ -1,6 +1,7 @@
 import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
+  IsBoolean,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -11,7 +12,10 @@ import {
   Min,
 } from 'class-validator';
 import { ProductStatus } from '../../entities/enums/product.enum';
-import { ProductSortBy, ProductSortOrder } from '../../models/product.models';
+import {
+  ProductSortBy,
+  ProductSortOrder,
+} from '../../entities/enums/product-sort.enum';
 
 export class ListProductsQueryDto {
   @Type(() => Number)
@@ -65,6 +69,16 @@ export class ListProductsQueryDto {
   @IsArray()
   @IsUUID('4', { each: true })
   readonly categoryIds?: string[];
+
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => {
+    if (typeof value !== 'string') {
+      return value;
+    }
+    return value === 'true';
+  })
+  @IsBoolean()
+  readonly isPopular?: boolean;
 
   @IsOptional()
   @IsEnum(ProductSortBy)

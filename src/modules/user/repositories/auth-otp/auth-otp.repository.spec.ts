@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { IsNull } from 'typeorm';
 import { AuthOtpRepository } from './auth-otp.repository';
 import { AuthOtp } from '../../entities/auth-otp.entity';
 import { OtpChannel, OtpPurpose } from '../../entities/enums/auth-otp.enum';
@@ -119,6 +120,77 @@ describe('AuthOtpRepository', () => {
       expect(queryBuilder.take).toHaveBeenCalledWith(1);
       expect(queryBuilder.getOne).toHaveBeenCalled();
       expect(result).toEqual(expectedOtp);
+    });
+  });
+
+  describe('reserveAttempt', () => {
+    const blockedUntil = new Date(1000);
+
+    const mockUpdateBuilder = (raw: unknown[]) => {
+      const queryBuilder = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        setParameters: jest.fn().mockReturnThis(),
+        returning: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ raw }),
+      };
+      typeOrmRepository.createQueryBuilder.mockReturnValue(queryBuilder);
+      return queryBuilder;
+    };
+
+    it('should increment attempts in one update and return the new count', async () => {
+      const queryBuilder = mockUpdateBuilder([{ attempts: 3 }]);
+
+      const result = await repository.reserveAttempt('otp-id', 5, blockedUntil);
+
+      expect(result).toBe(3);
+      expect(queryBuilder.update).toHaveBeenCalledWith(AuthOtp);
+      const [setArg] = queryBuilder.set.mock.calls[0] as [
+        Record<string, () => string>,
+      ];
+      expect(setArg.attempts()).toContain('attempts + 1');
+      expect(setArg.blockedUntil()).toContain('>= :limit');
+      expect(queryBuilder.where).toHaveBeenCalledWith('id = :id');
+      expect(queryBuilder.andWhere).toHaveBeenCalledWith('used_at IS NULL');
+      expect(queryBuilder.setParameters).toHaveBeenCalledWith({
+        id: 'otp-id',
+        limit: 5,
+        blockedUntil,
+        now: expect.any(Date),
+      });
+      expect(queryBuilder.returning).toHaveBeenCalledWith(['attempts']);
+    });
+
+    it('should return null when no row could be updated', async () => {
+      mockUpdateBuilder([]);
+
+      await expect(
+        repository.reserveAttempt('otp-id', 5, blockedUntil),
+      ).resolves.toBeNull();
+    });
+  });
+
+  describe('markUsed', () => {
+    beforeEach(() => {
+      typeOrmRepository.update = jest.fn();
+    });
+
+    it('should mark an unused code as used', async () => {
+      typeOrmRepository.update.mockResolvedValue({ affected: 1 });
+
+      await expect(repository.markUsed('otp-id')).resolves.toBe(true);
+      expect(typeOrmRepository.update).toHaveBeenCalledWith(
+        { id: 'otp-id', usedAt: IsNull() },
+        { usedAt: expect.any(Date) },
+      );
+    });
+
+    it('should return false when the code was already used', async () => {
+      typeOrmRepository.update.mockResolvedValue({ affected: 0 });
+
+      await expect(repository.markUsed('otp-id')).resolves.toBe(false);
     });
   });
 });

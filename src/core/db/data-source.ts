@@ -1,16 +1,17 @@
 import 'dotenv/config';
 import { DataSource } from 'typeorm';
-
-const isCompiled = __filename.endsWith('.js');
-const extension = isCompiled ? 'js' : 'ts';
-const rootDir = isCompiled ? 'dist' : 'src';
+import {
+  DB_FILE_EXTENSION,
+  DB_ROOT_DIR,
+  MIGRATION_DATABASE_URL,
+} from './constants/db.constants';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
-  url: process.env.DATABASE_URL,
+  url: MIGRATION_DATABASE_URL,
   ssl:
     process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
-  entities: [`${rootDir}/modules/**/*.entity.${extension}`],
-  migrations: [`${rootDir}/core/db/migrations/*.${extension}`],
+  entities: [`${DB_ROOT_DIR}/modules/**/*.entity.${DB_FILE_EXTENSION}`],
+  migrations: [`${DB_ROOT_DIR}/core/db/migrations/*.${DB_FILE_EXTENSION}`],
   synchronize: false,
 });

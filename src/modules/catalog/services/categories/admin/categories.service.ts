@@ -1,0 +1,223 @@
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { CacheService } from '../../../../../core/cache/cache.service';
+import { POSTGRES_ERROR_CODES } from '../../../../../core/db/constants/postgres-error.constants';
+import { matchesQueryFailedError } from '../../../../../core/db/helpers/query-failed-error.helpers';
+import { CATEGORY_MESSAGES } from '../../../constants/category-messages.constants';
+import { Category } from '../../../entities/category.entity';
+import { CategoryListResponse } from '../../../models/category.models';
+import { MessageResponse } from '../../../../../core/response/models/response.models';
+import { CategoryRepository } from '../../../repositories/category/admin/category.repository';
+import { ChangeCategorySortDto } from '../../../dto/categories/change-category-sort.dto';
+import { CreateCategoryDto } from '../../../dto/categories/create-category.dto';
+import { UpdateCategoryDto } from '../../../dto/categories/update-category.dto';
+import { ListCategoriesQueryDto } from '../../../dto/categories/list-categories-query.dto';
+import {
+  resolvePagination,
+  toListResponse,
+} from '../../../../../core/response/helpers/list-response.helpers';
+import { CATEGORY_DUPLICATE_SLUG_CONSTRAINTS } from '../../../constants/category-constraint.constants';
+
+@Injectable()
+export class CategoriesService {
+  constructor(
+    private readonly categoryRepository: CategoryRepository,
+    private readonly cacheService: CacheService,
+  ) {}
+
+  async listCategories(
+    query: ListCategoriesQueryDto,
+  ): Promise<CategoryListResponse> {
+    const { page, limit, skip } = resolvePagination(query);
+
+    const { items, total } = await this.categoryRepository.findAllPaginated(
+      { shopId: query.shopId, parentId: query.parentId },
+      skip,
+      limit,
+    );
+
+    return toListResponse(items, total, page, limit);
+  }
+
+  async getCategoryById(id: string): Promise<Category> {
+    return this.categoryRepository.findById(id);
+  }
+
+  async createCategory(dto: CreateCategoryDto): Promise<Category> {
+    await this.ensureSlugUniqueInShop(dto.shopId, dto.slug);
+
+    const parentId = dto.parentId ?? null;
+
+    if (parentId) {
+      const parent = await this.categoryRepository.findOneById(parentId);
+      if (!parent) {
+        throw new NotFoundException(CATEGORY_MESSAGES.PARENT_NOT_FOUND);
+      }
+      if (parent.shopId !== dto.shopId) {
+        throw new BadRequestException(CATEGORY_MESSAGES.PARENT_OTHER_SHOP);
+      }
+    }
+
+    const sort = await this.getNextSort(dto.shopId, parentId);
+
+    const category = this.categoryRepository.create({
+      shopId: dto.shopId,
+      parentId,
+      name: dto.name,
+      slug: dto.slug,
+      sort,
+      metaTitle: dto.metaTitle ?? null,
+      metaDescription: dto.metaDescription ?? null,
+      canonicalUrl: dto.canonicalUrl ?? null,
+      noIndex: dto.noIndex ?? false,
+    });
+
+    return this.saveCategory(category);
+  }
+
+  async updateCategory(id: string, dto: UpdateCategoryDto): Promise<Category> {
+    const category = await this.categoryRepository.findById(id);
+
+    if (dto.slug !== undefined && dto.slug !== category.slug) {
+      await this.ensureSlugUniqueInShop(category.shopId, dto.slug, id);
+    }
+
+    if (dto.parentId !== undefined) {
+      if (dto.parentId === id) {
+        throw new BadRequestException(CATEGORY_MESSAGES.SELF_PARENT);
+      }
+
+      const parent = await this.categoryRepository.findOneById(dto.parentId);
+      if (!parent) {
+        throw new NotFoundException(CATEGORY_MESSAGES.PARENT_NOT_FOUND);
+      }
+      if (parent.shopId !== category.shopId) {
+        throw new BadRequestException(CATEGORY_MESSAGES.PARENT_OTHER_SHOP);
+      }
+
+      if (category.parentId !== dto.parentId) {
+        category.parentId = dto.parentId;
+        category.sort = await this.getNextSort(category.shopId, dto.parentId);
+      }
+    }
+
+    if (dto.name !== undefined) {
+      category.name = dto.name;
+    }
+    if (dto.slug !== undefined) {
+      category.slug = dto.slug;
+    }
+    if (dto.metaTitle !== undefined) {
+      category.metaTitle = dto.metaTitle;
+    }
+    if (dto.metaDescription !== undefined) {
+      category.metaDescription = dto.metaDescription;
+    }
+    if (dto.canonicalUrl !== undefined) {
+      category.canonicalUrl = dto.canonicalUrl;
+    }
+    if (dto.noIndex !== undefined) {
+      category.noIndex = dto.noIndex;
+    }
+
+    return this.saveCategory(category);
+  }
+
+  async changeCategorySort(
+    id: string,
+    dto: ChangeCategorySortDto,
+  ): Promise<Category> {
+    const category = await this.categoryRepository.findById(id);
+    const sibling = await this.categoryRepository.findAdjacentSibling(
+      category,
+      dto.direction,
+    );
+
+    if (!sibling) {
+      throw new BadRequestException(
+        dto.direction === 'up'
+          ? CATEGORY_MESSAGES.ALREADY_FIRST
+          : CATEGORY_MESSAGES.ALREADY_LAST,
+      );
+    }
+
+    // No cache bump: `sort` orders the admin category tree and never reaches a
+    // cached catalog payload, so reordering would only throw the cache away.
+    return this.categoryRepository.swapSort(category, sibling);
+  }
+
+  async removeCategory(id: string): Promise<MessageResponse> {
+    const category = await this.categoryRepository.findById(id);
+    const descendantIds = await this.collectDescendantIds(category.id);
+    await this.categoryRepository.removeByIds([category.id, ...descendantIds]);
+    await this.cacheService.invalidate(category.shopId);
+    return { message: CATEGORY_MESSAGES.REMOVED };
+  }
+
+  private async collectDescendantIds(parentId: string): Promise<string[]> {
+    const children = await this.categoryRepository.findByParentId(parentId);
+    if (children.length === 0) {
+      return [];
+    }
+
+    const descendantIds: string[] = [];
+    for (const child of children) {
+      descendantIds.push(child.id);
+      const nestedDescendantIds = await this.collectDescendantIds(child.id);
+      descendantIds.push(...nestedDescendantIds);
+    }
+
+    return descendantIds;
+  }
+
+  private async getNextSort(
+    shopId: string,
+    parentId: string | null,
+  ): Promise<number> {
+    const maxSort = await this.categoryRepository.getMaxSort(shopId, parentId);
+    return maxSort + 1;
+  }
+
+  private async saveCategory(category: Category): Promise<Category> {
+    try {
+      const saved = await this.categoryRepository.save(category);
+      // Re-parenting a category rewrites the subtree that the catalog and the
+      // filter queries walk, so every cached page for the shop is now suspect.
+      await this.cacheService.invalidate(saved.shopId);
+      return saved;
+    } catch (error) {
+      if (this.isDuplicateSlugError(error)) {
+        throw new BadRequestException(
+          CATEGORY_MESSAGES.DUPLICATE_SLUG_IN_PARENT,
+        );
+      }
+
+      throw error;
+    }
+  }
+
+  private async ensureSlugUniqueInShop(
+    shopId: string,
+    slug: string,
+    excludeCategoryId?: string,
+  ): Promise<void> {
+    const existing = await this.categoryRepository.findByShopIdAndSlug(
+      shopId,
+      slug,
+    );
+
+    if (existing && existing.id !== excludeCategoryId) {
+      throw new BadRequestException(CATEGORY_MESSAGES.DUPLICATE_SLUG);
+    }
+  }
+
+  private isDuplicateSlugError(error: unknown): boolean {
+    return matchesQueryFailedError(error, {
+      code: POSTGRES_ERROR_CODES.UNIQUE_VIOLATION,
+      constraintIn: CATEGORY_DUPLICATE_SLUG_CONSTRAINTS,
+    });
+  }
+}

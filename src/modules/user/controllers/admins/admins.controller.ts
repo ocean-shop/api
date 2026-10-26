@@ -23,6 +23,7 @@ import { CreateAdminDto } from '../../dto/create-admin.dto';
 import { ListAdminsQueryDto } from '../../dto/list-admins-query.dto';
 import { UpdateAdminDto } from '../../dto/update-admin.dto';
 import { Roles } from '../../decorators/roles.decorator';
+import { ADMIN_ROLES, ROLES } from '../../constants/role.constants';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { RolesGuard } from '../../guards/roles.guard';
 import { AdminsService } from '../../services/admins/admins.service';
@@ -36,7 +37,7 @@ export class AdminsController {
   constructor(private readonly adminsService: AdminsService) {}
 
   @Get()
-  @Roles('super')
+  @Roles(ROLES.SUPER)
   @ApiOperation({ summary: 'List admins with filters and pagination' })
   @ApiQuery({ name: 'shopId', required: false, type: String })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -46,7 +47,7 @@ export class AdminsController {
   }
 
   @Get(':id')
-  @Roles('admin', 'super')
+  @Roles(...ADMIN_ROLES)
   @ApiOperation({ summary: 'Get admin details by id' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   async getAdminById(@Param('id', ParseUUIDPipe) id: string) {
@@ -54,7 +55,7 @@ export class AdminsController {
   }
 
   @Post()
-  @Roles('super')
+  @Roles(ROLES.SUPER)
   @ApiOperation({ summary: 'Create a new admin' })
   @ApiBody({ type: CreateAdminDto })
   async createAdmin(@Body() dto: CreateAdminDto) {
@@ -62,7 +63,7 @@ export class AdminsController {
   }
 
   @Patch(':id')
-  @Roles('super')
+  @Roles(ROLES.SUPER)
   @ApiOperation({ summary: 'Update admin profile and permissions' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiBody({ type: UpdateAdminDto })
@@ -75,7 +76,7 @@ export class AdminsController {
   }
 
   @Delete(':id')
-  @Roles('super')
+  @Roles(ROLES.SUPER)
   @ApiOperation({ summary: 'Delete admin by id' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   async removeAdmin(

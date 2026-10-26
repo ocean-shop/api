@@ -2,6 +2,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../entities/user.entity';
+import { USER_MESSAGES } from '../../constants/user-messages.constants';
+import { UserAuthState } from '../../models/auth-request.models';
+import { PaginatedResult } from '../../../../core/response/models/response.models';
 
 @Injectable()
 export class UserRepository {
@@ -21,7 +24,7 @@ export class UserRepository {
     });
 
     if (!user) {
-      throw new NotFoundException('Користувача не знайдено');
+      throw new NotFoundException(USER_MESSAGES.NOT_FOUND);
     }
 
     return user;
@@ -34,10 +37,25 @@ export class UserRepository {
     });
 
     if (!user) {
-      throw new NotFoundException('Користувача не знайдено');
+      throw new NotFoundException(USER_MESSAGES.NOT_FOUND);
     }
 
     return user;
+  }
+
+  /** The current status and role, read fresh on every authenticated request. */
+  async findAuthState(id: string): Promise<UserAuthState | null> {
+    const user = await this.repository.findOne({
+      where: { id },
+      select: { id: true, isActive: true, role: { name: true } },
+      relations: { role: true },
+    });
+
+    if (!user) {
+      return null;
+    }
+
+    return { isActive: user.isActive, role: user.role?.name ?? null };
   }
 
   create(payload: Partial<User>): User {
@@ -62,7 +80,7 @@ export class UserRepository {
     roles: string[],
     skip: number,
     take: number,
-  ): Promise<{ items: User[]; total: number }> {
+  ): Promise<PaginatedResult<User>> {
     const [items, total] = await this.repository
       .createQueryBuilder('user')
       .leftJoinAndSelect('user.role', 'role')
@@ -86,7 +104,7 @@ export class UserRepository {
       .getOne();
 
     if (!user) {
-      throw new NotFoundException('Адміністратора не знайдено');
+      throw new NotFoundException(USER_MESSAGES.ADMIN_NOT_FOUND);
     }
 
     return user;

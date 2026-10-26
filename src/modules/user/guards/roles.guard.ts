@@ -5,6 +5,8 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { AUTH_MESSAGES } from '../constants/auth-messages.constants';
+import { ROLES_METADATA_KEY } from '../constants/role.constants';
 import { AuthenticatedRequest } from '../models/auth-request.models';
 
 @Injectable()
@@ -13,7 +15,7 @@ export class RolesGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const requiredRoles = this.reflector.get<string[]>(
-      'roles',
+      ROLES_METADATA_KEY,
       context.getHandler(),
     );
 
@@ -25,16 +27,12 @@ export class RolesGuard implements CanActivate {
     const user = request.user;
 
     if (!user || !user.role) {
-      throw new ForbiddenException(
-        'Інформацію про роль користувача не знайдено',
-      );
+      throw new ForbiddenException(AUTH_MESSAGES.ROLE_INFO_MISSING);
     }
 
     const hasRole = requiredRoles.includes(user.role);
     if (!hasRole) {
-      throw new ForbiddenException(
-        `Для цієї дії потрібна одна з ролей: ${requiredRoles.join(', ')}`,
-      );
+      throw new ForbiddenException(AUTH_MESSAGES.roleRequired(requiredRoles));
     }
 
     return true;

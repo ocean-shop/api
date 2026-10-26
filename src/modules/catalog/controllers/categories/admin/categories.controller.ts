@@ -1,0 +1,90 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
+import { Roles } from '../../../../user/decorators/roles.decorator';
+import { ADMIN_ROLES } from '../../../../user/constants/role.constants';
+import { JwtAuthGuard } from '../../../../user/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../../user/guards/roles.guard';
+import { ChangeCategorySortDto } from '../../../dto/categories/change-category-sort.dto';
+import { CreateCategoryDto } from '../../../dto/categories/create-category.dto';
+import { ListCategoriesQueryDto } from '../../../dto/categories/list-categories-query.dto';
+import { UpdateCategoryDto } from '../../../dto/categories/update-category.dto';
+import { CategoriesService } from '../../../services/categories/admin/categories.service';
+
+@Controller('catalog/categories')
+@ApiTags('Catalog Categories')
+@ApiBearerAuth('access-token')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(...ADMIN_ROLES)
+export class CategoriesController {
+  constructor(private readonly categoriesService: CategoriesService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'List categories with filters and pagination' })
+  @ApiQuery({ name: 'shopId', required: false, type: String, format: 'uuid' })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'offset', required: false, type: Number })
+  async listCategories(@Query() query: ListCategoriesQueryDto) {
+    return this.categoriesService.listCategories(query);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get category details by id' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  async getCategoryById(@Param('id', ParseUUIDPipe) id: string) {
+    return this.categoriesService.getCategoryById(id);
+  }
+
+  @Post()
+  @ApiOperation({ summary: 'Create category' })
+  @ApiBody({ type: CreateCategoryDto })
+  async createCategory(@Body() dto: CreateCategoryDto) {
+    return this.categoriesService.createCategory(dto);
+  }
+
+  @Patch(':id/sort')
+  @ApiOperation({ summary: 'Change category sort order' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiBody({ type: ChangeCategorySortDto })
+  async changeCategorySort(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ChangeCategorySortDto,
+  ) {
+    return this.categoriesService.changeCategorySort(id, dto);
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update category' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiBody({ type: UpdateCategoryDto })
+  async updateCategory(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateCategoryDto,
+  ) {
+    return this.categoriesService.updateCategory(id, dto);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete category by id' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  async removeCategory(@Param('id', ParseUUIDPipe) id: string) {
+    return this.categoriesService.removeCategory(id);
+  }
+}

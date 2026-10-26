@@ -1,41 +1,35 @@
 import { Injectable } from '@nestjs/common';
+import { ADMIN_ROLES } from '../../constants/role.constants';
 import { User } from '../../entities/user.entity';
 import { VerifyOtpDto } from '../../dto/verify-otp.dto';
+import { assertCanSignIn } from '../../helpers/access.helpers';
 import { AuthService } from '../auth/auth.service';
+import { UserSessionService } from '../user-session/user-session.service';
 import { UserRepository } from '../../repositories/user/user.repository';
-import { UserSessionRepository } from '../../repositories/user-session/user-session.repository';
-import {
-  buildRefreshTokenExpiryDate,
-  hashRefreshToken,
-} from '../session/user-session.helpers';
+import { AuthSession } from '../../models/auth.models';
 
 @Injectable()
 export class VerifyOtpService {
   constructor(
     private readonly userRepository: UserRepository,
-    private readonly userSessionRepository: UserSessionRepository,
     private readonly authService: AuthService,
+    private readonly userSessionService: UserSessionService,
   ) {}
 
-  async verifyOtp(dto: VerifyOtpDto, userAgent?: string, ipAddress?: string) {
+  async verifyOtp(
+    dto: VerifyOtpDto,
+    userAgent?: string,
+    ipAddress?: string,
+  ): Promise<AuthSession> {
     const user = await this.userRepository.findByEmailOrPhone(
       dto.email,
       dto.phone,
     );
 
+    assertCanSignIn(user, ADMIN_ROLES);
     await this.processOtp(user, dto.code, dto.email, dto.phone);
-    const { accessToken, refreshToken } = this.authService.generateTokens(user);
-    await this.saveUserSession(user.id, refreshToken, userAgent, ipAddress);
-    return {
-      accessToken,
-      refreshToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        mobileNumber: user.mobileNumber,
-        role: user.role?.name || null,
-      },
-    };
+
+    return this.userSessionService.startSession(user, { userAgent, ipAddress });
   }
 
   private async processOtp(
@@ -45,32 +39,12 @@ export class VerifyOtpService {
     phone?: string,
   ): Promise<void> {
     const latestOtp = await this.authService.findAndValidateLatestOtp(user.id);
-    await this.authService.validateOtpCode(code, latestOtp);
-
-    latestOtp.usedAt = new Date();
-    await this.authService.saveAuthOtp(latestOtp);
+    await this.authService.consumeOtp(code, latestOtp);
     await this.authService.verifyUserIfRegistered(
       latestOtp,
       user,
       email,
       phone,
     );
-  }
-
-  private async saveUserSession(
-    userId: string,
-    refreshToken: string,
-    userAgent?: string,
-    ipAddress?: string,
-  ) {
-    const refreshTokenHash = await hashRefreshToken(refreshToken);
-    const session = this.userSessionRepository.create({
-      userId,
-      refreshTokenHash,
-      userAgent: userAgent || null,
-      ipAddress: ipAddress || null,
-      expiresAt: buildRefreshTokenExpiryDate(),
-    });
-    await this.userSessionRepository.save(session);
   }
 }

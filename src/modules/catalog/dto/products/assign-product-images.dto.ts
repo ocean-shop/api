@@ -13,37 +13,53 @@ import {
   ValidateIf,
   ValidateNested,
 } from 'class-validator';
+import { IMAGE_MESSAGES } from '../../constants/image-messages.constants';
+import {
+  BASE64_IMAGE_DATA_URI_REGEX,
+  IMAGE_ALT_MAX_LENGTH,
+  IMAGE_DATA_URI_PREFIX,
+  IMAGE_MAX_LENGTH,
+  IMAGE_URL_PROTOCOLS,
+} from '../../constants/product-image.constants';
 
 export class ProductImageItemDto {
-  private static readonly BASE64_IMAGE_DATA_URI_REGEX =
-    /^data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+$/;
-
   @ApiProperty({
     description: 'Image URL or base64 data URI',
     example: 'https://cdn.example.com/products/image-1.jpg',
   })
   @IsString()
   @IsNotEmpty()
-  @MaxLength(10_000_000)
+  @MaxLength(IMAGE_MAX_LENGTH)
   @ValidateIf(
-    (_, value) => typeof value === 'string' && value.startsWith('data:image/'),
+    (_, value) =>
+      typeof value === 'string' && value.startsWith(IMAGE_DATA_URI_PREFIX),
   )
-  @Matches(ProductImageItemDto.BASE64_IMAGE_DATA_URI_REGEX, {
-    message: 'image must be a valid base64 data URI',
+  @Matches(BASE64_IMAGE_DATA_URI_REGEX, {
+    message: IMAGE_MESSAGES.INVALID_DATA_URI,
   })
   @ValidateIf(
-    (_, value) => typeof value === 'string' && !value.startsWith('data:image/'),
+    (_, value) =>
+      typeof value === 'string' && !value.startsWith(IMAGE_DATA_URI_PREFIX),
   )
   @IsUrl(
     {
-      protocols: ['http', 'https'],
+      protocols: IMAGE_URL_PROTOCOLS,
       require_protocol: true,
     },
     {
-      message: 'image must be a valid URL',
+      message: IMAGE_MESSAGES.INVALID_URL,
     },
   )
   readonly image: string;
+
+  @ApiPropertyOptional({
+    maxLength: IMAGE_ALT_MAX_LENGTH,
+    description: 'Alternative text for search engines and screen readers',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(IMAGE_ALT_MAX_LENGTH)
+  readonly alt?: string;
 
   @ApiPropertyOptional({ type: Number, minimum: 0 })
   @IsOptional()

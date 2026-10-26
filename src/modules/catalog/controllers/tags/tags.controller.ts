@@ -19,6 +19,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Roles } from '../../../user/decorators/roles.decorator';
+import { ADMIN_ROLES } from '../../../user/constants/role.constants';
 import { JwtAuthGuard } from '../../../user/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../user/guards/roles.guard';
 import { CreateTagDto } from '../../dto/tags/create-tag.dto';
@@ -34,7 +35,7 @@ export class TagsController {
   constructor(private readonly tagsService: TagsService) {}
 
   @Get()
-  @Roles('admin', 'super')
+  @Roles(...ADMIN_ROLES)
   @ApiOperation({ summary: 'List tags with filters and pagination' })
   @ApiQuery({ name: 'shopId', required: false, type: String, format: 'uuid' })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -44,7 +45,7 @@ export class TagsController {
   }
 
   @Get(':id')
-  @Roles('admin', 'super')
+  @Roles(...ADMIN_ROLES)
   @ApiOperation({ summary: 'Get tag by id' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   async getTagById(@Param('id', ParseUUIDPipe) id: string) {
@@ -52,7 +53,7 @@ export class TagsController {
   }
 
   @Post()
-  @Roles('admin', 'super')
+  @Roles(...ADMIN_ROLES)
   @ApiOperation({ summary: 'Create tag' })
   @ApiBody({ type: CreateTagDto })
   async createTag(@Body() dto: CreateTagDto) {
@@ -60,7 +61,7 @@ export class TagsController {
   }
 
   @Patch(':id')
-  @Roles('admin', 'super')
+  @Roles(...ADMIN_ROLES)
   @ApiOperation({ summary: 'Update tag' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiBody({ type: UpdateTagDto })
@@ -72,7 +73,7 @@ export class TagsController {
   }
 
   @Delete(':id')
-  @Roles('admin', 'super')
+  @Roles(...ADMIN_ROLES)
   @ApiOperation({ summary: 'Delete tag by id' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   async removeTag(@Param('id', ParseUUIDPipe) id: string) {

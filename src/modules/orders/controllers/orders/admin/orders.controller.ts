@@ -1,0 +1,97 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
+import { Roles } from '../../../../user/decorators/roles.decorator';
+import { ADMIN_ROLES } from '../../../../user/constants/role.constants';
+import { JwtAuthGuard } from '../../../../user/guards/jwt-auth.guard';
+import { RolesGuard } from '../../../../user/guards/roles.guard';
+import { ListOrdersByUserQueryDto } from '../../../dto/list-orders-by-user-query.dto';
+import { ListOrdersQueryDto } from '../../../dto/list-orders-query.dto';
+import { UpdateOrderPaymentStatusDto } from '../../../dto/update-order-payment-status.dto';
+import { UpdateOrderStatusDto } from '../../../dto/update-order-status.dto';
+import { OrdersService } from '../../../services/orders/admin/orders.service';
+
+@Controller('orders')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiTags('Orders')
+@ApiBearerAuth('access-token')
+export class OrdersController {
+  constructor(private readonly ordersService: OrdersService) {}
+
+  @Get()
+  @Roles(...ADMIN_ROLES)
+  @ApiOperation({ summary: 'List orders with filters and pagination' })
+  @ApiQuery({ name: 'shopId', required: false, type: String, format: 'uuid' })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'offset', required: false, type: Number })
+  async listOrders(@Query() query: ListOrdersQueryDto) {
+    return this.ordersService.listOrders(query);
+  }
+
+  @Get('by-user')
+  @Roles(...ADMIN_ROLES)
+  @ApiOperation({ summary: 'List orders by user id' })
+  @ApiQuery({ name: 'userId', required: true, type: String, format: 'uuid' })
+  @ApiQuery({ name: 'shopId', required: false, type: String, format: 'uuid' })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'offset', required: false, type: Number })
+  async listOrdersByUser(@Query() query: ListOrdersByUserQueryDto) {
+    return this.ordersService.listOrdersByUser(query);
+  }
+
+  @Get(':id')
+  @Roles(...ADMIN_ROLES)
+  @ApiOperation({ summary: 'Get order by id' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  async getOrderById(@Param('id', ParseUUIDPipe) id: string) {
+    return this.ordersService.getOrderById(id);
+  }
+
+  @Delete(':id')
+  @Roles(...ADMIN_ROLES)
+  @ApiOperation({ summary: 'Delete order by id' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  async removeOrder(@Param('id', ParseUUIDPipe) id: string) {
+    return this.ordersService.removeOrder(id);
+  }
+
+  @Patch(':id/payment-status')
+  @Roles(...ADMIN_ROLES)
+  @ApiOperation({ summary: 'Update order payment status' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiBody({ type: UpdateOrderPaymentStatusDto })
+  async updatePaymentStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateOrderPaymentStatusDto,
+  ) {
+    return this.ordersService.updatePaymentStatus(id, dto);
+  }
+
+  @Patch(':id/status')
+  @Roles(...ADMIN_ROLES)
+  @ApiOperation({ summary: 'Update order status' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiBody({ type: UpdateOrderStatusDto })
+  async updateStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateOrderStatusDto,
+  ) {
+    return this.ordersService.updateStatus(id, dto);
+  }
+}

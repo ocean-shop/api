@@ -1,0 +1,1511 @@
+import { BadRequestException } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import { QueryFailedError } from 'typeorm';
+import { CacheService } from '../../../../../core/cache/cache.service';
+import {
+  ProductSortBy,
+  ProductSortOrder,
+} from '../../../entities/enums/product-sort.enum';
+import {
+  ProductStatus,
+  ProductType,
+} from '../../../entities/enums/product.enum';
+import { AttributeRepository } from '../../../repositories/attribute/attribute.repository';
+import { CategoryRepository } from '../../../repositories/category/admin/category.repository';
+import { ProductRepository } from '../../../repositories/product/admin/product.repository';
+import { ProductVariationRepository } from '../../../repositories/product-variation/product-variation.repository';
+import { ShopRepository } from '../../../repositories/shop/shop.repository';
+import { TagRepository } from '../../../repositories/tag/tag.repository';
+import { ProductImagesCloudinaryService } from '../../cloudinary/product-images-cloudinary.service';
+import { ProductsService } from './products.service';
+
+describe('ProductsService', () => {
+  let service: ProductsService;
+  let productRepository: ProductRepository;
+  let productVariationRepository: ProductVariationRepository;
+  let shopRepository: ShopRepository;
+  let categoryRepository: CategoryRepository;
+  let tagRepository: TagRepository;
+  let attributeRepository: AttributeRepository;
+  let productImagesCloudinaryService: ProductImagesCloudinaryService;
+  let cacheService: CacheService;
+
+  beforeEach(async () => {
+    const productRepositoryMock = {
+      findAllPaginated: jest.fn(),
+      findByCategoryIdPaginated: jest.fn(),
+      findByTagIdPaginated: jest.fn(),
+      findByAttributeTypeIdPaginated: jest.fn(),
+      findById: jest.fn(),
+      findByShopIdAndSku: jest.fn(),
+      findByShopIdAndSlug: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn((product) => Promise.resolve(product)),
+      remove: jest.fn(),
+      replaceImages: jest.fn(),
+    };
+
+    const productVariationRepositoryMock = {
+      create: jest.fn(),
+      findById: jest.fn(),
+      save: jest.fn(),
+      replaceAttributes: jest.fn(),
+      replaceImages: jest.fn(),
+    };
+
+    const shopRepositoryMock = {
+      findById: jest.fn(),
+    };
+
+    const categoryRepositoryMock = {
+      findById: jest.fn(),
+    };
+
+    const tagRepositoryMock = {
+      findById: jest.fn(),
+    };
+
+    const attributeRepositoryMock = {
+      findById: jest.fn(),
+    };
+
+    const productImagesCloudinaryServiceMock = {
+      uploadBase64Image: jest.fn(),
+    };
+
+    const cacheServiceMock = { wrap: jest.fn(), invalidate: jest.fn() };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        ProductsService,
+        { provide: ProductRepository, useValue: productRepositoryMock },
+        {
+          provide: ProductVariationRepository,
+          useValue: productVariationRepositoryMock,
+        },
+        { provide: ShopRepository, useValue: shopRepositoryMock },
+        { provide: CategoryRepository, useValue: categoryRepositoryMock },
+        { provide: TagRepository, useValue: tagRepositoryMock },
+        { provide: AttributeRepository, useValue: attributeRepositoryMock },
+        {
+          provide: ProductImagesCloudinaryService,
+          useValue: productImagesCloudinaryServiceMock,
+        },
+        { provide: CacheService, useValue: cacheServiceMock },
+      ],
+    }).compile();
+
+    service = module.get<ProductsService>(ProductsService);
+    productRepository = module.get<ProductRepository>(ProductRepository);
+    productVariationRepository = module.get<ProductVariationRepository>(
+      ProductVariationRepository,
+    );
+    shopRepository = module.get<ShopRepository>(ShopRepository);
+    categoryRepository = module.get<CategoryRepository>(CategoryRepository);
+    tagRepository = module.get<TagRepository>(TagRepository);
+    attributeRepository = module.get<AttributeRepository>(AttributeRepository);
+    productImagesCloudinaryService = module.get<ProductImagesCloudinaryService>(
+      ProductImagesCloudinaryService,
+    );
+    cacheService = module.get<CacheService>(CacheService);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
+  it('should list products with pagination', async () => {
+    jest.mocked(productRepository.findAllPaginated).mockResolvedValue({
+      items: [{ id: '1' }] as any,
+      total: 1,
+    });
+
+    const result = await service.listProducts({
+      page: 1,
+      limit: 20,
+      name: 'ocean',
+      sku: 'SKU',
+      categoryIds: ['11111111-1111-4111-8111-111111111111'],
+      status: ProductStatus.ACTIVE,
+      isPopular: true,
+      sortBy: ProductSortBy.CREATED_AT,
+      sortOrder: ProductSortOrder.DESC,
+    });
+
+    expect(productRepository.findAllPaginated).toHaveBeenCalledWith(
+      {
+        shopId: undefined,
+        status: ProductStatus.ACTIVE,
+        name: 'ocean',
+        sku: 'SKU',
+        categoryIds: ['11111111-1111-4111-8111-111111111111'],
+        isPopular: true,
+        sortBy: ProductSortBy.CREATED_AT,
+        sortOrder: ProductSortOrder.DESC,
+      },
+      0,
+      20,
+    );
+    expect(result.totalPages).toBe(1);
+  });
+
+  it('should list products by category id', async () => {
+    jest.mocked(categoryRepository.findById).mockResolvedValue({
+      id: 'category-id',
+    } as any);
+    jest
+      .mocked(productRepository.findByCategoryIdPaginated)
+      .mockResolvedValue({ items: [], total: 0 });
+
+    const result = await service.listProductsByCategoryId('category-id', {
+      page: 1,
+      limit: 20,
+    });
+
+    expect(categoryRepository.findById).toHaveBeenCalledWith('category-id');
+    expect(productRepository.findByCategoryIdPaginated).toHaveBeenCalledWith(
+      'category-id',
+      0,
+      20,
+      undefined,
+      undefined,
+      undefined,
+    );
+    expect(result.total).toBe(0);
+  });
+
+  it('should list products by category id filtered by isPopular', async () => {
+    jest.mocked(categoryRepository.findById).mockResolvedValue({
+      id: 'category-id',
+    } as any);
+    jest
+      .mocked(productRepository.findByCategoryIdPaginated)
+      .mockResolvedValue({ items: [], total: 0 });
+
+    await service.listProductsByCategoryId('category-id', {
+      page: 1,
+      limit: 20,
+      isPopular: true,
+    });
+
+    expect(productRepository.findByCategoryIdPaginated).toHaveBeenCalledWith(
+      'category-id',
+      0,
+      20,
+      undefined,
+      undefined,
+      true,
+    );
+  });
+
+  it('should list products by tag id', async () => {
+    jest
+      .mocked(tagRepository.findById)
+      .mockResolvedValue({ id: 'tag-id' } as any);
+    jest
+      .mocked(productRepository.findByTagIdPaginated)
+      .mockResolvedValue({ items: [{ id: '1' }] as any, total: 1 });
+
+    const result = await service.listProductsByTagId('tag-id', {
+      page: 2,
+      limit: 10,
+    });
+
+    expect(productRepository.findByTagIdPaginated).toHaveBeenCalledWith(
+      'tag-id',
+      10,
+      10,
+      undefined,
+      undefined,
+    );
+    expect(result.page).toBe(2);
+  });
+
+  it('should list products by attribute type id', async () => {
+    jest.mocked(attributeRepository.findById).mockResolvedValue({
+      id: 'attr-id',
+    } as any);
+    jest
+      .mocked(productRepository.findByAttributeTypeIdPaginated)
+      .mockResolvedValue({ items: [], total: 0 });
+
+    await service.listProductsByAttributeTypeId('attr-id', {
+      page: 1,
+      limit: 20,
+    });
+
+    expect(
+      productRepository.findByAttributeTypeIdPaginated,
+    ).toHaveBeenCalledWith('attr-id', 0, 20, undefined, undefined);
+  });
+
+  it('should return one product', async () => {
+    const product = { id: '1', name: 'Ocean Tee' } as any;
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+
+    const result = await service.getProductById('1');
+
+    expect(productRepository.findById).toHaveBeenCalledWith('1');
+    expect(result).toEqual(product);
+  });
+
+  it('should create product', async () => {
+    const payload = {
+      id: '1',
+      shopId: 'shop-id',
+      name: 'Ocean Tee',
+      price: '19.99',
+      oldPrice: null,
+    } as any;
+
+    jest.mocked(shopRepository.findById).mockResolvedValue({
+      id: 'shop-id',
+    } as any);
+    jest.mocked(productRepository.create).mockReturnValue(payload);
+    jest.mocked(productRepository.save).mockResolvedValue(payload);
+    jest.mocked(productRepository.findById).mockResolvedValue(payload);
+
+    const result = await service.createProduct({
+      shopId: 'shop-id',
+      name: 'Ocean Tee',
+      price: 19.99,
+    });
+
+    expect(productRepository.create).toHaveBeenCalledWith({
+      shopId: 'shop-id',
+      type: ProductType.SIMPLE,
+      name: 'Ocean Tee',
+      slug: 'ocean-tee',
+      description: null,
+      landing: null,
+      status: ProductStatus.DRAFT,
+      available: true,
+      isPopular: false,
+      isMainBanner: false,
+      sku: null,
+      price: '19.99',
+      oldPrice: null,
+      metaTitle: null,
+      metaDescription: null,
+      canonicalUrl: null,
+      noIndex: false,
+    });
+    expect(result).toEqual(payload);
+  });
+
+  it('should suffix a generated slug that is already taken in the shop', async () => {
+    jest.mocked(shopRepository.findById).mockResolvedValue({
+      id: 'shop-id',
+    } as any);
+    jest
+      .mocked(productRepository.findByShopIdAndSlug)
+      .mockResolvedValueOnce({ id: 'other-1' } as any)
+      .mockResolvedValueOnce({ id: 'other-2' } as any)
+      .mockResolvedValueOnce(null);
+    jest.mocked(productRepository.create).mockReturnValue({ id: '1' } as any);
+    jest.mocked(productRepository.save).mockResolvedValue({ id: '1' } as any);
+
+    await service.createProduct({ shopId: 'shop-id', name: 'Маска Ocean' });
+
+    expect(productRepository.findByShopIdAndSlug).toHaveBeenLastCalledWith(
+      'shop-id',
+      'maska-ocean-3',
+    );
+    expect(productRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ slug: 'maska-ocean-3' }),
+    );
+  });
+
+  it('should create product with explicit slug and seo fields', async () => {
+    jest.mocked(shopRepository.findById).mockResolvedValue({
+      id: 'shop-id',
+    } as any);
+    jest.mocked(productRepository.findByShopIdAndSlug).mockResolvedValue(null);
+    jest.mocked(productRepository.create).mockReturnValue({ id: '1' } as any);
+    jest.mocked(productRepository.save).mockResolvedValue({ id: '1' } as any);
+
+    await service.createProduct({
+      shopId: 'shop-id',
+      name: 'Ocean Tee',
+      slug: 'tee',
+      metaTitle: 'Ocean Tee | Ocean Shop',
+      metaDescription: 'Cotton tee',
+      canonicalUrl: 'https://ocean.shop/tee',
+      noIndex: true,
+    });
+
+    expect(productRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        slug: 'tee',
+        metaTitle: 'Ocean Tee | Ocean Shop',
+        metaDescription: 'Cotton tee',
+        canonicalUrl: 'https://ocean.shop/tee',
+        noIndex: true,
+      }),
+    );
+  });
+
+  it('should throw when explicit slug already exists in shop on create', async () => {
+    jest.mocked(shopRepository.findById).mockResolvedValue({
+      id: 'shop-id',
+    } as any);
+    jest.mocked(productRepository.findByShopIdAndSlug).mockResolvedValue({
+      id: 'existing-id',
+    } as any);
+
+    await expect(
+      service.createProduct({ shopId: 'shop-id', name: 'Tee', slug: 'tee' }),
+    ).rejects.toThrow(BadRequestException);
+    expect(productRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('should keep the slug when a product is renamed', async () => {
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      name: 'Old',
+      slug: 'old',
+      price: '10.00',
+      oldPrice: null,
+    } as any;
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+
+    await service.updateProduct('1', { name: 'New' });
+
+    expect(productRepository.findByShopIdAndSlug).not.toHaveBeenCalled();
+    expect(productRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'New', slug: 'old' }),
+    );
+  });
+
+  it('should update slug and seo fields of a product', async () => {
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      slug: 'old',
+      price: '10.00',
+      oldPrice: null,
+      metaTitle: 'Old title',
+    } as any;
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+    jest.mocked(productRepository.findByShopIdAndSlug).mockResolvedValue(null);
+
+    await service.updateProduct('1', {
+      slug: 'new',
+      metaTitle: null,
+      noIndex: true,
+    });
+
+    expect(productRepository.findByShopIdAndSlug).toHaveBeenCalledWith(
+      'shop-id',
+      'new',
+    );
+    expect(productRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({ slug: 'new', metaTitle: null, noIndex: true }),
+    );
+  });
+
+  it('should throw when updated slug belongs to another product', async () => {
+    jest.mocked(productRepository.findById).mockResolvedValue({
+      id: '1',
+      shopId: 'shop-id',
+      slug: 'old',
+      price: '10.00',
+      oldPrice: null,
+    } as any);
+    jest.mocked(productRepository.findByShopIdAndSlug).mockResolvedValue({
+      id: '2',
+    } as any);
+
+    await expect(service.updateProduct('1', { slug: 'taken' })).rejects.toThrow(
+      BadRequestException,
+    );
+    expect(productRepository.save).not.toHaveBeenCalled();
+  });
+
+  it('should create product marked as popular', async () => {
+    const payload = {
+      id: '1',
+      shopId: 'shop-id',
+      name: 'Ocean Tee',
+      price: '19.99',
+      oldPrice: null,
+      isPopular: true,
+    } as any;
+
+    jest.mocked(shopRepository.findById).mockResolvedValue({
+      id: 'shop-id',
+    } as any);
+    jest.mocked(productRepository.create).mockReturnValue(payload);
+    jest.mocked(productRepository.save).mockResolvedValue(payload);
+    jest.mocked(productRepository.findById).mockResolvedValue(payload);
+
+    await service.createProduct({
+      shopId: 'shop-id',
+      name: 'Ocean Tee',
+      price: 19.99,
+      isPopular: true,
+    });
+
+    expect(productRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ isPopular: true }),
+    );
+  });
+
+  it('should throw when oldPrice is less than price on create', async () => {
+    jest.mocked(shopRepository.findById).mockResolvedValue({
+      id: 'shop-id',
+    } as any);
+
+    await expect(
+      service.createProduct({
+        shopId: 'shop-id',
+        name: 'Ocean Tee',
+        price: 20,
+        oldPrice: 10,
+      }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('should throw when SKU already exists in shop on create', async () => {
+    jest.mocked(shopRepository.findById).mockResolvedValue({
+      id: 'shop-id',
+    } as any);
+    jest.mocked(productRepository.findByShopIdAndSku).mockResolvedValue({
+      id: 'existing-id',
+      sku: 'SKU-1',
+    } as any);
+
+    await expect(
+      service.createProduct({
+        shopId: 'shop-id',
+        name: 'Ocean Tee',
+        sku: 'SKU-1',
+      }),
+    ).rejects.toThrow(BadRequestException);
+    expect(productRepository.findByShopIdAndSku).toHaveBeenCalledWith(
+      'shop-id',
+      'SKU-1',
+    );
+  });
+
+  it('should map unique SKU constraint errors on create', async () => {
+    jest.mocked(shopRepository.findById).mockResolvedValue({
+      id: 'shop-id',
+    } as any);
+    jest.mocked(productRepository.findByShopIdAndSku).mockResolvedValue(null);
+    jest.mocked(productRepository.create).mockReturnValue({ id: '1' } as any);
+    jest.mocked(productRepository.save).mockRejectedValue(
+      new QueryFailedError(
+        'INSERT INTO products',
+        [],
+        Object.assign(new Error(), {
+          code: '23505',
+          constraint: 'uq_products_shop_sku',
+        }),
+      ),
+    );
+
+    await expect(
+      service.createProduct({
+        shopId: 'shop-id',
+        name: 'Ocean Tee',
+        sku: 'SKU-1',
+      }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('should map check constraint errors on create', async () => {
+    jest.mocked(shopRepository.findById).mockResolvedValue({
+      id: 'shop-id',
+    } as any);
+    jest.mocked(productRepository.create).mockReturnValue({ id: '1' } as any);
+    jest.mocked(productRepository.save).mockRejectedValue(
+      new QueryFailedError(
+        'INSERT INTO products',
+        [],
+        Object.assign(new Error(), {
+          code: '23514',
+          constraint: 'products_old_price_gte_price_check',
+        }),
+      ),
+    );
+
+    await expect(
+      service.createProduct({
+        shopId: 'shop-id',
+        name: 'Ocean Tee',
+        price: 10,
+        oldPrice: 20,
+      }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('should update a product', async () => {
+    const existing = {
+      id: '1',
+      shopId: 'shop-id',
+      name: 'Ocean Tee',
+      price: '10.00',
+      oldPrice: null,
+      status: ProductStatus.DRAFT,
+    } as any;
+    const updated = {
+      ...existing,
+      name: 'Updated Tee',
+      price: '12.00',
+      status: ProductStatus.ACTIVE,
+    };
+
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(existing);
+    jest.mocked(productRepository.save).mockResolvedValue(updated);
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(updated);
+
+    const result = await service.updateProduct('1', {
+      name: 'Updated Tee',
+      price: 12,
+      status: ProductStatus.ACTIVE,
+    });
+
+    expect(productRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Updated Tee',
+        price: '12.00',
+        status: ProductStatus.ACTIVE,
+      }),
+    );
+    expect(result).toEqual(updated);
+  });
+
+  it('should update isPopular flag on a product', async () => {
+    const existing = {
+      id: '1',
+      shopId: 'shop-id',
+      name: 'Ocean Tee',
+      price: '10.00',
+      oldPrice: null,
+      isPopular: false,
+    } as any;
+    const updated = { ...existing, isPopular: true };
+
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(existing);
+    jest.mocked(productRepository.save).mockResolvedValue(updated);
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(updated);
+
+    const result = await service.updateProduct('1', { isPopular: true });
+
+    expect(productRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({ isPopular: true }),
+    );
+    expect(result).toEqual(updated);
+  });
+
+  it('should throw when oldPrice is less than price on update', async () => {
+    jest.mocked(productRepository.findById).mockResolvedValue({
+      id: '1',
+      price: '20.00',
+      oldPrice: null,
+    } as any);
+
+    await expect(service.updateProduct('1', { oldPrice: 10 })).rejects.toThrow(
+      BadRequestException,
+    );
+  });
+
+  it('should throw when SKU already exists in shop on update', async () => {
+    jest.mocked(productRepository.findById).mockResolvedValue({
+      id: '1',
+      shopId: 'shop-id',
+      sku: 'SKU-OLD',
+      price: '10.00',
+      oldPrice: null,
+    } as any);
+    jest.mocked(productRepository.findByShopIdAndSku).mockResolvedValue({
+      id: '2',
+      sku: 'SKU-1',
+    } as any);
+
+    await expect(service.updateProduct('1', { sku: 'SKU-1' })).rejects.toThrow(
+      BadRequestException,
+    );
+    expect(productRepository.findByShopIdAndSku).toHaveBeenCalledWith(
+      'shop-id',
+      'SKU-1',
+    );
+  });
+
+  it('should allow clearing SKU on update', async () => {
+    const existing = {
+      id: '1',
+      shopId: 'shop-id',
+      sku: 'SKU-1',
+      price: '10.00',
+      oldPrice: null,
+    } as any;
+    const updated = { ...existing, sku: null };
+
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(existing);
+    jest.mocked(productRepository.save).mockResolvedValue(updated);
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(updated);
+
+    const result = await service.updateProduct('1', { sku: null });
+
+    expect(productRepository.findByShopIdAndSku).not.toHaveBeenCalled();
+    expect(productRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({ sku: null }),
+    );
+    expect(result).toEqual(updated);
+  });
+
+  it('should remove a product', async () => {
+    const product = { id: '1', name: 'Ocean Tee' } as any;
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+    jest.mocked(productRepository.remove).mockResolvedValue(product);
+
+    const result = await service.removeProduct('1');
+
+    expect(productRepository.remove).toHaveBeenCalledWith(product);
+    expect(result).toEqual({ message: 'Продукт успішно видалено' });
+  });
+
+  it('should assign category when shops match', async () => {
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      categories: [],
+      tags: [],
+      attributes: [],
+      images: [],
+    } as any;
+    const category = { id: 'category-id', shopId: 'shop-id' } as any;
+    const withCategory = { ...product, categories: [category] };
+
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(product);
+    jest.mocked(categoryRepository.findById).mockResolvedValue(category);
+    jest.mocked(productRepository.save).mockResolvedValue(withCategory);
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(withCategory);
+
+    const result = await service.assignCategory('1', {
+      categoryId: 'category-id',
+      assign: true,
+    });
+
+    expect(productRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        categories: [category],
+      }),
+    );
+    expect(result).toEqual(withCategory);
+  });
+
+  it('should not save when category is already assigned', async () => {
+    const category = { id: 'category-id', shopId: 'shop-id' } as any;
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      categories: [category],
+    } as any;
+
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+    jest.mocked(categoryRepository.findById).mockResolvedValue(category);
+
+    await service.assignCategory('1', {
+      categoryId: 'category-id',
+      assign: true,
+    });
+
+    expect(productRepository.save).not.toHaveBeenCalled();
+  });
+
+  it('should remove category when assign is false and category is assigned', async () => {
+    const category = { id: 'category-id', shopId: 'shop-id' } as any;
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      categories: [category],
+    } as any;
+    const withoutCategory = { ...product, categories: [] };
+
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(product);
+    jest.mocked(categoryRepository.findById).mockResolvedValue(category);
+    jest.mocked(productRepository.save).mockResolvedValue(withoutCategory);
+    jest
+      .mocked(productRepository.findById)
+      .mockResolvedValueOnce(withoutCategory);
+
+    const result = await service.assignCategory('1', {
+      categoryId: 'category-id',
+      assign: false,
+    });
+
+    expect(productRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        categories: [],
+      }),
+    );
+    expect(result).toEqual(withoutCategory);
+  });
+
+  it('should not save when assign is false and category is not assigned', async () => {
+    const category = { id: 'category-id', shopId: 'shop-id' } as any;
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      categories: [],
+    } as any;
+
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+    jest.mocked(categoryRepository.findById).mockResolvedValue(category);
+
+    await service.assignCategory('1', {
+      categoryId: 'category-id',
+      assign: false,
+    });
+
+    expect(productRepository.save).not.toHaveBeenCalled();
+  });
+
+  it('should throw when category belongs to another shop', async () => {
+    jest.mocked(productRepository.findById).mockResolvedValue({
+      id: '1',
+      shopId: 'shop-id',
+      categories: [],
+    } as any);
+    jest.mocked(categoryRepository.findById).mockResolvedValue({
+      id: 'category-id',
+      shopId: 'other-shop',
+    } as any);
+
+    await expect(
+      service.assignCategory('1', { categoryId: 'category-id', assign: true }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('should assign tag when shops match', async () => {
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      tags: [],
+    } as any;
+    const tag = { id: 'tag-id', shopId: 'shop-id' } as any;
+    const withTag = { ...product, tags: [tag] };
+
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(product);
+    jest.mocked(tagRepository.findById).mockResolvedValue(tag);
+    jest.mocked(productRepository.save).mockResolvedValue(withTag);
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(withTag);
+
+    const result = await service.assignTag('1', {
+      tagId: 'tag-id',
+      assign: true,
+    });
+
+    expect(result).toEqual(withTag);
+  });
+
+  it('should not save when tag is already assigned', async () => {
+    const tag = { id: 'tag-id', shopId: 'shop-id' } as any;
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      tags: [tag],
+    } as any;
+
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+    jest.mocked(tagRepository.findById).mockResolvedValue(tag);
+
+    await service.assignTag('1', { tagId: 'tag-id', assign: true });
+
+    expect(productRepository.save).not.toHaveBeenCalled();
+  });
+
+  it('should remove tag when assign is false and tag is assigned', async () => {
+    const tag = { id: 'tag-id', shopId: 'shop-id' } as any;
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      tags: [tag],
+    } as any;
+    const withoutTag = { ...product, tags: [] };
+
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(product);
+    jest.mocked(tagRepository.findById).mockResolvedValue(tag);
+    jest.mocked(productRepository.save).mockResolvedValue(withoutTag);
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(withoutTag);
+
+    const result = await service.assignTag('1', {
+      tagId: 'tag-id',
+      assign: false,
+    });
+
+    expect(productRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tags: [],
+      }),
+    );
+    expect(result).toEqual(withoutTag);
+  });
+
+  it('should not save when assign is false and tag is not assigned', async () => {
+    const tag = { id: 'tag-id', shopId: 'shop-id' } as any;
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      tags: [],
+    } as any;
+
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+    jest.mocked(tagRepository.findById).mockResolvedValue(tag);
+
+    await service.assignTag('1', { tagId: 'tag-id', assign: false });
+
+    expect(productRepository.save).not.toHaveBeenCalled();
+  });
+
+  it('should throw when tag belongs to another shop', async () => {
+    jest.mocked(productRepository.findById).mockResolvedValue({
+      id: '1',
+      shopId: 'shop-id',
+      tags: [],
+    } as any);
+    jest.mocked(tagRepository.findById).mockResolvedValue({
+      id: 'tag-id',
+      shopId: 'other-shop',
+    } as any);
+
+    await expect(
+      service.assignTag('1', { tagId: 'tag-id', assign: true }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('should assign attribute when shops match', async () => {
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      attributes: [],
+    } as any;
+    const attribute = { id: 'attr-id', shopId: 'shop-id' } as any;
+    const withAttribute = { ...product, attributes: [attribute] };
+
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(product);
+    jest.mocked(attributeRepository.findById).mockResolvedValue(attribute);
+    jest.mocked(productRepository.save).mockResolvedValue(withAttribute);
+    jest
+      .mocked(productRepository.findById)
+      .mockResolvedValueOnce(withAttribute);
+
+    const result = await service.assignAttribute('1', {
+      attributeTypeId: 'attr-id',
+      assign: true,
+    });
+
+    expect(result).toEqual(withAttribute);
+  });
+
+  it('should not save when attribute is already assigned', async () => {
+    const attribute = { id: 'attr-id', shopId: 'shop-id' } as any;
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      attributes: [attribute],
+    } as any;
+
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+    jest.mocked(attributeRepository.findById).mockResolvedValue(attribute);
+
+    await service.assignAttribute('1', {
+      attributeTypeId: 'attr-id',
+      assign: true,
+    });
+
+    expect(productRepository.save).not.toHaveBeenCalled();
+  });
+
+  it('should remove attribute when assign is false and attribute is assigned', async () => {
+    const attribute = { id: 'attr-id', shopId: 'shop-id' } as any;
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      attributes: [attribute],
+    } as any;
+    const withoutAttribute = { ...product, attributes: [] };
+
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(product);
+    jest.mocked(attributeRepository.findById).mockResolvedValue(attribute);
+    jest.mocked(productRepository.save).mockResolvedValue(withoutAttribute);
+    jest
+      .mocked(productRepository.findById)
+      .mockResolvedValueOnce(withoutAttribute);
+
+    const result = await service.assignAttribute('1', {
+      attributeTypeId: 'attr-id',
+      assign: false,
+    });
+
+    expect(productRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attributes: [],
+      }),
+    );
+    expect(result).toEqual(withoutAttribute);
+  });
+
+  it('should not save when assign is false and attribute is not assigned', async () => {
+    const attribute = { id: 'attr-id', shopId: 'shop-id' } as any;
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      attributes: [],
+    } as any;
+
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+    jest.mocked(attributeRepository.findById).mockResolvedValue(attribute);
+
+    await service.assignAttribute('1', {
+      attributeTypeId: 'attr-id',
+      assign: false,
+    });
+
+    expect(productRepository.save).not.toHaveBeenCalled();
+  });
+
+  it('should throw when attribute belongs to another shop', async () => {
+    jest.mocked(productRepository.findById).mockResolvedValue({
+      id: '1',
+      shopId: 'shop-id',
+      attributes: [],
+    } as any);
+    jest.mocked(attributeRepository.findById).mockResolvedValue({
+      id: 'attr-id',
+      shopId: 'other-shop',
+    } as any);
+
+    await expect(
+      service.assignAttribute('1', {
+        attributeTypeId: 'attr-id',
+        assign: true,
+      }),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('should replace images for a product', async () => {
+    const product = { id: '1', images: [] } as any;
+    const withImages = {
+      id: '1',
+      images: [
+        { url: 'https://res.cloudinary.com/shop/image/upload/a.jpg', sort: 0 },
+      ],
+    } as any;
+
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(product);
+    jest
+      .mocked(productImagesCloudinaryService.uploadBase64Image)
+      .mockResolvedValue('https://res.cloudinary.com/shop/image/upload/a.jpg');
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(withImages);
+
+    const result = await service.assignImages('1', {
+      images: [{ image: 'data:image/png;base64,ZmFrZQ==', alt: 'Ocean Tee' }],
+    });
+
+    expect(
+      productImagesCloudinaryService.uploadBase64Image,
+    ).toHaveBeenCalledWith('data:image/png;base64,ZmFrZQ==');
+    expect(productRepository.replaceImages).toHaveBeenCalledWith('1', [
+      {
+        url: 'https://res.cloudinary.com/shop/image/upload/a.jpg',
+        alt: 'Ocean Tee',
+        sort: 0,
+      },
+    ]);
+    expect(result).toEqual(withImages);
+  });
+
+  it('should keep existing image URLs when assigning product images', async () => {
+    const product = { id: '1', images: [] } as any;
+    const existingImageUrl =
+      'https://res.cloudinary.com/shop/image/upload/existing.jpg';
+    const withImages = {
+      id: '1',
+      images: [{ url: existingImageUrl, sort: 0 }],
+    } as any;
+
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(product);
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(withImages);
+
+    const result = await service.assignImages('1', {
+      images: [{ image: existingImageUrl }],
+    });
+
+    expect(
+      productImagesCloudinaryService.uploadBase64Image,
+    ).not.toHaveBeenCalled();
+    expect(productRepository.replaceImages).toHaveBeenCalledWith('1', [
+      { url: existingImageUrl, alt: null, sort: 0 },
+    ]);
+    expect(result).toEqual(withImages);
+  });
+
+  it('should throw when Cloudinary upload fails', async () => {
+    const product = { id: '1', images: [] } as any;
+
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(product);
+    jest
+      .mocked(productImagesCloudinaryService.uploadBase64Image)
+      .mockRejectedValue(new BadRequestException('Failed to upload image'));
+
+    await expect(
+      service.assignImages('1', {
+        images: [{ image: 'data:image/png;base64,ZmFrZQ==' }],
+      }),
+    ).rejects.toThrow(BadRequestException);
+    expect(productRepository.replaceImages).not.toHaveBeenCalled();
+  });
+
+  it('should create product variation for variable products', async () => {
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      type: ProductType.VARIABLE,
+    } as any;
+    const variation = {
+      id: 'variation-id',
+      productId: '1',
+    } as any;
+    const refreshedProduct = {
+      id: '1',
+      variations: [variation],
+    } as any;
+
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(product);
+    jest
+      .mocked(productImagesCloudinaryService.uploadBase64Image)
+      .mockResolvedValue('https://res.cloudinary.com/shop/image/upload/v.jpg');
+    jest
+      .mocked(attributeRepository.findById)
+      .mockResolvedValue({ id: 'attr-id', shopId: 'shop-id' } as any);
+    jest.mocked(productVariationRepository.create).mockReturnValue(variation);
+    jest.mocked(productVariationRepository.save).mockResolvedValue(variation);
+    jest
+      .mocked(productVariationRepository.replaceAttributes)
+      .mockResolvedValue([]);
+    jest.mocked(productVariationRepository.replaceImages).mockResolvedValue([]);
+    jest
+      .mocked(productRepository.findById)
+      .mockResolvedValueOnce(refreshedProduct);
+
+    const result = await service.createVariation('1', {
+      title: 'Iphone X Green',
+      name: 'Green',
+      sku: 'SKU-2',
+      price: 122,
+      oldPrice: 155,
+      available: true,
+      isDefault: true,
+      attributes: [{ attributeTypeId: 'attr-id' }],
+      images: [{ image: 'data:image/png;base64,ZmFrZQ==' }],
+    });
+
+    expect(productVariationRepository.create).toHaveBeenCalledWith({
+      productId: '1',
+      sku: 'SKU-2',
+      name: 'Green',
+      title: 'Iphone X Green',
+      price: '122.00',
+      oldPrice: '155.00',
+      available: true,
+      isDefault: true,
+    });
+    expect(productVariationRepository.save).toHaveBeenCalledWith(variation);
+    expect(productRepository.save).not.toHaveBeenCalled();
+    expect(attributeRepository.findById).toHaveBeenCalledWith('attr-id');
+    expect(productVariationRepository.replaceAttributes).toHaveBeenCalledWith(
+      'variation-id',
+      [{ attributeTypeId: 'attr-id' }],
+    );
+    expect(productVariationRepository.replaceImages).toHaveBeenCalledWith(
+      'variation-id',
+      [
+        {
+          url: 'https://res.cloudinary.com/shop/image/upload/v.jpg',
+          alt: null,
+          sort: 0,
+        },
+      ],
+    );
+    expect(result).toEqual(refreshedProduct);
+  });
+
+  it('should promote product to variable when creating variation', async () => {
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      type: ProductType.SIMPLE,
+    } as any;
+    const variation = {
+      id: 'variation-id',
+      productId: '1',
+    } as any;
+    const refreshedProduct = {
+      id: '1',
+      type: ProductType.VARIABLE,
+      variations: [variation],
+    } as any;
+
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(product);
+    jest
+      .mocked(attributeRepository.findById)
+      .mockResolvedValue({ id: 'attr-id', shopId: 'shop-id' } as any);
+    jest.mocked(productVariationRepository.create).mockReturnValue(variation);
+    jest.mocked(productVariationRepository.save).mockResolvedValue(variation);
+    jest
+      .mocked(productVariationRepository.replaceAttributes)
+      .mockResolvedValue([]);
+    jest.mocked(productVariationRepository.replaceImages).mockResolvedValue([]);
+    jest
+      .mocked(productRepository.findById)
+      .mockResolvedValueOnce(refreshedProduct);
+
+    const result = await service.createVariation('1', {
+      title: 'Iphone X Green',
+      name: 'Green',
+      sku: 'SKU-2',
+      price: 122,
+      oldPrice: 155,
+      available: true,
+      isDefault: true,
+      attributes: [{ attributeTypeId: 'attr-id' }],
+      images: [],
+    });
+
+    expect(productRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: '1',
+        type: ProductType.VARIABLE,
+      }),
+    );
+    expect(productVariationRepository.create).toHaveBeenCalled();
+    expect(result).toEqual(refreshedProduct);
+  });
+
+  it('should bubble up not found when creating variation for missing product', async () => {
+    jest
+      .mocked(productRepository.findById)
+      .mockRejectedValue(new Error('Product not found'));
+
+    await expect(
+      service.createVariation('missing-id', {
+        title: 'Iphone X Green',
+        name: 'Green',
+        sku: 'SKU-2',
+        price: 122,
+        oldPrice: 155,
+        available: true,
+        isDefault: true,
+        attributes: [{ attributeTypeId: 'attr-id' }],
+        images: [],
+      }),
+    ).rejects.toThrow('Product not found');
+
+    expect(productVariationRepository.save).not.toHaveBeenCalled();
+  });
+
+  it('should update existing variation when variation id is provided', async () => {
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      type: ProductType.SIMPLE,
+    } as any;
+    const variation = {
+      id: 'variation-id',
+      productId: '1',
+      title: 'Old title',
+      name: 'Old name',
+      sku: 'OLD-SKU',
+      price: '100.00',
+      oldPrice: '120.00',
+      available: false,
+      isDefault: false,
+    } as any;
+    const refreshedProduct = {
+      id: '1',
+      variations: [variation],
+    } as any;
+
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(product);
+    jest
+      .mocked(attributeRepository.findById)
+      .mockResolvedValue({ id: 'attr-id', shopId: 'shop-id' } as any);
+    jest
+      .mocked(productImagesCloudinaryService.uploadBase64Image)
+      .mockResolvedValue('https://res.cloudinary.com/shop/image/upload/v.jpg');
+    jest
+      .mocked(productVariationRepository.findById)
+      .mockResolvedValue(variation);
+    jest
+      .mocked(productVariationRepository.replaceAttributes)
+      .mockResolvedValue([]);
+    jest.mocked(productVariationRepository.replaceImages).mockResolvedValue([]);
+    jest
+      .mocked(productRepository.findById)
+      .mockResolvedValueOnce(refreshedProduct);
+
+    const result = await service.updateVariation('1', 'variation-id', {
+      title: 'Iphone X Green',
+      name: 'Green',
+      sku: 'SKU-2',
+      price: 122,
+      oldPrice: 155,
+      available: true,
+      isDefault: true,
+      attributes: [{ attributeTypeId: 'attr-id' }],
+      images: [{ image: 'data:image/png;base64,ZmFrZQ==' }],
+    });
+
+    expect(productVariationRepository.create).not.toHaveBeenCalled();
+    expect(productVariationRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'variation-id',
+        title: 'Iphone X Green',
+        name: 'Green',
+        sku: 'SKU-2',
+        price: '122.00',
+        oldPrice: '155.00',
+        available: true,
+        isDefault: true,
+      }),
+    );
+    expect(productRepository.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: '1',
+        type: ProductType.VARIABLE,
+      }),
+    );
+    expect(productVariationRepository.replaceAttributes).toHaveBeenCalledWith(
+      'variation-id',
+      [{ attributeTypeId: 'attr-id' }],
+    );
+    expect(productVariationRepository.replaceImages).toHaveBeenCalledWith(
+      'variation-id',
+      [
+        {
+          url: 'https://res.cloudinary.com/shop/image/upload/v.jpg',
+          alt: null,
+          sort: 0,
+        },
+      ],
+    );
+    expect(result).toEqual(refreshedProduct);
+  });
+
+  it('should keep existing image URLs when updating variation', async () => {
+    const existingImageUrl =
+      'https://res.cloudinary.com/shop/image/upload/existing-variation.jpg';
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      type: ProductType.VARIABLE,
+    } as any;
+    const variation = {
+      id: 'variation-id',
+      productId: '1',
+      title: 'Old title',
+      name: 'Old name',
+      sku: 'OLD-SKU',
+      price: '100.00',
+      oldPrice: '120.00',
+      available: false,
+      isDefault: false,
+    } as any;
+    const refreshedProduct = {
+      id: '1',
+      variations: [variation],
+    } as any;
+
+    jest.mocked(productRepository.findById).mockResolvedValueOnce(product);
+    jest
+      .mocked(attributeRepository.findById)
+      .mockResolvedValue({ id: 'attr-id', shopId: 'shop-id' } as any);
+    jest
+      .mocked(productVariationRepository.findById)
+      .mockResolvedValue(variation);
+    jest
+      .mocked(productVariationRepository.replaceAttributes)
+      .mockResolvedValue([]);
+    jest.mocked(productVariationRepository.replaceImages).mockResolvedValue([]);
+    jest
+      .mocked(productRepository.findById)
+      .mockResolvedValueOnce(refreshedProduct);
+
+    await service.updateVariation('1', 'variation-id', {
+      title: 'Iphone X Green',
+      name: 'Green',
+      sku: 'SKU-2',
+      price: 122,
+      oldPrice: 155,
+      available: true,
+      isDefault: true,
+      attributes: [{ attributeTypeId: 'attr-id' }],
+      images: [{ image: existingImageUrl }],
+    });
+
+    expect(
+      productImagesCloudinaryService.uploadBase64Image,
+    ).not.toHaveBeenCalled();
+    expect(productVariationRepository.replaceImages).toHaveBeenCalledWith(
+      'variation-id',
+      [
+        {
+          url: existingImageUrl,
+          alt: null,
+          sort: 0,
+        },
+      ],
+    );
+  });
+
+  it('should reject variation upsert when variation belongs to another product', async () => {
+    jest.mocked(productRepository.findById).mockResolvedValueOnce({
+      id: '1',
+      shopId: 'shop-id',
+      type: ProductType.VARIABLE,
+    } as any);
+    jest
+      .mocked(attributeRepository.findById)
+      .mockResolvedValue({ id: 'attr-id', shopId: 'shop-id' } as any);
+    jest.mocked(productVariationRepository.findById).mockResolvedValue({
+      id: 'variation-id',
+      productId: 'other-product-id',
+    } as any);
+
+    await expect(
+      service.updateVariation('1', 'variation-id', {
+        title: 'Iphone X Green',
+        name: 'Green',
+        sku: 'SKU-2',
+        price: 122,
+        oldPrice: 155,
+        available: true,
+        isDefault: true,
+        attributes: [{ attributeTypeId: 'attr-id' }],
+        images: [],
+      }),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(productVariationRepository.replaceAttributes).not.toHaveBeenCalled();
+  });
+
+  it('should reject variation attributes from a different shop', async () => {
+    jest.mocked(productRepository.findById).mockResolvedValueOnce({
+      id: '1',
+      shopId: 'shop-id',
+      type: ProductType.VARIABLE,
+    } as any);
+    jest
+      .mocked(attributeRepository.findById)
+      .mockResolvedValue({ id: 'attr-id', shopId: 'other-shop-id' } as any);
+
+    await expect(
+      service.createVariation('1', {
+        title: 'Iphone X Green',
+        name: 'Green',
+        sku: 'SKU-2',
+        price: 122,
+        oldPrice: 155,
+        available: true,
+        isDefault: true,
+        attributes: [{ attributeTypeId: 'attr-id' }],
+        images: [],
+      }),
+    ).rejects.toThrow(BadRequestException);
+
+    expect(productVariationRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('should drop the cached catalog of the shop when a product is created', async () => {
+    const product = { id: '1', shopId: 'shop-id' } as any;
+    jest.mocked(shopRepository.findById).mockResolvedValue({} as any);
+    jest.mocked(productRepository.create).mockReturnValue(product);
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+
+    await service.createProduct({ shopId: 'shop-id', name: 'Iphone X' });
+
+    expect(cacheService.invalidate).toHaveBeenCalledWith('shop-id');
+  });
+
+  it('should drop the cached catalog of the shop when a product is updated', async () => {
+    const product = { id: '1', shopId: 'shop-id', price: '10.00' } as any;
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+
+    await service.updateProduct('1', { name: 'Iphone XS' });
+
+    expect(cacheService.invalidate).toHaveBeenCalledWith('shop-id');
+  });
+
+  it('should drop the cached catalog of the shop when a product is removed', async () => {
+    const product = { id: '1', shopId: 'shop-id' } as any;
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+    jest.mocked(productRepository.remove).mockResolvedValue(product);
+
+    await service.removeProduct('1');
+
+    expect(cacheService.invalidate).toHaveBeenCalledWith('shop-id');
+  });
+
+  it('should drop the cached catalog of the shop when images are replaced', async () => {
+    const product = { id: '1', shopId: 'shop-id' } as any;
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+
+    await service.assignImages('1', {
+      images: [{ image: 'https://cdn.example.com/a.png', sort: 0 }],
+    });
+
+    expect(cacheService.invalidate).toHaveBeenCalledWith('shop-id');
+  });
+
+  it('should drop the cached catalog of the shop when a category is assigned', async () => {
+    const product = { id: '1', shopId: 'shop-id', categories: [] } as any;
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+    jest
+      .mocked(categoryRepository.findById)
+      .mockResolvedValue({ id: 'category-id', shopId: 'shop-id' } as any);
+
+    await service.assignCategory('1', {
+      categoryId: 'category-id',
+      assign: true,
+    });
+
+    expect(cacheService.invalidate).toHaveBeenCalledWith('shop-id');
+  });
+
+  it('should keep the cache intact when a category assignment is a no-op', async () => {
+    const product = {
+      id: '1',
+      shopId: 'shop-id',
+      categories: [{ id: 'category-id' }],
+    } as any;
+    jest.mocked(productRepository.findById).mockResolvedValue(product);
+    jest
+      .mocked(categoryRepository.findById)
+      .mockResolvedValue({ id: 'category-id', shopId: 'shop-id' } as any);
+
+    await service.assignCategory('1', {
+      categoryId: 'category-id',
+      assign: true,
+    });
+
+    expect(cacheService.invalidate).not.toHaveBeenCalled();
+  });
+
+  it('should keep the cache intact when updating a product fails', async () => {
+    jest
+      .mocked(productRepository.findById)
+      .mockResolvedValue({ id: '1', shopId: 'shop-id', price: '10.00' } as any);
+    jest.mocked(productRepository.save).mockRejectedValue(new Error('boom'));
+
+    await expect(
+      service.updateProduct('1', { name: 'Iphone XS' }),
+    ).rejects.toThrow('boom');
+
+    expect(cacheService.invalidate).not.toHaveBeenCalled();
+  });
+});

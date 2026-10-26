@@ -1,4 +1,12 @@
-import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import {
+  IsBoolean,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUrl,
+  IsUUID,
+  MaxLength,
+} from 'class-validator';
 
 export class CreateCategoryDto {
   @IsUUID()
@@ -16,4 +24,23 @@ export class CreateCategoryDto {
   @IsString()
   @IsNotEmpty()
   readonly slug: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  readonly metaTitle?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  readonly metaDescription?: string;
+
+  @IsOptional()
+  @IsUrl({ protocols: ['http', 'https'], require_protocol: true })
+  @MaxLength(500)
+  readonly canonicalUrl?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  readonly noIndex?: boolean;
 }

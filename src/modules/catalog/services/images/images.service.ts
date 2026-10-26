@@ -1,7 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { IMAGE_MESSAGES } from '../../constants/image-messages.constants';
 import { ChangeProductImageSortDto } from '../../dto/images/change-product-image-sort.dto';
 import { ProductImage } from '../../entities/product-image.entity';
-import { ProductRepository } from '../../repositories/product/product.repository';
+import { MessageResponse } from '../../../../core/response/models/response.models';
+import { ProductRepository } from '../../repositories/product/admin/product.repository';
 
 @Injectable()
 export class ImagesService {
@@ -20,17 +22,17 @@ export class ImagesService {
     if (!sibling) {
       throw new BadRequestException(
         dto.direction === 'up'
-          ? 'Зображення вже на початку'
-          : 'Зображення вже в кінці',
+          ? IMAGE_MESSAGES.ALREADY_FIRST
+          : IMAGE_MESSAGES.ALREADY_LAST,
       );
     }
 
     return this.productRepository.swapImageSort(image, sibling);
   }
 
-  async removeImage(id: string): Promise<{ message: string }> {
+  async removeImage(id: string): Promise<MessageResponse> {
     const image = await this.productRepository.findImageById(id);
     await this.productRepository.removeImage(image);
-    return { message: 'Зображення успішно видалено' };
+    return { message: IMAGE_MESSAGES.REMOVED };
   }
 }

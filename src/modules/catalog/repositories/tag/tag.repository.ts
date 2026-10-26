@@ -1,7 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { TAG_MESSAGES } from '../../constants/tag-messages.constants';
 import { Tag } from '../../entities/tag.entity';
+import { PaginatedResult } from '../../../../core/response/models/response.models';
 import { TagFilters } from '../../models/tag.models';
 
 @Injectable()
@@ -15,7 +17,7 @@ export class TagRepository {
     filters: TagFilters,
     skip: number,
     take: number,
-  ): Promise<{ items: Tag[]; total: number }> {
+  ): Promise<PaginatedResult<Tag>> {
     const query = this.repository
       .createQueryBuilder('tag')
       .orderBy('tag.createdAt', 'DESC')
@@ -39,7 +41,7 @@ export class TagRepository {
     const tag = await this.repository.findOne({ where: { id } });
 
     if (!tag) {
-      throw new NotFoundException('Тег не знайдено');
+      throw new NotFoundException(TAG_MESSAGES.NOT_FOUND);
     }
 
     return tag;

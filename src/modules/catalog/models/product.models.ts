@@ -1,15 +1,12 @@
 import { ProductStatus } from '../entities/enums/product.enum';
+import {
+  CatalogProductSort,
+  ProductSortBy,
+  ProductSortOrder,
+} from '../entities/enums/product-sort.enum';
 import { Product } from '../entities/product.entity';
-
-export enum ProductSortBy {
-  CREATED_AT = 'createdAt',
-  NAME = 'name',
-}
-
-export enum ProductSortOrder {
-  ASC = 'asc',
-  DESC = 'desc',
-}
+import { CatalogCategoryOption } from './category.models';
+import { ListResponse } from '../../../core/response/models/response.models';
 
 export type ProductFilters = {
   shopId?: string;
@@ -17,14 +14,100 @@ export type ProductFilters = {
   name?: string;
   sku?: string;
   categoryIds?: string[];
+  isPopular?: boolean;
   sortBy?: ProductSortBy;
   sortOrder?: ProductSortOrder;
 };
 
-export type ProductListResponse = {
-  items: Product[];
+export type CatalogFilter = {
+  name: string;
+  values: string[];
+};
+
+/** Narrowing shared by every catalog listing, whatever selects the products. */
+export type CommonCatalogProductFilters = {
+  shopId: string;
+  attributes?: CatalogFilter[];
+  priceFrom?: number;
+  priceTo?: number;
+  available?: boolean;
+  sort?: CatalogProductSort;
+};
+
+export type CatalogProductFilters = CommonCatalogProductFilters & {
+  categoryId: string;
+};
+
+/**
+ * The search listing selects by a term where the catalog selects by category.
+ * Categories narrow its matches instead of selecting them, so they are a
+ * filter like any other and a search without them spans the whole shop.
+ */
+export type CatalogProductSearchFilters = CommonCatalogProductFilters & {
+  term: string;
+  categoryIds?: string[];
+};
+
+/** What a search narrows by on top of the filters every listing shares. */
+export type SearchCacheKeyParts = Pick<
+  CatalogProductSearchFilters,
+  'term' | 'categoryIds'
+>;
+
+export type ProductOrdering = {
+  expression: string;
+  direction: 'ASC' | 'DESC';
+};
+
+/** One sitemap URL: the slug the storefront address is built from and when it last changed. */
+export type ProductSitemapEntry = {
+  slug: string;
+  updatedAt: Date;
+};
+
+/** Everything a search suggestion needs: a card plus the id and slug to redirect to. */
+export type ProductSearchItem = {
+  id: string;
+  slug: string;
+  name: string;
+  price: string;
+  oldPrice: string | null;
+  image: string | null;
+};
+
+/** Every row repeats the total, which Postgres returns as a bigint string. */
+export type ProductSearchRow = ProductSearchItem & { total: string };
+
+export type ProductSearchResponse = {
   total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+  items: ProductSearchItem[];
+};
+
+export type ProductListResponse = ListResponse<Product>;
+
+/** Any shop-owned entity a product links to through a many-to-many relation. */
+export type ShopOwnedEntity = {
+  id: string;
+  shopId: string;
+};
+
+export type ProductRelationAssignment = {
+  productId: string;
+  relationName: 'categories' | 'tags' | 'attributes';
+  relationEntity: ShopOwnedEntity;
+  assign: boolean;
+  crossShopMessage: string;
+};
+
+/**
+ * A search page plus everything the term can be narrowed by — the attribute
+ * filters and the categories holding the matched products — so the storefront
+ * renders the results, the filter panel and the category list from a single
+ * request. The category page gets the same filters from
+ * `filters/by-category/:categoryId`, which it can request once per category
+ * instead of once per page.
+ */
+export type ProductSearchListResponse = ProductListResponse & {
+  filters: CatalogFilter[];
+  categories: CatalogCategoryOption[];
 };

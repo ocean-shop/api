@@ -20,6 +20,9 @@ export class VariationImage {
   @Column({ type: 'varchar', length: 1000 })
   url: string;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  alt: string | null;
+
   @Column({ type: 'int', default: 0 })
   sort: number;
 

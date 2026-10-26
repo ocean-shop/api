@@ -1,6 +1,4 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Product } from '../catalog/entities/product.entity';
 import { Order } from '../orders/entities/order.entity';
@@ -12,16 +10,7 @@ import { StatisticRepository } from './repositories/statistic/statistic.reposito
 import { StatisticService } from './services/statistic/statistic.service';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Order, Product, User]),
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET') || 'default-secret-key',
-      }),
-      inject: [ConfigService],
-    }),
-  ],
+  imports: [TypeOrmModule.forFeature([Order, Product, User])],
   controllers: [StatisticController],
   providers: [StatisticService, StatisticRepository, JwtAuthGuard, RolesGuard],
 })

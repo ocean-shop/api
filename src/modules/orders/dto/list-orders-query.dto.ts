@@ -9,6 +9,11 @@ import {
   Max,
   Min,
 } from 'class-validator';
+import {
+  DEFAULT_SORT_ORDER,
+  SORT_ORDERS,
+} from '../../../core/response/constants/sort.constants';
+import type { SortOrder } from '../../../core/response/models/response.models';
 
 export class ListOrdersQueryDto {
   @Type(() => Number)
@@ -38,6 +43,6 @@ export class ListOrdersQueryDto {
     }
     return value.toLowerCase();
   })
-  @IsIn(['asc', 'desc'])
-  readonly sortOrder?: 'asc' | 'desc' = 'desc';
+  @IsIn(SORT_ORDERS)
+  readonly sortOrder?: SortOrder = DEFAULT_SORT_ORDER;
 }

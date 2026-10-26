@@ -2,12 +2,14 @@ import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
+  IsEmail,
   IsEnum,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
   IsUUID,
+  Matches,
   MaxLength,
   Min,
   ValidateNested,
@@ -19,6 +21,10 @@ import {
   OrderStatus,
 } from '../entities/enums/order.enum';
 import { CreateOrderItemDto } from './create-order-item.dto';
+import {
+  UKRAINIAN_PHONE_REGEX,
+  VALIDATION_MESSAGES,
+} from '../../user/constants/phone.constants';
 
 export class CreateOrderDto {
   @ApiProperty({ format: 'uuid' })
@@ -26,10 +32,10 @@ export class CreateOrderDto {
   @IsNotEmpty()
   readonly shopId: string;
 
-  @ApiProperty({ format: 'uuid' })
+  @ApiPropertyOptional({ format: 'uuid' })
+  @IsOptional()
   @IsUUID()
-  @IsNotEmpty()
-  readonly userId: string;
+  readonly userId?: string;
 
   @ApiProperty({ maxLength: 255 })
   @IsString()
@@ -37,11 +43,37 @@ export class CreateOrderDto {
   @MaxLength(255)
   readonly shippingNumber: string;
 
-  @ApiProperty({ maxLength: 100 })
+  @ApiPropertyOptional({ maxLength: 100 })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(100)
-  readonly orderNumber: string;
+  readonly firstName?: string;
+
+  @ApiPropertyOptional({ maxLength: 100 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  readonly lastName?: string;
+
+  @ApiPropertyOptional({ maxLength: 100 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  readonly middleName?: string;
+
+  @ApiPropertyOptional({ example: 'customer@example.com', maxLength: 255 })
+  @IsOptional()
+  @IsEmail()
+  @MaxLength(255)
+  readonly email?: string;
+
+  @ApiPropertyOptional({ example: '+380991234567' })
+  @IsOptional()
+  @IsString()
+  @Matches(UKRAINIAN_PHONE_REGEX, {
+    message: VALIDATION_MESSAGES.PHONE,
+  })
+  readonly phoneNumber?: string;
 
   @ApiProperty({ type: Number, minimum: 0 })
   @Type(() => Number)

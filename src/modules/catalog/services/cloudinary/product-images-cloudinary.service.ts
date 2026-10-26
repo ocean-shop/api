@@ -1,6 +1,12 @@
 import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UploadApiResponse, v2 as cloudinary } from 'cloudinary';
+import {
+  CLOUDINARY_CONFIG_KEYS,
+  CLOUDINARY_DEFAULT_PRODUCTS_FOLDER,
+  CLOUDINARY_RESOURCE_TYPE,
+} from '../../constants/cloudinary.constants';
+import { IMAGE_MESSAGES } from '../../constants/image-messages.constants';
 
 @Injectable()
 export class ProductImagesCloudinaryService {
@@ -12,10 +18,11 @@ export class ProductImagesCloudinaryService {
 
     try {
       const response = await cloudinary.uploader.upload(normalizedImage, {
-        resource_type: 'auto',
+        resource_type: CLOUDINARY_RESOURCE_TYPE,
         folder:
-          this.configService.get<string>('CLOUDINARY_PRODUCTS_FOLDER') ||
-          'shop',
+          this.configService.get<string>(
+            CLOUDINARY_CONFIG_KEYS.PRODUCTS_FOLDER,
+          ) || CLOUDINARY_DEFAULT_PRODUCTS_FOLDER,
       });
 
       return this.toSecureUrl(response);
@@ -27,16 +34,22 @@ export class ProductImagesCloudinaryService {
       const details = this.extractUploadErrorDetails(error);
       throw new BadRequestException(
         details
-          ? `Не вдалося завантажити зображення до Cloudinary: ${details}`
-          : 'Не вдалося завантажити зображення до Cloudinary',
+          ? `${IMAGE_MESSAGES.UPLOAD_FAILED}: ${details}`
+          : IMAGE_MESSAGES.UPLOAD_FAILED,
       );
     }
   }
 
   private ensureConfigured(): void {
-    const cloudName = this.configService.get<string>('CLOUDINARY_CLOUD_NAME');
-    const apiKey = this.configService.get<string>('CLOUDINARY_API_KEY');
-    const apiSecret = this.configService.get<string>('CLOUDINARY_API_SECRET');
+    const cloudName = this.configService.get<string>(
+      CLOUDINARY_CONFIG_KEYS.CLOUD_NAME,
+    );
+    const apiKey = this.configService.get<string>(
+      CLOUDINARY_CONFIG_KEYS.API_KEY,
+    );
+    const apiSecret = this.configService.get<string>(
+      CLOUDINARY_CONFIG_KEYS.API_SECRET,
+    );
 
     cloudinary.config({
       cloud_name: cloudName,
@@ -48,7 +61,7 @@ export class ProductImagesCloudinaryService {
 
   private toSecureUrl(response: UploadApiResponse): string {
     if (!response.secure_url) {
-      throw new BadRequestException('Cloudinary не повернув безпечний URL');
+      throw new BadRequestException(IMAGE_MESSAGES.MISSING_SECURE_URL);
     }
 
     return response.secure_url;

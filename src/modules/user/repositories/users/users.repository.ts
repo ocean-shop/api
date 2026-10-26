@@ -4,6 +4,11 @@ import { In, Repository, SelectQueryBuilder } from 'typeorm';
 import { Order } from '../../../orders/entities/order.entity';
 import { User } from '../../entities/user.entity';
 import { UserWithOrders } from '../../models/users.models';
+import { USER_MESSAGES } from '../../constants/user-messages.constants';
+import {
+  PaginatedResult,
+  SortOrder,
+} from '../../../../core/response/models/response.models';
 
 @Injectable()
 export class UsersRepository {
@@ -20,8 +25,8 @@ export class UsersRepository {
     take: number,
     email?: string,
     phoneNumber?: string,
-    sortOrder: 'asc' | 'desc' = 'desc',
-  ): Promise<{ items: User[]; total: number }> {
+    sortOrder: SortOrder = 'desc',
+  ): Promise<PaginatedResult<User>> {
     const baseQuery = this.buildUsersByShopQuery(shopId, email, phoneNumber);
     const total = await this.countUsers(baseQuery);
     if (total === 0) {
@@ -83,7 +88,7 @@ export class UsersRepository {
     query: SelectQueryBuilder<User>,
     skip: number,
     take: number,
-    sortOrder: 'asc' | 'desc',
+    sortOrder: SortOrder,
   ): Promise<string[]> {
     const rows = await query
       .clone()
@@ -120,7 +125,7 @@ export class UsersRepository {
     });
 
     if (!user) {
-      throw new NotFoundException('Користувача не знайдено');
+      throw new NotFoundException(USER_MESSAGES.NOT_FOUND);
     }
 
     const orders = await this.orderRepository.find({

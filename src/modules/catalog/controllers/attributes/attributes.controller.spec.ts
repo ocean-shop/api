@@ -37,7 +37,7 @@ describe('AttributesController', () => {
   });
 
   it('should return all attributes', async () => {
-    const query = { name: 'col' };
+    const query = { page: 1, limit: 20, name: 'col' };
     const expected = {
       items: [
         { id: '1', shopId: 'shop-id', name: 'Color', value: 'Red' },

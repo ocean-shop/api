@@ -1,7 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { SHOP_MESSAGES } from '../../constants/shop-messages.constants';
 import { Shop } from '../../entities/shop.entity';
+import { PaginatedResult } from '../../../../core/response/models/response.models';
 
 @Injectable()
 export class ShopRepository {
@@ -13,7 +15,7 @@ export class ShopRepository {
   async findAllPaginated(
     skip: number,
     take: number,
-  ): Promise<{ items: Shop[]; total: number }> {
+  ): Promise<PaginatedResult<Shop>> {
     const [items, total] = await this.repository
       .createQueryBuilder('shop')
       .orderBy('shop.createdAt', 'DESC')
@@ -28,7 +30,7 @@ export class ShopRepository {
     const shop = await this.repository.findOne({ where: { id } });
 
     if (!shop) {
-      throw new NotFoundException('Магазин не знайдено');
+      throw new NotFoundException(SHOP_MESSAGES.NOT_FOUND);
     }
 
     return shop;

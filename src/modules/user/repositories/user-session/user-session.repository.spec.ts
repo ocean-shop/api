@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { IsNull } from 'typeorm';
+import { IsNull, MoreThan } from 'typeorm';
 import { UserSessionRepository } from './user-session.repository';
 import { UserSession } from '../../entities/user-session.entity';
 
@@ -12,7 +12,8 @@ describe('UserSessionRepository', () => {
     typeOrmRepository = {
       create: jest.fn(),
       save: jest.fn(),
-      find: jest.fn(),
+      findOne: jest.fn(),
+      update: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -33,15 +34,16 @@ describe('UserSessionRepository', () => {
   });
 
   describe('create', () => {
-    it('should create a UserSession instance', () => {
+    it('should create a UserSession instance with the given id', () => {
       const data = {
+        id: 'session-id',
         userId: 'uuid',
         refreshTokenHash: 'hash',
         userAgent: 'agent',
         ipAddress: '127.0.0.1',
         expiresAt: new Date(),
       };
-      const expectedSession = { id: 'session-id', ...data } as UserSession;
+      const expectedSession = data as UserSession;
       typeOrmRepository.create.mockReturnValue(expectedSession);
 
       const result = repository.create(data);
@@ -63,21 +65,95 @@ describe('UserSessionRepository', () => {
     });
   });
 
-  describe('findActiveSessionsByUserId', () => {
-    it('should find active sessions by user id', async () => {
-      const userId = 'uuid';
-      const expectedSessions = [
-        { id: 'session-1' },
-        { id: 'session-2' },
-      ] as UserSession[];
-      typeOrmRepository.find.mockResolvedValue(expectedSessions);
+  describe('findActiveById', () => {
+    it('should find a live, unrevoked session of the user', async () => {
+      const session = { id: 'session-id' } as UserSession;
+      typeOrmRepository.findOne.mockResolvedValue(session);
 
-      const result = await repository.findActiveSessionsByUserId(userId);
+      const result = await repository.findActiveById('session-id', 'uuid');
 
-      expect(typeOrmRepository.find).toHaveBeenCalledWith({
-        where: { userId, revokedAt: IsNull() },
+      expect(typeOrmRepository.findOne).toHaveBeenCalledWith({
+        where: {
+          id: 'session-id',
+          userId: 'uuid',
+          revokedAt: IsNull(),
+          expiresAt: MoreThan(expect.any(Date)),
+        },
       });
-      expect(result).toEqual(expectedSessions);
+      expect(result).toBe(session);
+    });
+  });
+
+  describe('rotate', () => {
+    const rotation = {
+      sessionId: 'session-id',
+      currentHash: 'old-hash',
+      nextHash: 'new-hash',
+      expiresAt: new Date(1000),
+    };
+
+    it('should swap the hash only while the presented one is current', async () => {
+      typeOrmRepository.update.mockResolvedValue({ affected: 1 });
+
+      await expect(
+        repository.rotate({
+          ...rotation,
+          userAgent: 'agent',
+          ipAddress: '1.1.1.1',
+        }),
+      ).resolves.toBe(true);
+      expect(typeOrmRepository.update).toHaveBeenCalledWith(
+        {
+          id: 'session-id',
+          refreshTokenHash: 'old-hash',
+          revokedAt: IsNull(),
+        },
+        {
+          refreshTokenHash: 'new-hash',
+          expiresAt: rotation.expiresAt,
+          userAgent: 'agent',
+          ipAddress: '1.1.1.1',
+        },
+      );
+    });
+
+    it('should keep the stored client info when none is given', async () => {
+      typeOrmRepository.update.mockResolvedValue({ affected: 1 });
+
+      await repository.rotate(rotation);
+
+      expect(typeOrmRepository.update).toHaveBeenCalledWith(
+        expect.any(Object),
+        { refreshTokenHash: 'new-hash', expiresAt: rotation.expiresAt },
+      );
+    });
+
+    it('should return false when another request rotated it first', async () => {
+      typeOrmRepository.update.mockResolvedValue({ affected: 0 });
+
+      await expect(repository.rotate(rotation)).resolves.toBe(false);
+    });
+  });
+
+  describe('revoke', () => {
+    it('should revoke the given session of the user', async () => {
+      await repository.revoke('session-id', 'uuid');
+
+      expect(typeOrmRepository.update).toHaveBeenCalledWith(
+        { id: 'session-id', userId: 'uuid', revokedAt: IsNull() },
+        { revokedAt: expect.any(Date) },
+      );
+    });
+  });
+
+  describe('revokeAllByUserId', () => {
+    it('should revoke every open session of the user', async () => {
+      await repository.revokeAllByUserId('uuid');
+
+      expect(typeOrmRepository.update).toHaveBeenCalledWith(
+        { userId: 'uuid', revokedAt: IsNull() },
+        { revokedAt: expect.any(Date) },
+      );
     });
   });
 });

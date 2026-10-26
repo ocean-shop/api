@@ -1,15 +1,13 @@
-import { NestFactory } from '@nestjs/core';
-import { DataSource } from 'typeorm';
-import { AppModule } from '../../../app.module';
 import { User } from '../../../modules/user/entities/user.entity';
 import { Role } from '../../../modules/user/entities/role.entity';
+import { AppDataSource } from '../data-source';
 
 async function bootstrap() {
-  // Create a standalone NestJS application context
-  const app = await NestFactory.createApplicationContext(AppModule);
+  // Seeding runs from the same pre-deploy container as the migrations, so it
+  // reuses their DataSource: AppModule would resolve DATABASE_URL against the
+  // private network, which is not up yet. See the note in data-source.ts.
+  const dataSource = await AppDataSource.initialize();
 
-  // Retrieve the TypeORM DataSource from the DI container
-  const dataSource = app.get(DataSource);
   const userRepository = dataSource.getRepository(User);
   const roleRepository = dataSource.getRepository(Role);
 
@@ -71,12 +69,12 @@ async function bootstrap() {
   } else {
     console.log(`Super user ${superEmail} already exists.`);
 
-    // Ensure the admin role is assigned if the user existed but didn't have it
-    const hasAdminRole = superUser.role?.name === 'admin';
-    if (!hasAdminRole) {
-      superUser.role = adminRole;
+    // Ensure the super role is assigned if the user existed but didn't have it
+    const hasSuperRole = superUser.role?.name === 'super';
+    if (!hasSuperRole) {
+      superUser.role = superRole;
       await userRepository.save(superUser);
-      console.log(`Assigned admin role to existing user: ${superEmail}`);
+      console.log(`Assigned super role to existing user: ${superEmail}`);
     }
   }
 
@@ -109,8 +107,7 @@ async function bootstrap() {
   }
 
   console.log('Seeding completed successfully!');
-  // Close the application context
-  await app.close();
+  await dataSource.destroy();
 }
 
 bootstrap().catch((err) => {

@@ -13,10 +13,20 @@ import { User } from '../../entities/user.entity';
 import { UserRepository } from '../../repositories/user/user.repository';
 import { AdminListResponse } from '../../models/admin.models';
 import { Shop } from '../../../catalog/entities/shop.entity';
+import {
+  resolvePagination,
+  toListResponse,
+} from '../../../../core/response/helpers/list-response.helpers';
+import { MessageResponse } from '../../../../core/response/models/response.models';
+import { AUTH_MESSAGES } from '../../constants/auth-messages.constants';
+import { ADMIN_ROLES, ROLES } from '../../constants/role.constants';
+import { USER_MESSAGES } from '../../constants/user-messages.constants';
+import { AdminRoleName } from '../../models/role.models';
+import { UserSessionService } from '../user-session/user-session.service';
 
 @Injectable()
 export class AdminsService {
-  private readonly adminRoleNames = ['admin', 'super'];
+  private readonly adminRoleNames = [...ADMIN_ROLES];
 
   constructor(
     private readonly userRepository: UserRepository,
@@ -24,25 +34,18 @@ export class AdminsService {
     private readonly roleRepository: Repository<Role>,
     @InjectRepository(Shop)
     private readonly shopRepository: Repository<Shop>,
+    private readonly userSessionService: UserSessionService,
   ) {}
 
   async listAdmins(query: ListAdminsQueryDto): Promise<AdminListResponse> {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = resolvePagination(query);
     const { items, total } = await this.userRepository.findByRolesPaginated(
       this.adminRoleNames,
       skip,
       limit,
     );
 
-    return {
-      items,
-      total,
-      page,
-      limit,
-      totalPages: total > 0 ? Math.ceil(total / limit) : 0,
-    };
+    return toListResponse(items, total, page, limit);
   }
 
   async getAdminById(id: string): Promise<User> {
@@ -52,7 +55,7 @@ export class AdminsService {
   async createAdmin(dto: CreateAdminDto): Promise<User> {
     await this.ensureUniqueIdentity(dto.email, dto.mobileNumber);
 
-    const roleName = dto.role ?? 'admin';
+    const roleName = dto.role ?? ROLES.ADMIN;
     const role = await this.findRoleByName(roleName);
     const shops = await this.resolveShopsByIds(dto.shopIds ?? []);
 
@@ -87,15 +90,16 @@ export class AdminsService {
     await this.applyShopsUpdate(dto.shopIds, admin);
 
     const savedAdmin = await this.userRepository.save(admin);
+    if (dto.isActive === false) {
+      await this.userSessionService.revokeAllSessions(id);
+    }
+
     return this.getAdminById(savedAdmin.id);
   }
 
-  async removeAdmin(
-    id: string,
-    actorId?: string,
-  ): Promise<{ message: string }> {
+  async removeAdmin(id: string, actorId?: string): Promise<MessageResponse> {
     if (actorId && actorId === id) {
-      throw new ForbiddenException('Ви не можете видалити власний акаунт');
+      throw new ForbiddenException(USER_MESSAGES.CANNOT_REMOVE_SELF);
     }
 
     const admin = await this.userRepository.findByIdAndRoles(
@@ -103,13 +107,13 @@ export class AdminsService {
       this.adminRoleNames,
     );
 
-    if (admin.role?.name === 'super') {
+    if (admin.role?.name === ROLES.SUPER) {
       await this.ensureSuperUserCanBeChanged();
     }
 
     await this.userRepository.remove(admin);
 
-    return { message: 'Адміністратора успішно видалено' };
+    return { message: USER_MESSAGES.ADMIN_REMOVED };
   }
 
   private async ensureUniqueIdentity(
@@ -119,7 +123,7 @@ export class AdminsService {
     if (email) {
       const existingByEmail = await this.userRepository.findByEmail(email);
       if (existingByEmail) {
-        throw new BadRequestException('Email вже використовується');
+        throw new BadRequestException(USER_MESSAGES.EMAIL_TAKEN);
       }
     }
 
@@ -127,7 +131,7 @@ export class AdminsService {
       const existingByMobile =
         await this.userRepository.findByMobileNumber(mobileNumber);
       if (existingByMobile) {
-        throw new BadRequestException('Номер телефону вже використовується');
+        throw new BadRequestException(USER_MESSAGES.PHONE_TAKEN);
       }
     }
   }
@@ -143,7 +147,7 @@ export class AdminsService {
 
     const existingByEmail = await this.userRepository.findByEmail(email);
     if (existingByEmail && existingByEmail.id !== adminId) {
-      throw new BadRequestException('Email вже використовується');
+      throw new BadRequestException(USER_MESSAGES.EMAIL_TAKEN);
     }
 
     admin.email = email;
@@ -161,7 +165,7 @@ export class AdminsService {
     const existingByMobile =
       await this.userRepository.findByMobileNumber(mobileNumber);
     if (existingByMobile && existingByMobile.id !== adminId) {
-      throw new BadRequestException('Номер телефону вже використовується');
+      throw new BadRequestException(USER_MESSAGES.PHONE_TAKEN);
     }
 
     admin.mobileNumber = mobileNumber;
@@ -178,7 +182,7 @@ export class AdminsService {
 
   private async applyRoleUpdate(
     adminId: string,
-    nextRole: 'admin' | 'super' | undefined,
+    nextRole: AdminRoleName | undefined,
     admin: User,
     actorId?: string,
   ): Promise<void> {
@@ -186,11 +190,11 @@ export class AdminsService {
       return;
     }
 
-    if (actorId && actorId === adminId && nextRole === 'admin') {
-      throw new ForbiddenException('Ви не можете понизити власний суперакаунт');
+    if (actorId && actorId === adminId && nextRole === ROLES.ADMIN) {
+      throw new ForbiddenException(USER_MESSAGES.CANNOT_DEMOTE_SELF);
     }
 
-    if (admin.role?.name === 'super' && nextRole !== 'super') {
+    if (admin.role?.name === ROLES.SUPER && nextRole !== ROLES.SUPER) {
       await this.ensureSuperUserCanBeChanged();
     }
 
@@ -223,30 +227,26 @@ export class AdminsService {
       const missingShopIds = uniqueShopIds.filter(
         (id) => !existingShopIds.has(id),
       );
-      throw new BadRequestException(
-        `Деякі магазини не існують: ${missingShopIds.join(', ')}`,
-      );
+      throw new BadRequestException(USER_MESSAGES.missingShops(missingShopIds));
     }
 
     return shops;
   }
 
-  private async findRoleByName(roleName: 'admin' | 'super'): Promise<Role> {
+  private async findRoleByName(roleName: AdminRoleName): Promise<Role> {
     const role = await this.roleRepository.findOne({
       where: { name: roleName },
     });
     if (!role) {
-      throw new BadRequestException(`Роль ${roleName} не налаштована`);
+      throw new BadRequestException(AUTH_MESSAGES.roleNotConfigured(roleName));
     }
     return role;
   }
 
   private async ensureSuperUserCanBeChanged(): Promise<void> {
-    const superUsersCount = await this.userRepository.countByRole('super');
+    const superUsersCount = await this.userRepository.countByRole(ROLES.SUPER);
     if (superUsersCount <= 1) {
-      throw new BadRequestException(
-        'Неможливо змінити останнього суперкористувача',
-      );
+      throw new BadRequestException(USER_MESSAGES.LAST_SUPER_USER);
     }
   }
 }

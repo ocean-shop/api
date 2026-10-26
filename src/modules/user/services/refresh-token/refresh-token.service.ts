@@ -1,101 +1,91 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { UserSession } from '../../entities/user-session.entity';
+import { User } from '../../entities/user.entity';
 import { UserRepository } from '../../repositories/user/user.repository';
 import { UserSessionRepository } from '../../repositories/user-session/user-session.repository';
 import { AuthService } from '../auth/auth.service';
-import {
-  buildRefreshTokenExpiryDate,
-  findSessionByRefreshToken,
-  hashRefreshToken,
-} from '../session/user-session.helpers';
+import { UserSessionService } from '../user-session/user-session.service';
+import { isRefreshTokenMatch } from '../../helpers/user-session.helpers';
+import { AUTH_MESSAGES } from '../../constants/auth-messages.constants';
+import { AuthSession, SessionClient } from '../../models/auth.models';
 
 @Injectable()
 export class RefreshTokenService {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly userSessionRepository: UserSessionRepository,
-    private readonly jwtService: JwtService,
     private readonly authService: AuthService,
+    private readonly userSessionService: UserSessionService,
   ) {}
 
+  /**
+   * Rotates the session only for a user of one of `allowedRoles`, so a shop
+   * session can never be refreshed into the admin panel and vice versa.
+   */
   async refreshToken(
     refreshToken: string,
+    allowedRoles: readonly string[],
     userAgent?: string,
     ipAddress?: string,
-  ) {
+  ): Promise<AuthSession> {
     if (!refreshToken) {
-      throw new UnauthorizedException('Потрібен refresh-токен');
+      throw new UnauthorizedException(AUTH_MESSAGES.REFRESH_TOKEN_REQUIRED);
     }
 
-    try {
-      const userId = this.extractUserIdFromToken(refreshToken);
-      const user = await this.userRepository.findById(userId);
-      const currentSession = await this.findValidSession(userId, refreshToken);
+    const { sub, sid } = this.authService.verifyRefreshToken(refreshToken);
+    const session = await this.findValidSession(sid, sub, refreshToken);
+    const user = await this.findActiveUser(session);
+    this.assertAllowedRole(user, allowedRoles);
+    const client: SessionClient = { userAgent, ipAddress };
 
-      const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
-        this.authService.generateTokens(user);
-
-      await this.updateSession(
-        currentSession,
-        newRefreshToken,
-        userAgent,
-        ipAddress,
-      );
-
-      return {
-        accessToken: newAccessToken,
-        refreshToken: newRefreshToken,
-        user: {
-          id: user.id,
-          email: user.email,
-          mobileNumber: user.mobileNumber,
-          role: user.role?.name || null,
-        },
-      };
-    } catch {
-      throw new UnauthorizedException('Недійсний refresh-токен');
-    }
+    return this.userSessionService.rotateSession(session, user, client);
   }
 
-  private extractUserIdFromToken(refreshToken: string): string {
-    const payload: { sub: string } = this.jwtService.verify(refreshToken);
-    return String(payload.sub);
-  }
-
+  /** The session must be live and still hold this exact token, not a rotated-out one. */
   private async findValidSession(
+    sessionId: string,
     userId: string,
     refreshToken: string,
   ): Promise<UserSession> {
-    const sessions =
-      await this.userSessionRepository.findActiveSessionsByUserId(userId);
-
-    const matchingSession = await findSessionByRefreshToken(
-      sessions,
-      refreshToken,
-      {
-        skipExpired: true,
-      },
+    const session = await this.userSessionRepository.findActiveById(
+      sessionId,
+      userId,
     );
-    if (matchingSession) {
-      return matchingSession;
+
+    if (
+      !session ||
+      !isRefreshTokenMatch(refreshToken, session.refreshTokenHash)
+    ) {
+      throw new UnauthorizedException(AUTH_MESSAGES.REFRESH_TOKEN_INVALID);
     }
 
-    throw new UnauthorizedException('Недійсний refresh-токен');
+    return session;
   }
 
-  private async updateSession(
-    session: UserSession,
-    newRefreshToken: string,
-    userAgent?: string,
-    ipAddress?: string,
-  ): Promise<void> {
-    session.refreshTokenHash = await hashRefreshToken(newRefreshToken);
-    session.expiresAt = buildRefreshTokenExpiryDate();
+  /** A blocked or deleted user loses the session instead of getting new tokens. */
+  private async findActiveUser(session: UserSession): Promise<User> {
+    const user = await this.findUser(session.userId);
 
-    if (userAgent) session.userAgent = userAgent;
-    if (ipAddress) session.ipAddress = ipAddress;
+    if (!user?.isActive) {
+      await this.userSessionService.revokeSession(session.id, session.userId);
+      throw new UnauthorizedException(AUTH_MESSAGES.REFRESH_TOKEN_INVALID);
+    }
 
-    await this.userSessionRepository.save(session);
+    return user;
+  }
+
+  /** The session stays valid for its own app; it is just not accepted here. */
+  private assertAllowedRole(user: User, allowedRoles: readonly string[]): void {
+    if (!user.role?.name || !allowedRoles.includes(user.role.name)) {
+      throw new UnauthorizedException(AUTH_MESSAGES.REFRESH_TOKEN_INVALID);
+    }
+  }
+
+  private async findUser(userId: string): Promise<User | null> {
+    try {
+      return await this.userRepository.findById(userId);
+    } catch {
+      return null;
+    }
   }
 }
