@@ -2,7 +2,6 @@ import type { CookieOptions, Response } from 'express';
 import {
   DEFAULT_REFRESH_EXPIRE_MS,
   PRODUCTION_ENV,
-  REFRESH_TOKEN_COOKIE,
   REFRESH_TOKEN_COOKIE_SAME_SITE,
 } from '../constants/auth.constants';
 import { AuthResponse, AuthSession } from '../models/auth.models';
@@ -32,14 +31,11 @@ export function buildRefreshTokenCookieOptions(): CookieOptions {
 export function sendAuthSession(
   response: Response,
   session: AuthSession,
+  cookieName: string,
 ): AuthResponse {
   const { refreshToken, ...authResponse } = session;
 
-  response.cookie(
-    REFRESH_TOKEN_COOKIE,
-    refreshToken,
-    buildRefreshTokenCookieOptions(),
-  );
+  response.cookie(cookieName, refreshToken, buildRefreshTokenCookieOptions());
 
   return authResponse;
 }

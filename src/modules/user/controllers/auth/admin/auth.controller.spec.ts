@@ -116,7 +116,7 @@ describe('AuthController', () => {
         ipAddress,
       );
       expect(mockResponse.cookie).toHaveBeenCalledWith(
-        'refresh_token',
+        'admin_refresh_token',
         expectedResult.refreshToken,
         {
           httpOnly: true,
@@ -154,7 +154,7 @@ describe('AuthController', () => {
       await controller.verifyOtp(dto, 'agent', 'ip', mockResponse);
 
       expect(mockResponse.cookie).toHaveBeenCalledWith(
-        'refresh_token',
+        'admin_refresh_token',
         expectedResult.refreshToken,
         {
           httpOnly: true,
@@ -172,7 +172,7 @@ describe('AuthController', () => {
       const ipAddress = '127.0.0.1';
 
       const mockRequest = {
-        cookies: { refresh_token: 'old-refresh-token' },
+        cookies: { admin_refresh_token: 'old-refresh-token' },
       } as unknown as Request;
 
       const mockResponse = {
@@ -203,11 +203,12 @@ describe('AuthController', () => {
 
       expect(refreshTokenService.refreshToken).toHaveBeenCalledWith(
         'old-refresh-token',
+        ['admin', 'super'],
         userAgent,
         ipAddress,
       );
       expect(mockResponse.cookie).toHaveBeenCalledWith(
-        'refresh_token',
+        'admin_refresh_token',
         expectedResult.refreshToken,
         {
           httpOnly: true,
@@ -227,7 +228,7 @@ describe('AuthController', () => {
   describe('logout', () => {
     it('should call logoutService.logout, clear cookie, and return success message', async () => {
       const mockRequest = {
-        cookies: { refresh_token: 'refresh-token-to-logout' },
+        cookies: { admin_refresh_token: 'refresh-token-to-logout' },
       } as unknown as Request;
 
       const mockResponse = {
@@ -239,11 +240,14 @@ describe('AuthController', () => {
       expect(logoutService.logout).toHaveBeenCalledWith(
         'refresh-token-to-logout',
       );
-      expect(mockResponse.clearCookie).toHaveBeenCalledWith('refresh_token', {
-        httpOnly: true,
-        secure: false,
-        sameSite: 'strict',
-      });
+      expect(mockResponse.clearCookie).toHaveBeenCalledWith(
+        'admin_refresh_token',
+        {
+          httpOnly: true,
+          secure: false,
+          sameSite: 'strict',
+        },
+      );
       expect(result).toEqual({ message: 'Ви успішно вийшли з системи' });
     });
 
@@ -251,7 +255,7 @@ describe('AuthController', () => {
       process.env.NODE_ENV = 'production';
 
       const mockRequest = {
-        cookies: { refresh_token: 'refresh-token-to-logout' },
+        cookies: { admin_refresh_token: 'refresh-token-to-logout' },
       } as unknown as Request;
 
       const mockResponse = {
@@ -260,11 +264,14 @@ describe('AuthController', () => {
 
       await controller.logout(mockRequest, mockResponse);
 
-      expect(mockResponse.clearCookie).toHaveBeenCalledWith('refresh_token', {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'strict',
-      });
+      expect(mockResponse.clearCookie).toHaveBeenCalledWith(
+        'admin_refresh_token',
+        {
+          httpOnly: true,
+          secure: true,
+          sameSite: 'strict',
+        },
+      );
     });
   });
 });

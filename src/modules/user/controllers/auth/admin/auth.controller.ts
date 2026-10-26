@@ -23,12 +23,13 @@ import { RefreshTokenService } from '../../../services/refresh-token/refresh-tok
 import { LogoutService } from '../../../services/logout/logout.service';
 import { MessageResponse } from '../../../../../core/response/models/response.models';
 import { AUTH_MESSAGES } from '../../../constants/auth-messages.constants';
+import { ADMIN_ROLES } from '../../../constants/role.constants';
 import {
   OTP_REQUEST_THROTTLE_LIMIT,
   OTP_THROTTLE_WINDOW_MS,
   OTP_THROTTLER,
   OTP_VERIFY_THROTTLE_LIMIT,
-  REFRESH_TOKEN_COOKIE,
+  ADMIN_REFRESH_TOKEN_COOKIE,
 } from '../../../constants/auth.constants';
 import {
   buildRefreshTokenClearCookieOptions,
@@ -90,40 +91,41 @@ export class AuthController {
       ipAddress,
     );
 
-    return sendAuthSession(response, session);
+    return sendAuthSession(response, session, ADMIN_REFRESH_TOKEN_COOKIE);
   }
 
   @Post('refresh')
   @ApiOperation({ summary: 'Refresh access token by refresh cookie' })
-  @ApiCookieAuth(REFRESH_TOKEN_COOKIE)
+  @ApiCookieAuth(ADMIN_REFRESH_TOKEN_COOKIE)
   async refresh(
     @Req() request: Request,
     @Headers('user-agent') userAgent: string,
     @Ip() ipAddress: string,
     @Res({ passthrough: true }) response: Response,
   ): Promise<AuthResponse> {
-    const refreshToken = request.cookies[REFRESH_TOKEN_COOKIE] as string;
+    const refreshToken = request.cookies[ADMIN_REFRESH_TOKEN_COOKIE] as string;
     const session = await this.refreshTokenService.refreshToken(
       refreshToken,
+      ADMIN_ROLES,
       userAgent,
       ipAddress,
     );
 
-    return sendAuthSession(response, session);
+    return sendAuthSession(response, session, ADMIN_REFRESH_TOKEN_COOKIE);
   }
 
   @Post('logout')
   @ApiOperation({ summary: 'Logout and clear refresh cookie' })
-  @ApiCookieAuth(REFRESH_TOKEN_COOKIE)
+  @ApiCookieAuth(ADMIN_REFRESH_TOKEN_COOKIE)
   async logout(
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ): Promise<MessageResponse> {
-    const refreshToken = request.cookies[REFRESH_TOKEN_COOKIE] as string;
+    const refreshToken = request.cookies[ADMIN_REFRESH_TOKEN_COOKIE] as string;
     await this.logoutService.logout(refreshToken);
 
     response.clearCookie(
-      REFRESH_TOKEN_COOKIE,
+      ADMIN_REFRESH_TOKEN_COOKIE,
       buildRefreshTokenClearCookieOptions(),
     );
 

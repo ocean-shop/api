@@ -65,14 +65,14 @@ describe('auth-cookie.helpers', () => {
         role: 'user',
       };
 
-      const result = sendAuthSession(response, {
-        accessToken: 'access',
-        refreshToken: 'refresh',
-        user,
-      });
+      const result = sendAuthSession(
+        response,
+        { accessToken: 'access', refreshToken: 'refresh', user },
+        'client_refresh_token',
+      );
 
       expect(response.cookie).toHaveBeenCalledWith(
-        'refresh_token',
+        'client_refresh_token',
         'refresh',
         buildRefreshTokenCookieOptions(),
       );

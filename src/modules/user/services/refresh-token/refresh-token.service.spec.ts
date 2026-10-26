@@ -29,6 +29,8 @@ describe('RefreshTokenService', () => {
   const invalid = new UnauthorizedException(
     AUTH_MESSAGES.REFRESH_TOKEN_INVALID,
   );
+  const CLIENT = ['user'];
+  const ADMIN = ['admin', 'super'];
 
   beforeEach(async () => {
     userRepository = { findById: jest.fn().mockResolvedValue(user) };
@@ -59,13 +61,18 @@ describe('RefreshTokenService', () => {
   });
 
   it('should require a refresh token', async () => {
-    await expect(service.refreshToken('')).rejects.toThrow(
+    await expect(service.refreshToken('', CLIENT)).rejects.toThrow(
       new UnauthorizedException(AUTH_MESSAGES.REFRESH_TOKEN_REQUIRED),
     );
   });
 
   it('should rotate the session the token belongs to', async () => {
-    const result = await service.refreshToken('current-token', 'agent', 'ip');
+    const result = await service.refreshToken(
+      'current-token',
+      CLIENT,
+      'agent',
+      'ip',
+    );
 
     expect(authService.verifyRefreshToken).toHaveBeenCalledWith(
       'current-token',
@@ -87,30 +94,32 @@ describe('RefreshTokenService', () => {
       throw invalid;
     });
 
-    await expect(service.refreshToken('access-token')).rejects.toThrow(invalid);
+    await expect(service.refreshToken('access-token', CLIENT)).rejects.toThrow(
+      invalid,
+    );
     expect(userSessionRepository.findActiveById).not.toHaveBeenCalled();
   });
 
   it('should reject when the session is revoked, expired or unknown', async () => {
     userSessionRepository.findActiveById.mockResolvedValue(null);
 
-    await expect(service.refreshToken('current-token')).rejects.toThrow(
+    await expect(service.refreshToken('current-token', CLIENT)).rejects.toThrow(
       invalid,
     );
     expect(userSessionService.rotateSession).not.toHaveBeenCalled();
   });
 
   it('should reject a token that was already rotated out', async () => {
-    await expect(service.refreshToken('previous-token')).rejects.toThrow(
-      invalid,
-    );
+    await expect(
+      service.refreshToken('previous-token', CLIENT),
+    ).rejects.toThrow(invalid);
     expect(userSessionService.rotateSession).not.toHaveBeenCalled();
   });
 
   it('should revoke the session and refuse a blocked user', async () => {
     userRepository.findById.mockResolvedValue({ ...user, isActive: false });
 
-    await expect(service.refreshToken('current-token')).rejects.toThrow(
+    await expect(service.refreshToken('current-token', CLIENT)).rejects.toThrow(
       invalid,
     );
     expect(userSessionService.revokeSession).toHaveBeenCalledWith(
@@ -123,7 +132,7 @@ describe('RefreshTokenService', () => {
   it('should revoke the session of a deleted user', async () => {
     userRepository.findById.mockRejectedValue(new NotFoundException());
 
-    await expect(service.refreshToken('current-token')).rejects.toThrow(
+    await expect(service.refreshToken('current-token', CLIENT)).rejects.toThrow(
       invalid,
     );
     expect(userSessionService.revokeSession).toHaveBeenCalledWith(
@@ -132,10 +141,38 @@ describe('RefreshTokenService', () => {
     );
   });
 
+  it('should refuse a client session in the admin panel without revoking it', async () => {
+    await expect(service.refreshToken('current-token', ADMIN)).rejects.toThrow(
+      invalid,
+    );
+    expect(userSessionService.revokeSession).not.toHaveBeenCalled();
+    expect(userSessionService.rotateSession).not.toHaveBeenCalled();
+  });
+
+  it('should refuse an admin session in the shop', async () => {
+    userRepository.findById.mockResolvedValue({
+      ...user,
+      role: { name: 'admin' },
+    });
+
+    await expect(service.refreshToken('current-token', CLIENT)).rejects.toThrow(
+      invalid,
+    );
+    expect(userSessionService.rotateSession).not.toHaveBeenCalled();
+  });
+
+  it('should refuse a user without a role', async () => {
+    userRepository.findById.mockResolvedValue({ ...user, role: null });
+
+    await expect(service.refreshToken('current-token', CLIENT)).rejects.toThrow(
+      invalid,
+    );
+  });
+
   it('should propagate a lost rotation race', async () => {
     userSessionService.rotateSession.mockRejectedValue(invalid);
 
-    await expect(service.refreshToken('current-token')).rejects.toThrow(
+    await expect(service.refreshToken('current-token', CLIENT)).rejects.toThrow(
       invalid,
     );
   });

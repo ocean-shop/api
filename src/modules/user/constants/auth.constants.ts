@@ -31,7 +31,13 @@ export const TOKEN_TYPES = {
 export const REFRESH_TOKEN_HASH_ALGORITHM = 'sha256';
 export const REFRESH_TOKEN_HASH_ENCODING = 'hex';
 
-export const REFRESH_TOKEN_COOKIE = 'refresh_token';
+/**
+ * One cookie per app. Browsers ignore the port when matching cookies, so with a
+ * shared name the shop and the admin (e.g. both on `localhost`) would read each
+ * other's session.
+ */
+export const ADMIN_REFRESH_TOKEN_COOKIE = 'admin_refresh_token';
+export const CLIENT_REFRESH_TOKEN_COOKIE = 'client_refresh_token';
 export const BEARER_PREFIX = 'Bearer ';
 
 export const PRODUCTION_ENV = 'production';

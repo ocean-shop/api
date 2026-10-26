@@ -18,8 +18,13 @@ export class RefreshTokenService {
     private readonly userSessionService: UserSessionService,
   ) {}
 
+  /**
+   * Rotates the session only for a user of one of `allowedRoles`, so a shop
+   * session can never be refreshed into the admin panel and vice versa.
+   */
   async refreshToken(
     refreshToken: string,
+    allowedRoles: readonly string[],
     userAgent?: string,
     ipAddress?: string,
   ): Promise<AuthSession> {
@@ -30,6 +35,7 @@ export class RefreshTokenService {
     const { sub, sid } = this.authService.verifyRefreshToken(refreshToken);
     const session = await this.findValidSession(sid, sub, refreshToken);
     const user = await this.findActiveUser(session);
+    this.assertAllowedRole(user, allowedRoles);
     const client: SessionClient = { userAgent, ipAddress };
 
     return this.userSessionService.rotateSession(session, user, client);
@@ -66,6 +72,13 @@ export class RefreshTokenService {
     }
 
     return user;
+  }
+
+  /** The session stays valid for its own app; it is just not accepted here. */
+  private assertAllowedRole(user: User, allowedRoles: readonly string[]): void {
+    if (!user.role?.name || !allowedRoles.includes(user.role.name)) {
+      throw new UnauthorizedException(AUTH_MESSAGES.REFRESH_TOKEN_INVALID);
+    }
   }
 
   private async findUser(userId: string): Promise<User | null> {
