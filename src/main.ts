@@ -4,20 +4,27 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
+import {
+  APP_ENVS,
+  AppEnv,
+  CORS_ORIGINS_BY_ENV,
+  DEFAULT_APP_ENV,
+} from './core/config/constants/app-env.constants';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use(json({ limit: '20mb' }));
   app.use(urlencoded({ limit: '20mb', extended: true }));
 
+  const appEnv = process.env.APP_ENV ?? DEFAULT_APP_ENV;
+  if (!APP_ENVS.includes(appEnv as AppEnv)) {
+    throw new Error(
+      `Invalid APP_ENV "${appEnv}". Expected one of: ${APP_ENVS.join(', ')}`,
+    );
+  }
+
   const corsOrigin = process.env.CORS_ORIGIN;
-  const defaultCorsOrigins = [
-    'http://localhost:3001',
-    'http://localhost:3002',
-    'http://localhost:3000/',
-    'https://admin-production-90ee.up.railway.app',
-    'https://client-production-cf61c.up.railway.app',
-  ];
+  const defaultCorsOrigins = [...CORS_ORIGINS_BY_ENV[appEnv as AppEnv]];
   const allowedCorsOrigins = corsOrigin
     ? [
         ...new Set([
