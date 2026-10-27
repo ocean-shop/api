@@ -1,3 +1,4 @@
+import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MailService } from '../../../../core/mail/mail.service';
 import {
@@ -12,6 +13,14 @@ describe('OrderEmailService', () => {
   let service: OrderEmailService;
   let mailService: any;
   let orderClientRepository: any;
+  let configService: { get: jest.Mock };
+
+  const manualPaymentConfig: Record<string, string | undefined> = {
+    MANUAL_PAYMENT_RECIPIENT: 'ФОП Коваль О.П.',
+    MANUAL_PAYMENT_IBAN: 'UA213223130000026007233566001',
+    MANUAL_PAYMENT_CARD_NUMBER: '4441 1111 2222 3333',
+    MANUAL_PAYMENT_PHONE: '+380671112233',
+  };
 
   const buildOrder = (overrides: Record<string, unknown> = {}): any => ({
     id: 'a1b2c3d4-0000-0000-0000-000000000000',
@@ -53,12 +62,16 @@ describe('OrderEmailService', () => {
         .fn()
         .mockResolvedValue(new Map([['p1', 'https://img/p1.jpg']])),
     };
+    configService = {
+      get: jest.fn((key: string) => manualPaymentConfig[key]),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OrderEmailService,
         { provide: MailService, useValue: mailService },
         { provide: OrderClientRepository, useValue: orderClientRepository },
+        { provide: ConfigService, useValue: configService },
       ],
     }).compile();
 
@@ -161,6 +174,60 @@ describe('OrderEmailService', () => {
     expect(context.paymentLabel).toBe('Оплата банківською карткою');
     expect(context.items).toEqual([]);
     expect(context.itemsCount).toBe(0);
+  });
+
+  it('should send payment instructions for manual payment orders', async () => {
+    await service.sendOrderCreatedEmail(
+      buildOrder({
+        paymentMethod: OrderPaymentMethod.MANUAL,
+        paymentStatus: OrderPaymentStatus.UNPAID,
+      }),
+    );
+
+    expect(mailService.sendMail).toHaveBeenCalledTimes(1);
+    const [{ to, subject, template, context }] =
+      mailService.sendMail.mock.calls[0];
+    expect(to).toBe('olena@example.com');
+    expect(subject).toBe('Оплата замовлення #48211: реквізити');
+    expect(template).toBe('order-manual-payment');
+    expect(context).toMatchObject({
+      orderNumber: '48211',
+      firstName: 'Олена',
+      paymentLabel: 'Оплата за реквізитами',
+      payment: {
+        recipient: 'ФОП Коваль О.П.',
+        iban: 'UA213223130000026007233566001',
+        cardNumber: '4441 1111 2222 3333',
+        phone: '+380671112233',
+      },
+    });
+    expect(normalizeSpaces(context.total)).toBe('8 567 ₴');
+    expect(configService.get).toHaveBeenCalledWith('MANUAL_PAYMENT_IBAN');
+  });
+
+  it('should send manual payment email with empty details when not configured', async () => {
+    configService.get.mockReturnValue(undefined);
+
+    await service.sendOrderCreatedEmail(
+      buildOrder({ paymentMethod: OrderPaymentMethod.MANUAL }),
+    );
+
+    const { template, context } = mailService.sendMail.mock.calls[0][0];
+    expect(template).toBe('order-manual-payment');
+    expect(context.payment).toEqual({
+      recipient: null,
+      iban: null,
+      cardNumber: null,
+      phone: null,
+    });
+  });
+
+  it('should skip manual payment email when the order has no email', async () => {
+    await service.sendOrderCreatedEmail(
+      buildOrder({ paymentMethod: OrderPaymentMethod.MANUAL, email: null }),
+    );
+
+    expect(mailService.sendMail).not.toHaveBeenCalled();
   });
 });
 

@@ -44,6 +44,10 @@ export function getPaymentLabel(
     return PAYMENT_LABELS.CASH_ON_DELIVERY;
   }
 
+  if (order.paymentMethod === OrderPaymentMethod.MANUAL) {
+    return PAYMENT_LABELS.MANUAL;
+  }
+
   return order.paymentStatus === OrderPaymentStatus.PAID
     ? PAYMENT_LABELS.CARD_PAID
     : PAYMENT_LABELS.CARD_UNPAID;

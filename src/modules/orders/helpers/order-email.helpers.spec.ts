@@ -46,6 +46,15 @@ describe('order-email.helpers', () => {
       ).toBe(PAYMENT_LABELS.CASH_ON_DELIVERY);
     });
 
+    it('should label manual payment', () => {
+      expect(
+        getPaymentLabel({
+          paymentMethod: OrderPaymentMethod.MANUAL,
+          paymentStatus: OrderPaymentStatus.UNPAID,
+        }),
+      ).toBe(PAYMENT_LABELS.MANUAL);
+    });
+
     it.each([
       [OrderPaymentStatus.PAID, PAYMENT_LABELS.CARD_PAID],
       [OrderPaymentStatus.UNPAID, PAYMENT_LABELS.CARD_UNPAID],

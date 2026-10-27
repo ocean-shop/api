@@ -1,6 +1,7 @@
 export enum OrderPaymentMethod {
   CARD = 'card',
   COD = 'cod',
+  MANUAL = 'manual',
 }
 
 export enum OrderPaymentStatus {
