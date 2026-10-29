@@ -10,7 +10,6 @@ import { Order } from '../../../entities/order.entity';
 import { OrdersListResponse } from '../../../models/order.models';
 import { OrderClientRepository } from '../../../repositories/order/client/order-client.repository';
 import { OrderEmailService } from '../../email/order-email.service';
-import { OrdersStatusService } from '../common/orders-status.service';
 import {
   resolvePagination,
   toListResponse,
@@ -18,15 +17,13 @@ import {
 import { assertCanAccessUser } from '../../../../user/helpers/access.helpers';
 
 @Injectable()
-export class OrdersClientService extends OrdersStatusService {
+export class OrdersClientService {
   private readonly logger = new Logger(OrdersClientService.name);
 
   constructor(
     private readonly orderClientRepository: OrderClientRepository,
     private readonly orderEmailService: OrderEmailService,
-  ) {
-    super(orderClientRepository);
-  }
+  ) {}
 
   async createOrder(dto: CreateOrderDto): Promise<Order> {
     await this.orderClientRepository.validateProductsForShop(

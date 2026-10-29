@@ -13,14 +13,18 @@ import { AuthenticatedRequest } from '../models/auth-request.models';
 export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
+  /**
+   * `@Roles` may sit on the handler or on the whole controller; the handler
+   * wins. A route behind this guard without any `@Roles` is denied, so a
+   * forgotten decorator never opens it to every signed-in user.
+   */
   canActivate(context: ExecutionContext): boolean {
-    const requiredRoles = this.reflector.get<string[]>(
-      ROLES_METADATA_KEY,
-      context.getHandler(),
-    );
+    const requiredRoles = this.reflector.getAllAndOverride<
+      string[] | undefined
+    >(ROLES_METADATA_KEY, [context.getHandler(), context.getClass()]);
 
-    if (!requiredRoles) {
-      return true;
+    if (!requiredRoles?.length) {
+      throw new ForbiddenException(AUTH_MESSAGES.ACCESS_DENIED);
     }
 
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
