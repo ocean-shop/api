@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../entities/user.entity';
 import { Role } from '../../entities/role.entity';
+import { Shop } from '../../../catalog/entities/shop.entity';
+import { USERS_SHOPS_TABLE } from '../../constants/users-shops.constants';
 
 @Injectable()
 export class AuthClientRepository {
@@ -11,6 +13,8 @@ export class AuthClientRepository {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Role)
     private readonly roleRepository: Repository<Role>,
+    @InjectRepository(Shop)
+    private readonly shopRepository: Repository<Shop>,
   ) {}
 
   async findByEmailOrPhone(
@@ -30,5 +34,19 @@ export class AuthClientRepository {
   async createUser(payload: Partial<User>): Promise<User> {
     const user = this.userRepository.create(payload);
     return this.userRepository.save(user);
+  }
+
+  async shopExists(shopId: string): Promise<boolean> {
+    return this.shopRepository.existsBy({ id: shopId });
+  }
+
+  async bindUserToShop(userId: string, shopId: string): Promise<void> {
+    await this.userRepository
+      .createQueryBuilder()
+      .insert()
+      .into(USERS_SHOPS_TABLE, ['user_id', 'shop_id'])
+      .values({ user_id: userId, shop_id: shopId })
+      .orIgnore()
+      .execute();
   }
 }
