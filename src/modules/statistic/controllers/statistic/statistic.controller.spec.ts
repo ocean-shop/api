@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { JwtAuthGuard } from '../../../user/guards/jwt-auth.guard';
-import { RolesGuard } from '../../../user/guards/roles.guard';
+import { JwtAuthGuard } from '../../../user/guards/jwt-auth/jwt-auth.guard';
+import { RolesGuard } from '../../../user/guards/roles/roles.guard';
 import { StatisticService } from '../../services/statistic/statistic.service';
 import { StatisticController } from './statistic.controller';
 

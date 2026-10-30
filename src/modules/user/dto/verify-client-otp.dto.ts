@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, Length } from 'class-validator';
+import { IsNotEmpty, IsString, IsUUID, Length } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class VerifyClientOtpDto {
@@ -16,4 +16,12 @@ export class VerifyClientOtpDto {
   @IsNotEmpty()
   @Length(4, 4)
   readonly code: string;
+
+  @ApiProperty({
+    example: '3f1c2b9e-8a4d-4e2f-9b1a-2c3d4e5f6a7b',
+    format: 'uuid',
+    description: 'Shop the client signs in to; the client is bound to it',
+  })
+  @IsUUID()
+  readonly shopId: string;
 }

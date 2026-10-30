@@ -16,9 +16,9 @@ import {
 } from '@nestjs/swagger';
 import { SettingsService } from '../../services/settings/settings.service';
 import { UpdateSettingsDto } from '../../dto/update-settings.dto';
-import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
-import { RolesGuard } from '../../guards/roles.guard';
-import { Roles } from '../../decorators/roles.decorator';
+import { JwtAuthGuard } from '../../guards/jwt-auth/jwt-auth.guard';
+import { RolesGuard } from '../../guards/roles/roles.guard';
+import { Roles } from '../../decorators/roles/roles.decorator';
 import { ADMIN_ROLES } from '../../constants/role.constants';
 
 @Controller('user/settings')

@@ -17,9 +17,9 @@ import {
 } from '@nestjs/swagger';
 import { ProfileService } from '../../../../services/profile/profile.service';
 import { UpdateProfileDto } from '../../../../dto/update-profile.dto';
-import { JwtAuthGuard } from '../../../../guards/jwt-auth.guard';
-import { RolesGuard } from '../../../../guards/roles.guard';
-import { Roles } from '../../../../decorators/roles.decorator';
+import { JwtAuthGuard } from '../../../../guards/jwt-auth/jwt-auth.guard';
+import { RolesGuard } from '../../../../guards/roles/roles.guard';
+import { Roles } from '../../../../decorators/roles/roles.decorator';
 import { ALL_ROLES } from '../../../../constants/role.constants';
 import type { AuthenticatedRequest } from '../../../../models/auth-request.models';
 

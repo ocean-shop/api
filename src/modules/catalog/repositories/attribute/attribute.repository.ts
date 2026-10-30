@@ -10,7 +10,7 @@ import {
   CATEGORY_SUBTREE_IDS,
 } from '../../constants/category-query.constants';
 import { SEARCH_MATCHED_PRODUCT_CONDITION } from '../../constants/product-query.constants';
-import { escapeLikeWildcards } from '../../helpers/catalog-query.helpers';
+import { escapeLikeWildcards } from '../../helpers/catalog-query/catalog-query.helpers';
 import { AttributeFilterOption } from '../../models/attribute.models';
 
 @Injectable()

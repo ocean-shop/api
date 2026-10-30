@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Оплата замовлення #{{orderNumber}}</title>
+    <style>
+      @media only screen and (max-width: 620px) {
+        .wrap { width: 100% !important; max-width: 100% !important; }
+        .px { padding-left: 20px !important; padding-right: 20px !important; }
+        .h1 { font-size: 22px !important; line-height: 28px !important; }
+      }
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background:#ffffff;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="padding:32px 0;">
+      <tr>
+        <td align="center">
+          <table role="presentation" class="wrap" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;">
+
+            <!-- logo -->
+            <tr>
+              <td class="px" style="padding:0 32px 20px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td width="34" height="34" align="center" bgcolor="#00685f" style="width:34px;height:34px;border-radius:9px;font-family:Arial, Helvetica, sans-serif;font-size:18px;font-weight:bold;color:#ffffff;">O</td>
+                    <td style="padding-left:10px;font-family:Arial, Helvetica, sans-serif;font-size:20px;font-weight:bold;letter-spacing:-0.5px;color:#00473f;">Ocean</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- hero -->
+            <tr>
+              <td class="px" bgcolor="#f7fbfa" style="background:#f7fbfa;border-radius:16px 16px 0 0;padding:36px 32px 28px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr><td class="h1" style="font-family:Arial, Helvetica, sans-serif;font-size:26px;line-height:32px;mso-line-height-rule:exactly;font-weight:bold;color:#111c2d;">Дякуємо за замовлення! Залишилось його оплатити</td></tr>
+                  <tr><td style="padding-top:10px;font-family:Arial, Helvetica, sans-serif;font-size:15px;line-height:23px;mso-line-height-rule:exactly;color:#3d4947;">{{#if firstName}}{{firstName}}, ваше{{else}}Ваше{{/if}} замовлення <b style="color:#111c2d;">#{{orderNumber}}</b> від {{orderDate}} прийнято. Будь ласка, оплатіть <b style="color:#111c2d;">{{total}}</b> за реквізитами нижче — щойно отримаємо оплату, одразу почнемо збирати замовлення.</td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- payment details -->
+            <tr>
+              <td class="px" bgcolor="#ffffff" style="background:#ffffff;padding:24px 32px 8px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f2f8f6" style="background:#f2f8f6;border-radius:12px;">
+                  <tr>
+                    <td style="padding:18px;font-family:Arial, Helvetica, sans-serif;">
+                      <div style="font-size:12px;line-height:16px;letter-spacing:1px;text-transform:uppercase;font-weight:bold;color:#00685f;">Реквізити для оплати</div>
+                      {{#if payment.recipient}}
+                      <div style="padding-top:12px;font-size:13px;line-height:19px;color:#5c6b68;">Отримувач</div>
+                      <div style="font-size:15px;line-height:21px;color:#111c2d;font-weight:bold;">{{payment.recipient}}</div>
+                      {{/if}}
+                      {{#if payment.iban}}
+                      <div style="padding-top:12px;font-size:13px;line-height:19px;color:#5c6b68;">IBAN</div>
+                      <div style="font-size:15px;line-height:21px;color:#111c2d;font-weight:bold;word-break:break-all;">{{payment.iban}}</div>
+                      {{/if}}
+                      {{#if payment.cardNumber}}
+                      <div style="padding-top:12px;font-size:13px;line-height:19px;color:#5c6b68;">Номер картки</div>
+                      <div style="font-size:15px;line-height:21px;color:#111c2d;font-weight:bold;white-space:nowrap;">{{payment.cardNumber}}</div>
+                      {{/if}}
+                      {{#unless payment.iban}}{{#unless payment.cardNumber}}
+                      <div style="padding-top:12px;font-size:14px;line-height:21px;color:#3d4947;">Найближчим часом наш менеджер зв'яжеться з вами та надішле реквізити для оплати.</div>
+                      {{/unless}}{{/unless}}
+                      <div style="padding-top:12px;font-size:13px;line-height:19px;color:#5c6b68;">Сума до сплати</div>
+                      <div style="font-size:20px;line-height:26px;color:#111c2d;font-weight:bold;white-space:nowrap;">{{total}}</div>
+                      <div style="padding-top:12px;font-size:13px;line-height:19px;color:#5c6b68;">Призначення платежу</div>
+                      <div style="font-size:15px;line-height:21px;color:#111c2d;font-weight:bold;">Оплата замовлення #{{orderNumber}}</div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- after payment -->
+            <tr>
+              <td class="px" bgcolor="#ffffff" style="background:#ffffff;padding:16px 32px 8px;font-family:Arial, Helvetica, sans-serif;">
+                <div style="font-size:12px;line-height:16px;letter-spacing:1px;text-transform:uppercase;font-weight:bold;color:#00685f;">Після оплати</div>
+                <div style="padding-top:8px;font-size:14px;line-height:22px;color:#3d4947;">
+                  Будь ласка, {{#if payment.phone}}зателефонуйте нам за номером <a href="tel:{{payment.phone}}" style="color:#00685f;font-weight:bold;">{{payment.phone}}</a> або {{/if}}дайте відповідь на цей лист і повідомте, що ви оплатили замовлення <b style="color:#111c2d;">#{{orderNumber}}</b>. Скриншот або квитанція про оплату допоможуть нам швидше знайти ваш платіж.
+                </div>
+              </td>
+            </tr>
+
+            <!-- products -->
+            <tr>
+              <td class="px" bgcolor="#ffffff" style="background:#ffffff;border-radius:0 0 16px 16px;padding:8px 32px 36px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr><td colspan="2" style="padding:18px 0 4px;font-family:Arial, Helvetica, sans-serif;font-size:12px;line-height:16px;letter-spacing:1px;text-transform:uppercase;font-weight:bold;color:#00685f;">Товари в замовленні ({{itemsCount}})</td></tr>
+                  {{#each items}}
+                  <tr>
+                    <td valign="top" style="padding:10px 0;{{#unless @last}}border-bottom:1px solid #e3ede9;{{/unless}}font-family:Arial, Helvetica, sans-serif;font-size:14px;line-height:20px;color:#111c2d;">{{name}} <span style="color:#5c6b68;">× {{quantity}}</span></td>
+                    <td width="96" align="right" valign="top" style="padding:10px 0;{{#unless @last}}border-bottom:1px solid #e3ede9;{{/unless}}font-family:Arial, Helvetica, sans-serif;font-size:14px;line-height:20px;color:#111c2d;font-weight:bold;white-space:nowrap;">{{total}}</td>
+                  </tr>
+                  {{/each}}
+                  <tr>
+                    <td style="padding-top:14px;border-top:1px solid #d3e4de;font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:22px;font-weight:bold;color:#111c2d;">Разом</td>
+                    <td align="right" style="padding-top:14px;border-top:1px solid #d3e4de;font-family:Arial, Helvetica, sans-serif;font-size:18px;line-height:22px;font-weight:bold;color:#111c2d;white-space:nowrap;">{{total}}</td>
+                  </tr>
+                  <tr><td colspan="2" style="padding-top:12px;font-family:Arial, Helvetica, sans-serif;font-size:13px;line-height:19px;color:#5c6b68;">Доставка: {{shippingMethod}}, {{shippingNumber}}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- footer -->
+            <tr>
+              <td class="px" style="padding:24px 32px 0;font-family:Arial, Helvetica, sans-serif;font-size:12.5px;line-height:19px;color:#5c6b68;">
+                Питання щодо оплати чи замовлення? Відповідайте на цей лист або телефонуйте <a href="tel:0800300500" style="color:#00685f;">0 800 300 500</a> (безкоштовно, щодня 8:00–21:00).<br><br>
+                ТОВ «Оушен Шоп», вул. Велика Васильківська, 100, Київ, 03150.<br>
+                Цей лист надіслано, бо ви оформили замовлення на <a href="https://ocean.ua" style="color:#00685f;">ocean.ua</a>.
+              </td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

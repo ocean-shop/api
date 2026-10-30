@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AdminsController } from './admins.controller';
 import { AdminsService } from '../../services/admins/admins.service';
-import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
-import { RolesGuard } from '../../guards/roles.guard';
+import { JwtAuthGuard } from '../../guards/jwt-auth/jwt-auth.guard';
+import { RolesGuard } from '../../guards/roles/roles.guard';
 import { CreateAdminDto } from '../../dto/create-admin.dto';
 import { UpdateAdminDto } from '../../dto/update-admin.dto';
 

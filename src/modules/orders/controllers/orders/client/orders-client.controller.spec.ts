@@ -1,11 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { JwtAuthGuard } from '../../../../user/guards/jwt-auth.guard';
-import { RolesGuard } from '../../../../user/guards/roles.guard';
+import { JwtAuthGuard } from '../../../../user/guards/jwt-auth/jwt-auth.guard';
+import { RolesGuard } from '../../../../user/guards/roles/roles.guard';
 import {
   OrderPaymentMethod,
-  OrderPaymentStatus,
   OrderShippingMethod,
-  OrderStatus,
 } from '../../../entities/enums/order.enum';
 import { OrdersClientService } from '../../../services/orders/client/orders-client.service';
 import { OrdersClientController } from './orders-client.controller';
@@ -19,8 +17,6 @@ describe('OrdersClientController', () => {
       createOrder: jest.fn(),
       listOrdersByUser: jest.fn(),
       getOrderById: jest.fn(),
-      updatePaymentStatus: jest.fn(),
-      updateStatus: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -109,37 +105,6 @@ describe('OrdersClientController', () => {
       id,
       request.user,
     );
-    expect(result).toEqual(expected);
-  });
-
-  it('should update payment status', async () => {
-    const id = '98f21967-fce6-4ceb-af61-304913f593a7';
-    const dto = { paymentStatus: OrderPaymentStatus.PAID };
-    const expected = { id, paymentStatus: 'paid' };
-    jest
-      .mocked(ordersClientService.updatePaymentStatus)
-      .mockResolvedValue(expected as any);
-
-    const result = await controller.updatePaymentStatus(id, dto);
-
-    expect(ordersClientService.updatePaymentStatus).toHaveBeenCalledWith(
-      id,
-      dto,
-    );
-    expect(result).toEqual(expected);
-  });
-
-  it('should update order status', async () => {
-    const id = '98f21967-fce6-4ceb-af61-304913f593a7';
-    const dto = { status: OrderStatus.PROCESSING };
-    const expected = { id, status: 'processing' };
-    jest
-      .mocked(ordersClientService.updateStatus)
-      .mockResolvedValue(expected as any);
-
-    const result = await controller.updateStatus(id, dto);
-
-    expect(ordersClientService.updateStatus).toHaveBeenCalledWith(id, dto);
     expect(result).toEqual(expected);
   });
 });

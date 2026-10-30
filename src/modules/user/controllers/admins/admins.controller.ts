@@ -22,10 +22,10 @@ import {
 import { CreateAdminDto } from '../../dto/create-admin.dto';
 import { ListAdminsQueryDto } from '../../dto/list-admins-query.dto';
 import { UpdateAdminDto } from '../../dto/update-admin.dto';
-import { Roles } from '../../decorators/roles.decorator';
+import { Roles } from '../../decorators/roles/roles.decorator';
 import { ADMIN_ROLES, ROLES } from '../../constants/role.constants';
-import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
-import { RolesGuard } from '../../guards/roles.guard';
+import { JwtAuthGuard } from '../../guards/jwt-auth/jwt-auth.guard';
+import { RolesGuard } from '../../guards/roles/roles.guard';
 import { AdminsService } from '../../services/admins/admins.service';
 import type { AuthenticatedRequest } from '../../models/auth-request.models';
 

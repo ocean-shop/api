@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { assertCanAccessUser } from '../../helpers/access.helpers';
+import { assertCanAccessUser } from '../../helpers/access/access.helpers';
 import { UserProfile } from '../../entities/user-profile.entity';
 import { UserRepository } from '../../repositories/user/user.repository';
 import { ProfileRepository } from '../../repositories/profile/profile.repository';

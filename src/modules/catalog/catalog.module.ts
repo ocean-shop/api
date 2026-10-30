@@ -23,8 +23,8 @@ import { ProductClientRepository } from './repositories/product/client/product-c
 import { ProductVariationRepository } from './repositories/product-variation/product-variation.repository';
 import { ShopRepository } from './repositories/shop/shop.repository';
 import { TagRepository } from './repositories/tag/tag.repository';
-import { JwtAuthGuard } from '../user/guards/jwt-auth.guard';
-import { RolesGuard } from '../user/guards/roles.guard';
+import { JwtAuthGuard } from '../user/guards/jwt-auth/jwt-auth.guard';
+import { RolesGuard } from '../user/guards/roles/roles.guard';
 import { CategoriesService } from './services/categories/admin/categories.service';
 import { CategoriesClientService } from './services/categories/client/categories-client.service';
 import { ProductImagesCloudinaryService } from './services/cloudinary/product-images-cloudinary.service';

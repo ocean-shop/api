@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { CacheService } from '../../../../../core/cache/cache.service';
 import { POSTGRES_ERROR_CODES } from '../../../../../core/db/constants/postgres-error.constants';
-import { matchesQueryFailedError } from '../../../../../core/db/helpers/query-failed-error.helpers';
+import { matchesQueryFailedError } from '../../../../../core/db/helpers/query-failed-error/query-failed-error.helpers';
 import { CATEGORY_MESSAGES } from '../../../constants/category-messages.constants';
 import { Category } from '../../../entities/category.entity';
 import { CategoryListResponse } from '../../../models/category.models';
@@ -18,7 +18,7 @@ import { ListCategoriesQueryDto } from '../../../dto/categories/list-categories-
 import {
   resolvePagination,
   toListResponse,
-} from '../../../../../core/response/helpers/list-response.helpers';
+} from '../../../../../core/response/helpers/list-response/list-response.helpers';
 import { CATEGORY_DUPLICATE_SLUG_CONSTRAINTS } from '../../../constants/category-constraint.constants';
 
 @Injectable()

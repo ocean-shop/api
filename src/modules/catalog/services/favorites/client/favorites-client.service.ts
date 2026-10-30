@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { assertCanAccessUser } from '../../../../user/helpers/access.helpers';
+import { assertCanAccessUser } from '../../../../user/helpers/access/access.helpers';
 import { JwtPayload } from '../../../../user/models/auth-request.models';
 import { FAVORITE_MESSAGES } from '../../../constants/favorite-messages.constants';
 import { PRODUCT_MESSAGES } from '../../../constants/product-messages.constants';
@@ -9,7 +9,7 @@ import { UserFavoriteProduct } from '../../../entities/user-favorite-product.ent
 import {
   resolvePagination,
   toListResponse,
-} from '../../../../../core/response/helpers/list-response.helpers';
+} from '../../../../../core/response/helpers/list-response/list-response.helpers';
 import { ProductListResponse } from '../../../models/product.models';
 import { FavoriteProductRepository } from '../../../repositories/favorite-product/favorite-product.repository';
 

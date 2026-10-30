@@ -23,3 +23,14 @@ export type OrderCreatedEmailContext = {
   phoneNumber: string | null;
   email: string;
 };
+
+export type ManualPaymentDetails = {
+  recipient: string | null;
+  iban: string | null;
+  cardNumber: string | null;
+  phone: string | null;
+};
+
+export type OrderManualPaymentEmailContext = OrderCreatedEmailContext & {
+  payment: ManualPaymentDetails;
+};

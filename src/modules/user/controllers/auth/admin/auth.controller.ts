@@ -34,7 +34,7 @@ import {
 import {
   buildRefreshTokenClearCookieOptions,
   sendAuthSession,
-} from '../../../helpers/auth-cookie.helpers';
+} from '../../../helpers/auth-cookie/auth-cookie.helpers';
 import { AuthResponse } from '../../../models/auth.models';
 import { RequestOtpDto } from '../../../dto/request-otp.dto';
 import { VerifyOtpDto } from '../../../dto/verify-otp.dto';

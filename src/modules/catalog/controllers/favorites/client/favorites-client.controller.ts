@@ -19,10 +19,10 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import { Roles } from '../../../../user/decorators/roles.decorator';
+import { Roles } from '../../../../user/decorators/roles/roles.decorator';
 import { ALL_ROLES } from '../../../../user/constants/role.constants';
-import { JwtAuthGuard } from '../../../../user/guards/jwt-auth.guard';
-import { RolesGuard } from '../../../../user/guards/roles.guard';
+import { JwtAuthGuard } from '../../../../user/guards/jwt-auth/jwt-auth.guard';
+import { RolesGuard } from '../../../../user/guards/roles/roles.guard';
 import type { AuthenticatedRequest } from '../../../../user/models/auth-request.models';
 import { AddFavoriteProductDto } from '../../../dto/favorites/add-favorite-product.dto';
 import { ListFavoriteProductsQueryDto } from '../../../dto/favorites/list-favorite-products-query.dto';

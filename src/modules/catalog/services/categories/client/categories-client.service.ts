@@ -3,7 +3,7 @@ import { ListCategoriesQueryDto } from '../../../dto/categories/list-categories-
 import {
   resolvePagination,
   toListResponse,
-} from '../../../../../core/response/helpers/list-response.helpers';
+} from '../../../../../core/response/helpers/list-response/list-response.helpers';
 import { Category } from '../../../entities/category.entity';
 import { CategoryListResponse } from '../../../models/category.models';
 import { CategoryClientRepository } from '../../../repositories/category/client/category-client.repository';

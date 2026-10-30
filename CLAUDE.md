@@ -63,10 +63,11 @@ modules/<feature>/
 ├── dto/            # <name>/<action>-<name>.dto.ts
 ├── entities/       # <name>.entity.ts, enums/<name>.enum.ts
 ├── models/         # <name>.models.ts          — types only
-├── helpers/        # <name>.helpers.ts         — pure functions
-├── guards/  decorators/  processors/           — when the module needs them
+├── helpers/        # <name>/<name>.helpers.ts  — pure functions
+├── guards/  decorators/  processors/           — <name>/<name>.<type>.ts, when the module needs them
 ```
 
+- Every testable file (controllers, services, repositories, helpers, guards, decorators, processors) lives in its own `<name>/` folder together with its `<name>.<type>.spec.ts`. Never put them flat in the type folder.
 - Only create folders that are needed; follow the existing modules (e.g. `modules/catalog`) as the reference.
 - No magic numbers / strings inline — put them in `constants/`.
 - Pure, reusable logic goes in `helpers/` as exported functions (easy to unit test).

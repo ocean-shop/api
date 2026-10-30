@@ -7,7 +7,7 @@ import { Shop } from '../../entities/shop.entity';
 import {
   resolvePagination,
   toListResponse,
-} from '../../../../core/response/helpers/list-response.helpers';
+} from '../../../../core/response/helpers/list-response/list-response.helpers';
 import { MessageResponse } from '../../../../core/response/models/response.models';
 import { ShopListResponse } from '../../models/shop.models';
 import { ShopRepository } from '../../repositories/shop/shop.repository';

@@ -24,7 +24,6 @@ describe('OrdersClientService', () => {
       findById: jest.fn(),
       findAllByShopIdAndUserId: jest.fn(),
       create: jest.fn(),
-      save: jest.fn(),
       saveWithNextOrderNumber: jest.fn(),
       replaceItems: jest.fn(),
       validateProductsForShop: jest.fn(),
@@ -217,42 +216,5 @@ describe('OrdersClientService', () => {
     await expect(
       service.getOrderById('order-id', { sub: 'user-id', role: 'user' } as any),
     ).rejects.toThrow(ForbiddenException);
-  });
-
-  it('should update payment status', async () => {
-    const order = {
-      id: 'order-id',
-      paymentStatus: OrderPaymentStatus.UNPAID,
-    } as any;
-    const saved = { ...order, paymentStatus: OrderPaymentStatus.PAID };
-    jest.mocked(orderClientRepository.findById).mockResolvedValue(order);
-    jest.mocked(orderClientRepository.save).mockResolvedValue(saved);
-
-    const result = await service.updatePaymentStatus('order-id', {
-      paymentStatus: OrderPaymentStatus.PAID,
-    });
-
-    expect(orderClientRepository.save).toHaveBeenCalledWith({
-      id: 'order-id',
-      paymentStatus: OrderPaymentStatus.PAID,
-    });
-    expect(result).toEqual(saved);
-  });
-
-  it('should update order status', async () => {
-    const order = { id: 'order-id', status: OrderStatus.PENDING } as any;
-    const saved = { ...order, status: OrderStatus.PROCESSING };
-    jest.mocked(orderClientRepository.findById).mockResolvedValue(order);
-    jest.mocked(orderClientRepository.save).mockResolvedValue(saved);
-
-    const result = await service.updateStatus('order-id', {
-      status: OrderStatus.PROCESSING,
-    });
-
-    expect(orderClientRepository.save).toHaveBeenCalledWith({
-      id: 'order-id',
-      status: OrderStatus.PROCESSING,
-    });
-    expect(result).toEqual(saved);
   });
 });

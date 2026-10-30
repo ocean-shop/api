@@ -9,7 +9,7 @@ import { UserRepository } from '../../repositories/user/user.repository';
 import { MessageResponse } from '../../../../core/response/models/response.models';
 import { AUTH_MESSAGES } from '../../constants/auth-messages.constants';
 import { ADMIN_ROLES } from '../../constants/role.constants';
-import { assertCanSignIn } from '../../helpers/access.helpers';
+import { assertCanSignIn } from '../../helpers/access/access.helpers';
 import { USER_MESSAGES } from '../../constants/user-messages.constants';
 
 @Injectable()

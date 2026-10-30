@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { POSTGRES_ERROR_CODES } from '../../../../core/db/constants/postgres-error.constants';
-import { matchesQueryFailedError } from '../../../../core/db/helpers/query-failed-error.helpers';
+import { matchesQueryFailedError } from '../../../../core/db/helpers/query-failed-error/query-failed-error.helpers';
 import { TAG_DUPLICATE_NAME_CONSTRAINTS } from '../../constants/tag-constraint.constants';
 import { TAG_MESSAGES } from '../../constants/tag-messages.constants';
 import { CreateTagDto } from '../../dto/tags/create-tag.dto';
@@ -10,7 +10,7 @@ import { Tag } from '../../entities/tag.entity';
 import {
   resolvePagination,
   toListResponse,
-} from '../../../../core/response/helpers/list-response.helpers';
+} from '../../../../core/response/helpers/list-response/list-response.helpers';
 import { MessageResponse } from '../../../../core/response/models/response.models';
 import { TagListResponse } from '../../models/tag.models';
 import { TagRepository } from '../../repositories/tag/tag.repository';

@@ -9,11 +9,12 @@ import { AUTH_MESSAGES } from '../../constants/auth-messages.constants';
 import { UKRAINIAN_PHONE_REGEX } from '../../constants/phone.constants';
 import { ROLES } from '../../constants/role.constants';
 import { USER_MESSAGES } from '../../constants/user-messages.constants';
+import { SHOP_MESSAGES } from '../../../catalog/constants/shop-messages.constants';
 import { User } from '../../entities/user.entity';
 import { RequestClientOtpDto } from '../../dto/request-client-otp.dto';
 import { VerifyClientOtpDto } from '../../dto/verify-client-otp.dto';
 import { OtpPurpose } from '../../entities/enums/auth-otp.enum';
-import { assertCanSignIn } from '../../helpers/access.helpers';
+import { assertCanSignIn } from '../../helpers/access/access.helpers';
 import { AuthSession, LoginIdentity } from '../../models/auth.models';
 import { AuthService } from '../auth/auth.service';
 import { RequestOtpService } from '../request-otp/request-otp.service';
@@ -80,9 +81,18 @@ export class AuthClientService {
     }
 
     this.assertClient(user);
+    await this.assertShopExists(dto.shopId);
     await this.processOtp(user, dto.code, email, phone);
+    await this.authClientRepository.bindUserToShop(user.id, dto.shopId);
 
     return this.userSessionService.startSession(user, { userAgent, ipAddress });
+  }
+
+  private async assertShopExists(shopId: string): Promise<void> {
+    const exists = await this.authClientRepository.shopExists(shopId);
+    if (!exists) {
+      throw new NotFoundException(SHOP_MESSAGES.NOT_FOUND);
+    }
   }
 
   private parseLogin(login: string): LoginIdentity {

@@ -3,8 +3,8 @@ import { FavoritesClientController } from './favorites-client.controller';
 import { FavoritesClientService } from '../../../services/favorites/client/favorites-client.service';
 import { AddFavoriteProductDto } from '../../../dto/favorites/add-favorite-product.dto';
 import { ListFavoriteProductsQueryDto } from '../../../dto/favorites/list-favorite-products-query.dto';
-import { JwtAuthGuard } from '../../../../user/guards/jwt-auth.guard';
-import { RolesGuard } from '../../../../user/guards/roles.guard';
+import { JwtAuthGuard } from '../../../../user/guards/jwt-auth/jwt-auth.guard';
+import { RolesGuard } from '../../../../user/guards/roles/roles.guard';
 import { AuthenticatedRequest } from '../../../../user/models/auth-request.models';
 
 describe('FavoritesClientController', () => {

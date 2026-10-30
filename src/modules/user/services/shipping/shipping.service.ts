@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { assertCanAccessUser } from '../../helpers/access.helpers';
+import { assertCanAccessUser } from '../../helpers/access/access.helpers';
 import { UserShipping } from '../../entities/user-shipping.entity';
 import { UserRepository } from '../../repositories/user/user.repository';
 import { ShippingRepository } from '../../repositories/shipping/shipping.repository';

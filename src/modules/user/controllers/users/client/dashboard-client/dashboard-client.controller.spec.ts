@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DashboardController } from './dashboard-client.controller';
 import { DashboardService } from '../../../../services/dashboard/dashboard.service';
-import { JwtAuthGuard } from '../../../../guards/jwt-auth.guard';
-import { RolesGuard } from '../../../../guards/roles.guard';
+import { JwtAuthGuard } from '../../../../guards/jwt-auth/jwt-auth.guard';
+import { RolesGuard } from '../../../../guards/roles/roles.guard';
 import { AuthenticatedRequest } from '../../../../models/auth-request.models';
 
 describe('DashboardController', () => {

@@ -29,6 +29,8 @@ describe('AuthClientService', () => {
         .mockImplementation((payload) =>
           Promise.resolve({ id: 'new-uuid', ...payload }),
         ),
+      shopExists: jest.fn().mockResolvedValue(true),
+      bindUserToShop: jest.fn().mockResolvedValue(undefined),
     };
 
     authService = {
@@ -202,12 +204,17 @@ describe('AuthClientService', () => {
 
     it('should verify OTP, save session and return tokens for a client', async () => {
       const result = await service.verifyOtp(
-        { login: 'client@example.com', code: '1234' },
+        { login: 'client@example.com', code: '1234', shopId: 'shop-1' },
         'agent',
         '127.0.0.1',
       );
 
+      expect(authClientRepository.shopExists).toHaveBeenCalledWith('shop-1');
       expect(authService.consumeOtp).toHaveBeenCalledWith('1234', latestOtp);
+      expect(authClientRepository.bindUserToShop).toHaveBeenCalledWith(
+        'uuid',
+        'shop-1',
+      );
       expect(authService.verifyUserIfRegistered).toHaveBeenCalledWith(
         latestOtp,
         client,
@@ -234,7 +241,11 @@ describe('AuthClientService', () => {
       authClientRepository.findByEmailOrPhone.mockResolvedValue(null);
 
       await expect(
-        service.verifyOtp({ login: '+380991112233', code: '1234' }),
+        service.verifyOtp({
+          login: '+380991112233',
+          code: '1234',
+          shopId: 'shop-1',
+        }),
       ).rejects.toThrow(NotFoundException);
       expect(authService.findAndValidateLatestOtp).not.toHaveBeenCalled();
     });
@@ -246,7 +257,11 @@ describe('AuthClientService', () => {
       });
 
       await expect(
-        service.verifyOtp({ login: 'admin@example.com', code: '1234' }),
+        service.verifyOtp({
+          login: 'admin@example.com',
+          code: '1234',
+          shopId: 'shop-1',
+        }),
       ).rejects.toThrow(new BadRequestException('Доступ заборонено'));
       expect(authService.findAndValidateLatestOtp).not.toHaveBeenCalled();
       expect(userSessionService.startSession).not.toHaveBeenCalled();
@@ -259,7 +274,11 @@ describe('AuthClientService', () => {
       });
 
       await expect(
-        service.verifyOtp({ login: 'client@example.com', code: '1234' }),
+        service.verifyOtp({
+          login: 'client@example.com',
+          code: '1234',
+          shopId: 'shop-1',
+        }),
       ).rejects.toThrow(ForbiddenException);
       expect(userSessionService.startSession).not.toHaveBeenCalled();
     });
@@ -270,8 +289,28 @@ describe('AuthClientService', () => {
       );
 
       await expect(
-        service.verifyOtp({ login: 'client@example.com', code: '0000' }),
+        service.verifyOtp({
+          login: 'client@example.com',
+          code: '0000',
+          shopId: 'shop-1',
+        }),
       ).rejects.toThrow(BadRequestException);
+      expect(authClientRepository.bindUserToShop).not.toHaveBeenCalled();
+      expect(userSessionService.startSession).not.toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException before consuming OTP if shop does not exist', async () => {
+      authClientRepository.shopExists.mockResolvedValue(false);
+
+      await expect(
+        service.verifyOtp({
+          login: 'client@example.com',
+          code: '1234',
+          shopId: 'missing-shop',
+        }),
+      ).rejects.toThrow(new NotFoundException('Магазин не знайдено'));
+      expect(authService.findAndValidateLatestOtp).not.toHaveBeenCalled();
+      expect(authClientRepository.bindUserToShop).not.toHaveBeenCalled();
       expect(userSessionService.startSession).not.toHaveBeenCalled();
     });
   });

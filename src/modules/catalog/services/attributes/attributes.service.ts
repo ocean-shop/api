@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CacheService } from '../../../../core/cache/cache.service';
 import { POSTGRES_ERROR_CODES } from '../../../../core/db/constants/postgres-error.constants';
-import { matchesQueryFailedError } from '../../../../core/db/helpers/query-failed-error.helpers';
+import { matchesQueryFailedError } from '../../../../core/db/helpers/query-failed-error/query-failed-error.helpers';
 import { ATTRIBUTE_DUPLICATE_CONSTRAINTS } from '../../constants/attribute-constraint.constants';
 import { ATTRIBUTE_MESSAGES } from '../../constants/attribute-messages.constants';
 import { CreateAttributeDto } from '../../dto/attributes/create-attribute.dto';
@@ -10,7 +10,7 @@ import { Attribute } from '../../entities/attribute.entity';
 import {
   resolvePagination,
   toListResponse,
-} from '../../../../core/response/helpers/list-response.helpers';
+} from '../../../../core/response/helpers/list-response/list-response.helpers';
 import { AttributeListResponse } from '../../models/attribute.models';
 import { MessageResponse } from '../../../../core/response/models/response.models';
 import { AttributeRepository } from '../../repositories/attribute/attribute.repository';

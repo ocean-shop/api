@@ -74,6 +74,7 @@ describe('AuthClientController', () => {
       const dto: VerifyClientOtpDto = {
         login: 'client@example.com',
         code: '1234',
+        shopId: 'shop-1',
       };
       jest.spyOn(authClientService, 'verifyOtp').mockResolvedValue(session);
       const response = { cookie: jest.fn() } as unknown as Response;

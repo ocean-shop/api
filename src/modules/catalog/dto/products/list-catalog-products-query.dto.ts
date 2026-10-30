@@ -14,7 +14,7 @@ import {
 import {
   parseAttributeFilters,
   parseBoolean,
-} from '../../helpers/catalog-query.helpers';
+} from '../../helpers/catalog-query/catalog-query.helpers';
 import { CatalogFilter } from '../../models/product.models';
 import { CatalogProductSort } from '../../entities/enums/product-sort.enum';
 

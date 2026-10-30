@@ -4,6 +4,18 @@ export const ORDER_CREATED_TEMPLATE = 'order-created';
 export const orderCreatedSubject = (orderNumber: string): string =>
   `Замовлення #${orderNumber} прийнято`;
 
+export const ORDER_MANUAL_PAYMENT_TEMPLATE = 'order-manual-payment';
+export const orderManualPaymentSubject = (orderNumber: string): string =>
+  `Оплата замовлення #${orderNumber}: реквізити`;
+
+/** Env keys holding the shop's bank details for manual (bank transfer) orders. */
+export const MANUAL_PAYMENT_CONFIG_KEYS = {
+  RECIPIENT: 'MANUAL_PAYMENT_RECIPIENT',
+  IBAN: 'MANUAL_PAYMENT_IBAN',
+  CARD_NUMBER: 'MANUAL_PAYMENT_CARD_NUMBER',
+  PHONE: 'MANUAL_PAYMENT_PHONE',
+} as const;
+
 export const SHIPPING_METHOD_LABELS: Readonly<
   Record<OrderShippingMethod, string>
 > = {
@@ -15,6 +27,7 @@ export const PAYMENT_LABELS = {
   CASH_ON_DELIVERY: 'Оплата при отриманні',
   CARD_PAID: 'Оплачено банківською карткою',
   CARD_UNPAID: 'Оплата банківською карткою',
+  MANUAL: 'Оплата за реквізитами',
 } as const;
 
 export const EMAIL_LOCALE = 'uk-UA';

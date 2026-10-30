@@ -13,10 +13,10 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import { Roles } from '../../../user/decorators/roles.decorator';
+import { Roles } from '../../../user/decorators/roles/roles.decorator';
 import { ADMIN_ROLES } from '../../../user/constants/role.constants';
-import { JwtAuthGuard } from '../../../user/guards/jwt-auth.guard';
-import { RolesGuard } from '../../../user/guards/roles.guard';
+import { JwtAuthGuard } from '../../../user/guards/jwt-auth/jwt-auth.guard';
+import { RolesGuard } from '../../../user/guards/roles/roles.guard';
 import { ChangeProductImageSortDto } from '../../dto/images/change-product-image-sort.dto';
 import { ImagesService } from '../../services/images/images.service';
 
