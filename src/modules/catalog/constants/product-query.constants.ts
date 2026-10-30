@@ -1,4 +1,4 @@
-import { buildProductNameMatchCondition } from '../helpers/catalog-query.helpers';
+import { buildProductNameMatchCondition } from '../helpers/catalog-query/catalog-query.helpers';
 
 /**
  * Price shown in the catalog: the cheapest variation for variable products,

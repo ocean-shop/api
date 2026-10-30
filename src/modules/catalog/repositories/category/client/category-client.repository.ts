@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { Category } from '../../../entities/category.entity';
 import { ProductStatus } from '../../../entities/enums/product.enum';
 import { SEARCH_MATCHED_CATEGORY_CONDITION } from '../../../constants/product-query.constants';
-import { escapeLikeWildcards } from '../../../helpers/catalog-query.helpers';
+import { escapeLikeWildcards } from '../../../helpers/catalog-query/catalog-query.helpers';
 import {
   CatalogCategoryOption,
   CategoryFilters,

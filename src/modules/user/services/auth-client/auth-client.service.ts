@@ -14,7 +14,7 @@ import { User } from '../../entities/user.entity';
 import { RequestClientOtpDto } from '../../dto/request-client-otp.dto';
 import { VerifyClientOtpDto } from '../../dto/verify-client-otp.dto';
 import { OtpPurpose } from '../../entities/enums/auth-otp.enum';
-import { assertCanSignIn } from '../../helpers/access.helpers';
+import { assertCanSignIn } from '../../helpers/access/access.helpers';
 import { AuthSession, LoginIdentity } from '../../models/auth.models';
 import { AuthService } from '../auth/auth.service';
 import { RequestOtpService } from '../request-otp/request-otp.service';

@@ -2,7 +2,7 @@ import { DynamicModule, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
 import { EMAIL_QUEUE } from './constants/queue.constants';
-import { isEmailQueueEnabled } from './helpers/queue.helpers';
+import { isEmailQueueEnabled } from './helpers/queue/queue.helpers';
 
 @Module({})
 export class QueueModule {

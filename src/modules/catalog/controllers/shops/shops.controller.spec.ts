@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { JwtAuthGuard } from '../../../user/guards/jwt-auth.guard';
-import { RolesGuard } from '../../../user/guards/roles.guard';
+import { JwtAuthGuard } from '../../../user/guards/jwt-auth/jwt-auth.guard';
+import { RolesGuard } from '../../../user/guards/roles/roles.guard';
 import { CreateShopDto } from '../../dto/shops/create-shop.dto';
 import { UpdateShopDto } from '../../dto/shops/update-shop.dto';
 import { ShopsService } from '../../services/shops/shops.service';

@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CacheService } from '../../../../../core/cache/cache.service';
 import { POSTGRES_ERROR_CODES } from '../../../../../core/db/constants/postgres-error.constants';
-import { matchesQueryFailedError } from '../../../../../core/db/helpers/query-failed-error.helpers';
+import { matchesQueryFailedError } from '../../../../../core/db/helpers/query-failed-error/query-failed-error.helpers';
 import { ATTRIBUTE_MESSAGES } from '../../../constants/attribute-messages.constants';
 import { CATEGORY_MESSAGES } from '../../../constants/category-messages.constants';
 import { PRODUCT_CONSTRAINTS } from '../../../constants/product-constraint.constants';
@@ -29,8 +29,8 @@ import { Product } from '../../../entities/product.entity';
 import {
   resolvePagination,
   toListResponse,
-} from '../../../../../core/response/helpers/list-response.helpers';
-import { slugify, withSlugSuffix } from '../../../helpers/slug.helpers';
+} from '../../../../../core/response/helpers/list-response/list-response.helpers';
+import { slugify, withSlugSuffix } from '../../../helpers/slug/slug.helpers';
 import { MessageResponse } from '../../../../../core/response/models/response.models';
 import { ImagePayload } from '../../../models/product-image.models';
 import {

@@ -9,7 +9,7 @@ import {
   buildRefreshTokenExpiryDate,
   hashRefreshToken,
   toAuthUser,
-} from '../../helpers/user-session.helpers';
+} from '../../helpers/user-session/user-session.helpers';
 import { AuthSession, SessionClient } from '../../models/auth.models';
 import { UserSessionRepository } from '../../repositories/user-session/user-session.repository';
 import { AuthService } from '../auth/auth.service';

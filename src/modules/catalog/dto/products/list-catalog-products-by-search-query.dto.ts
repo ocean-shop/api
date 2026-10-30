@@ -15,7 +15,7 @@ import {
 import {
   normalizeSearchTerm,
   parseCategoryIds,
-} from '../../helpers/catalog-query.helpers';
+} from '../../helpers/catalog-query/catalog-query.helpers';
 import { ListCatalogProductsQueryDto } from './list-catalog-products-query.dto';
 
 /**

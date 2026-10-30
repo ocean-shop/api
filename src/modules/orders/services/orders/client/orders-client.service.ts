@@ -13,8 +13,8 @@ import { OrderEmailService } from '../../email/order-email.service';
 import {
   resolvePagination,
   toListResponse,
-} from '../../../../../core/response/helpers/list-response.helpers';
-import { assertCanAccessUser } from '../../../../user/helpers/access.helpers';
+} from '../../../../../core/response/helpers/list-response/list-response.helpers';
+import { assertCanAccessUser } from '../../../../user/helpers/access/access.helpers';
 
 @Injectable()
 export class OrdersClientService {

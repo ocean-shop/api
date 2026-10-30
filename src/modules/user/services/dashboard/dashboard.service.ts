@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { assertCanAccessUser } from '../../helpers/access.helpers';
+import { assertCanAccessUser } from '../../helpers/access/access.helpers';
 import { FavoriteProductRepository } from '../../../catalog/repositories/favorite-product/favorite-product.repository';
 import {
   LAST_ACTIVE_ORDERS_LIMIT,

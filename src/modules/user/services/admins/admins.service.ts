@@ -16,7 +16,7 @@ import { Shop } from '../../../catalog/entities/shop.entity';
 import {
   resolvePagination,
   toListResponse,
-} from '../../../../core/response/helpers/list-response.helpers';
+} from '../../../../core/response/helpers/list-response/list-response.helpers';
 import { MessageResponse } from '../../../../core/response/models/response.models';
 import { AUTH_MESSAGES } from '../../constants/auth-messages.constants';
 import { ADMIN_ROLES, ROLES } from '../../constants/role.constants';

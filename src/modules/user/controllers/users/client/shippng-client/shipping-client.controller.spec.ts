@@ -2,8 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ShippingController } from './shipping-client.controller';
 import { ShippingService } from '../../../../services/shipping/shipping.service';
 import { CreateShippingDto } from '../../../../dto/create-shipping.dto';
-import { JwtAuthGuard } from '../../../../guards/jwt-auth.guard';
-import { RolesGuard } from '../../../../guards/roles.guard';
+import { JwtAuthGuard } from '../../../../guards/jwt-auth/jwt-auth.guard';
+import { RolesGuard } from '../../../../guards/roles/roles.guard';
 import { AuthenticatedRequest } from '../../../../models/auth-request.models';
 import { OrderShippingMethod } from '../../../../../orders/entities/enums/order.enum';
 

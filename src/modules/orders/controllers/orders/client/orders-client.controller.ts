@@ -17,10 +17,10 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { Roles } from '../../../../user/decorators/roles.decorator';
+import { Roles } from '../../../../user/decorators/roles/roles.decorator';
 import { ALL_ROLES } from '../../../../user/constants/role.constants';
-import { JwtAuthGuard } from '../../../../user/guards/jwt-auth.guard';
-import { RolesGuard } from '../../../../user/guards/roles.guard';
+import { JwtAuthGuard } from '../../../../user/guards/jwt-auth/jwt-auth.guard';
+import { RolesGuard } from '../../../../user/guards/roles/roles.guard';
 import type { AuthenticatedRequest } from '../../../../user/models/auth-request.models';
 import { CreateOrderDto } from '../../../dto/create-order.dto';
 import { ListOrdersQueryDto } from '../../../dto/list-orders-query.dto';

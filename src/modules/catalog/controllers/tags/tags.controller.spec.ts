@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { JwtAuthGuard } from '../../../user/guards/jwt-auth.guard';
-import { RolesGuard } from '../../../user/guards/roles.guard';
+import { JwtAuthGuard } from '../../../user/guards/jwt-auth/jwt-auth.guard';
+import { RolesGuard } from '../../../user/guards/roles/roles.guard';
 import { CreateTagDto } from '../../dto/tags/create-tag.dto';
 import { UpdateTagDto } from '../../dto/tags/update-tag.dto';
 import { TagsService } from '../../services/tags/tags.service';

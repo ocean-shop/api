@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { JwtAuthGuard } from '../user/guards/jwt-auth.guard';
-import { RolesGuard } from '../user/guards/roles.guard';
+import { JwtAuthGuard } from '../user/guards/jwt-auth/jwt-auth.guard';
+import { RolesGuard } from '../user/guards/roles/roles.guard';
 import { Product } from '../catalog/entities/product.entity';
 import { OrdersController } from './controllers/orders/admin/orders.controller';
 import { OrdersClientController } from './controllers/orders/client/orders-client.controller';

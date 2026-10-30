@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   resolvePagination,
   toListResponse,
-} from '../../../../core/response/helpers/list-response.helpers';
+} from '../../../../core/response/helpers/list-response/list-response.helpers';
 import { ListUsersByShopQueryDto } from '../../dto/list-users-by-shop-query.dto';
 import { UserWithOrders, UsersByShopResponse } from '../../models/users.models';
 import { UsersRepository } from '../../repositories/users/users.repository';

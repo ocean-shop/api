@@ -5,7 +5,7 @@ import { AuthService } from '../auth/auth.service';
 import { UserSessionService } from '../user-session/user-session.service';
 import { UserRepository } from '../../repositories/user/user.repository';
 import { UserSessionRepository } from '../../repositories/user-session/user-session.repository';
-import { hashRefreshToken } from '../../helpers/user-session.helpers';
+import { hashRefreshToken } from '../../helpers/user-session/user-session.helpers';
 import { AUTH_MESSAGES } from '../../constants/auth-messages.constants';
 
 describe('RefreshTokenService', () => {

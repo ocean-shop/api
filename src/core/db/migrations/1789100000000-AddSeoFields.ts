@@ -2,7 +2,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 import {
   slugify,
   withSlugSuffix,
-} from '../../../modules/catalog/helpers/slug.helpers';
+} from '../../../modules/catalog/helpers/slug/slug.helpers';
 
 export class AddSeoFields1789100000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {

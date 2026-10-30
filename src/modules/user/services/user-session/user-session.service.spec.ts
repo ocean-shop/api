@@ -6,7 +6,7 @@ import { AuthService } from '../auth/auth.service';
 import { UserSessionRepository } from '../../repositories/user-session/user-session.repository';
 import { User } from '../../entities/user.entity';
 import { UserSession } from '../../entities/user-session.entity';
-import { hashRefreshToken } from '../../helpers/user-session.helpers';
+import { hashRefreshToken } from '../../helpers/user-session/user-session.helpers';
 import { DEFAULT_REFRESH_EXPIRE_MS } from '../../constants/auth.constants';
 
 describe('UserSessionService', () => {

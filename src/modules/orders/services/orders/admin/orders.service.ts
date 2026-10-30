@@ -8,7 +8,7 @@ import { OrdersStatusService } from '../common/orders-status.service';
 import {
   resolvePagination,
   toListResponse,
-} from '../../../../../core/response/helpers/list-response.helpers';
+} from '../../../../../core/response/helpers/list-response/list-response.helpers';
 import { MessageResponse } from '../../../../../core/response/models/response.models';
 import { ORDER_MESSAGES } from '../../../constants/order-messages.constants';
 

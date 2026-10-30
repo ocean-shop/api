@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ADMIN_ROLES } from '../../constants/role.constants';
 import { User } from '../../entities/user.entity';
 import { VerifyOtpDto } from '../../dto/verify-otp.dto';
-import { assertCanSignIn } from '../../helpers/access.helpers';
+import { assertCanSignIn } from '../../helpers/access/access.helpers';
 import { AuthService } from '../auth/auth.service';
 import { UserSessionService } from '../user-session/user-session.service';
 import { UserRepository } from '../../repositories/user/user.repository';

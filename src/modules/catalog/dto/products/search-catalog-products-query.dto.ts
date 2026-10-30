@@ -5,7 +5,7 @@ import {
   PRODUCT_SEARCH_TERM_MAX_LENGTH,
   PRODUCT_SEARCH_TERM_MIN_LENGTH,
 } from '../../constants/pagination.constants';
-import { normalizeSearchTerm } from '../../helpers/catalog-query.helpers';
+import { normalizeSearchTerm } from '../../helpers/catalog-query/catalog-query.helpers';
 
 export class SearchCatalogProductsQueryDto {
   @ApiProperty({ type: String, format: 'uuid' })

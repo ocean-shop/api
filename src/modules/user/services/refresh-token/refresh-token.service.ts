@@ -5,7 +5,7 @@ import { UserRepository } from '../../repositories/user/user.repository';
 import { UserSessionRepository } from '../../repositories/user-session/user-session.repository';
 import { AuthService } from '../auth/auth.service';
 import { UserSessionService } from '../user-session/user-session.service';
-import { isRefreshTokenMatch } from '../../helpers/user-session.helpers';
+import { isRefreshTokenMatch } from '../../helpers/user-session/user-session.helpers';
 import { AUTH_MESSAGES } from '../../constants/auth-messages.constants';
 import { AuthSession, SessionClient } from '../../models/auth.models';
 

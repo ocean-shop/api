@@ -30,7 +30,7 @@ import {
   PRODUCT_SEARCH_QUERY,
   PRODUCT_SEARCH_RELEVANCE_EXPRESSION,
 } from '../../../constants/product-query.constants';
-import { escapeLikeWildcards } from '../../../helpers/catalog-query.helpers';
+import { escapeLikeWildcards } from '../../../helpers/catalog-query/catalog-query.helpers';
 import { ProductQueryRepository } from '../common/product-query.repository';
 
 @Injectable()

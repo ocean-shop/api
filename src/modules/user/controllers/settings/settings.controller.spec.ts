@@ -3,8 +3,8 @@ import { SettingsController } from './settings.controller';
 import { SettingsService } from '../../services/settings/settings.service';
 import { UserLanguage } from '../../entities/enums/user-settings.enum';
 import { UpdateSettingsDto } from '../../dto/update-settings.dto';
-import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
-import { RolesGuard } from '../../guards/roles.guard';
+import { JwtAuthGuard } from '../../guards/jwt-auth/jwt-auth.guard';
+import { RolesGuard } from '../../guards/roles/roles.guard';
 
 describe('SettingsController', () => {
   let controller: SettingsController;

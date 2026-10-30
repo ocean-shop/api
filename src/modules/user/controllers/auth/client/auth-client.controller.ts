@@ -33,7 +33,7 @@ import {
 import {
   buildRefreshTokenClearCookieOptions,
   sendAuthSession,
-} from '../../../helpers/auth-cookie.helpers';
+} from '../../../helpers/auth-cookie/auth-cookie.helpers';
 import { AuthResponse } from '../../../models/auth.models';
 import { RequestClientOtpDto } from '../../../dto/request-client-otp.dto';
 import { VerifyClientOtpDto } from '../../../dto/verify-client-otp.dto';

@@ -49,10 +49,10 @@ import { DashboardService } from './services/dashboard/dashboard.service';
 import { ContactsService } from './services/contacts/contacts.service';
 import { AdminsService } from './services/admins/admins.service';
 import { UsersService } from './services/users/users.service';
-import { EmailProcessor } from './processors/email.processor';
-import { isEmailQueueEnabled } from '../../core/queue/helpers/queue.helpers';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { RolesGuard } from './guards/roles.guard';
+import { EmailProcessor } from './processors/email/email.processor';
+import { isEmailQueueEnabled } from '../../core/queue/helpers/queue/queue.helpers';
+import { JwtAuthGuard } from './guards/jwt-auth/jwt-auth.guard';
+import { RolesGuard } from './guards/roles/roles.guard';
 import {
   ACCESS_TOKEN_EXPIRES_IN,
   JWT_ACCESS_SECRET_KEY,
@@ -61,7 +61,7 @@ import {
   OTP_THROTTLER,
 } from './constants/auth.constants';
 import { AUTH_MESSAGES } from './constants/auth-messages.constants';
-import { resolveOtpThrottleTracker } from './helpers/otp-throttle.helpers';
+import { resolveOtpThrottleTracker } from './helpers/otp-throttle/otp-throttle.helpers';
 
 /**
  * Global because every feature module guards its routes with `JwtAuthGuard`,

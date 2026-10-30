@@ -16,7 +16,7 @@ import {
   formatOrderDate,
   getPaymentLabel,
   toKopecks,
-} from '../../helpers/order-email.helpers';
+} from '../../helpers/order-email/order-email.helpers';
 import { Order } from '../../entities/order.entity';
 import {
   ManualPaymentDetails,

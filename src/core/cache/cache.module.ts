@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import { CacheService } from './cache.service';
 import { CACHE_CLIENT } from './constants/cache.constants';
-import { isCacheEnabled } from './helpers/cache.helpers';
+import { isCacheEnabled } from './helpers/cache/cache.helpers';
 
 const cacheClientProvider: Provider = {
   provide: CACHE_CLIENT,

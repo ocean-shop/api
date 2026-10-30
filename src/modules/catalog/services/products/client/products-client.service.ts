@@ -28,11 +28,11 @@ import {
   buildCatalogSearchCategoriesCacheSegments,
   buildCatalogSearchFiltersCacheSegments,
   buildProductSearchCacheSegments,
-} from '../../../helpers/catalog-cache.helpers';
+} from '../../../helpers/catalog-cache/catalog-cache.helpers';
 import {
   resolvePagination,
   toListResponse,
-} from '../../../../../core/response/helpers/list-response.helpers';
+} from '../../../../../core/response/helpers/list-response/list-response.helpers';
 import { AttributeFilterOption } from '../../../models/attribute.models';
 import { CatalogCategoryOption } from '../../../models/category.models';
 import {
