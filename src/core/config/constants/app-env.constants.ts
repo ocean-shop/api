@@ -16,7 +16,7 @@ export const CORS_ORIGINS_BY_ENV: Readonly<Record<AppEnv, readonly string[]>> =
       'https://client-develop-dea1.up.railway.app',
     ],
     production: [
-      'https://admin-production-7b49.up.railway.app/',
-      'https://client-production-df01.up.railway.app/',
+      'https://admin-production-7b49.up.railway.app',
+      'https://client-production-df01.up.railway.app',
     ],
   };
