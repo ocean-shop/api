@@ -16,6 +16,28 @@ const MAIN_IMAGE_EXPRESSION = `(
     )`;
 
 /**
+ * The variation a variable product presents itself with, the same one the
+ * storefront product page opens on: the one flagged default, otherwise the
+ * first created. Joined as `default_variation`; no row for simple products.
+ */
+const DEFAULT_VARIATION_JOIN = `LEFT JOIN LATERAL (
+    SELECT candidate.id, candidate.price, candidate.old_price
+    FROM product_variations candidate
+    WHERE candidate.product_id = product.id
+    ORDER BY candidate.is_default DESC, candidate.created_at ASC
+    LIMIT 1
+  ) default_variation ON TRUE`;
+
+/** First photo of the `default_variation`; a variation without its own falls back to the product's. */
+const DEFAULT_VARIATION_IMAGE_EXPRESSION = `(
+      SELECT variation_image.url
+      FROM variation_images variation_image
+      WHERE variation_image.variation_id = default_variation.id
+      ORDER BY variation_image.sort ASC, variation_image.created_at ASC
+      LIMIT 1
+    )`;
+
+/**
  * Relevance of a search hit, best first: the exact name, then names starting
  * with the term, then names where a later word starts with it, then the
  * remaining substring matches.
@@ -117,11 +139,15 @@ export const PRODUCT_SEARCH_QUERY = `
     product.id AS "id",
     product.slug AS "slug",
     product.name AS "name",
-    ${EFFECTIVE_PRICE_EXPRESSION} AS "price",
-    product.old_price AS "oldPrice",
-    ${MAIN_IMAGE_EXPRESSION} AS "image",
+    COALESCE(default_variation.price, product.price) AS "price",
+    CASE
+      WHEN default_variation.id IS NULL THEN product.old_price
+      ELSE default_variation.old_price
+    END AS "oldPrice",
+    COALESCE(${DEFAULT_VARIATION_IMAGE_EXPRESSION}, ${MAIN_IMAGE_EXPRESSION}) AS "image",
     product.total AS "total"
   FROM matches product
+  ${DEFAULT_VARIATION_JOIN}
   ORDER BY
     ${SEARCH_ORDER_BY}
 `;
