@@ -95,6 +95,9 @@ describe('ProductRepository', () => {
         tags: true,
         attributes: true,
         images: true,
+        variations: {
+          images: true,
+        },
       },
       relationLoadStrategy: 'query',
     });

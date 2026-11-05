@@ -92,15 +92,28 @@ export abstract class ProductQueryRepository {
         tags: true,
         attributes: true,
         images: true,
+        // A variable product keeps its price and photos on its variations, so
+        // a card needs them to show anything but a zero price and no image.
+        variations: {
+          images: true,
+        },
       },
       // One query per collection instead of a single multi-join, whose rows
       // multiply out as products × categories × tags × attributes × images.
       relationLoadStrategy: 'query',
     });
 
-    // Ordering images through `order` would join product_images back into the
-    // main query and bring the row multiplication back, so sort them here.
-    items.forEach((item) => item.images?.sort((a, b) => a.sort - b.sort));
+    // Ordering through `order` would join the collections back into the main
+    // query and bring the row multiplication back, so sort them here.
+    items.forEach((item) => {
+      item.images?.sort((a, b) => a.sort - b.sort);
+      item.variations?.sort(
+        (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
+      );
+      item.variations?.forEach((variation) =>
+        variation.images?.sort((a, b) => a.sort - b.sort),
+      );
+    });
 
     const itemsById = new Map(items.map((item) => [item.id, item]));
 
