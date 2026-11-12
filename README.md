@@ -1,98 +1,152 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Ocean Shop API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend for **Ocean Shop**, a multi-shop e-commerce platform. It covers the catalog, orders, users and auth, statistics and settings.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+The API serves two clients:
 
-## Description
+- **Admin panel**: shop managers with the `admin` or `super` role.
+- **Client storefront**: customers with the `user` role, or anonymous visitors.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Tech stack
 
-## Project setup
+| Area | Tools |
+| --- | --- |
+| Framework | [NestJS 11](https://nestjs.com), TypeScript 5 |
+| Database | PostgreSQL + TypeORM (migrations only, `synchronize: false`) |
+| Queue / cache | BullMQ + Redis (both optional) |
+| Auth | JWT (access + refresh), OTP by email / SMS, `bcryptjs` |
+| Email | [Resend](https://resend.com) + Handlebars templates |
+| SMS | [TurboSMS](https://turbosms.ua) |
+| Images | [Cloudinary](https://cloudinary.com) |
+| Docs | Swagger / OpenAPI |
+| Tests | Jest 30 (coverage ≥ 70% enforced) |
+| Deploy | [Railway](https://railway.com) (`railway.json`) |
 
-```bash
-$ npm install
-```
+## Getting started
 
-## Compile and run the project
+### Prerequisites
 
-```bash
-# development
-$ npm run start
+- Node.js 22 (same as CI)
+- PostgreSQL
+- Redis (optional, needed only for the email queue and the response cache)
 
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
-```
-
-## Run tests
+### Setup
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm ci                    # install dependencies from the lockfile
+cp .env.example .env      # then fill in the values (see below)
+npm run migration:run     # apply database migrations
+npm run seed              # seed roles (admin, super, user) and base users
+npm run start:dev         # start in watch mode
 ```
+
+The API listens on `http://localhost:3000` by default. Swagger UI is served at `/docs` (configurable through `SWAGGER_PATH`) and at `/`.
+
+### Environment variables
+
+All variables are documented in [`.env.example`](.env.example). The main groups:
+
+| Group | Variables | Notes |
+| --- | --- | --- |
+| Server | `PORT`, `APP_ENV`, `CORS_ORIGIN`, `SWAGGER_ENABLED`, `SWAGGER_PATH` | `APP_ENV` is `develop` or `production` and picks the built-in CORS allowlist |
+| Database | `DATABASE_URL`, `DATABASE_SSL`, `MIGRATION_DATABASE_URL` | `MIGRATION_DATABASE_URL` is only for prod migrations through the public proxy |
+| Auth | `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `OTP_EXPIRE`, `REFRESH_EXPIRE_TIME` | **Required.** The app won't start without the JWT secrets |
+| Email | `RESEND_API_KEY`, `MAIL_FROM`, `ADMIN_EMAIL`, `MANUAL_PAYMENT_*` | Sent over Resend's HTTPS API (SMTP is blocked on many hosts) |
+| SMS | `TURBOSMS_API_TOKEN`, `TURBOSMS_SENDER`, `TURBOSMS_API_URL` | Phone OTP delivery |
+| Images | `CLOUDINARY_URL` (or `CLOUDINARY_CLOUD_NAME` / `_API_KEY` / `_API_SECRET`), `CLOUDINARY_PRODUCTS_FOLDER` | Product image uploads |
+| Queue / cache | `EMAIL_QUEUE_ENABLED`, `REDIS_URL`, `CACHE_ENABLED` | See below |
+
+**Running without Redis.** Set `EMAIL_QUEUE_ENABLED=false` to send emails inline. Leave `REDIS_URL` unset (or set `CACHE_ENABLED=false`) to serve the storefront straight from Postgres. Redis failures always fall back to Postgres and never fail a request.
+
+## Scripts
+
+| Task | Command |
+| --- | --- |
+| Dev server (watch) | `npm run start:dev` |
+| Debug server | `npm run start:debug` |
+| Build | `npm run build` |
+| Run prod build | `npm run start:prod` |
+| Unit tests | `npm run test` (one file: `npx jest path/to/file.spec.ts`) |
+| Tests with coverage | `npm run test:cov` |
+| Lint (fix / check) | `npm run lint` / `npm run lint:check` |
+| Format (write / check) | `npm run format:write` / `npm run format:check` |
+| Format + lint + tests | `npm run check` |
+| Migrations | `npm run migration:run` / `npm run migration:revert` |
+| Seed | `npm run seed` |
+
+## API overview
+
+Full, interactive docs live in Swagger. Protected routes take a Bearer JWT; auth also sets `httpOnly` cookies. The main route groups:
+
+| Module | Routes | Purpose |
+| --- | --- | --- |
+| Catalog | `catalog/shops`, `catalog/categories`, `catalog/tags`, `catalog/attributes`, `catalog/products`, `catalog/images` | Admin management of shops, categories, tags, attributes, products/variations and images |
+| Catalog (storefront) | `catalog/products-client`, `catalog/categories-client`, `catalog/favorites-client` | Public catalog browsing (cached in Redis) and user favorites |
+| Orders | `orders`, `orders-client` | Admin order management; customer checkout and order history |
+| User | `user/auth`, `user/auth/client` | Admin and customer authentication (OTP, JWT, refresh sessions) |
+| User (admin) | `user/admins`, `user/users`, `user/settings` | Manage admins, customers and account settings |
+| User (storefront) | `user/client/profile`, `user/client/shipping`, `user/client/contacts`, `user/client/dashboard` | Customer profile, shipping addresses, "contact us" form, dashboard |
+| Statistic | `statistic` | Shop statistics for the admin panel |
+| Settings | `settings/cache` | Cache administration |
+
+User-facing messages are in Ukrainian.
+
+## Project structure
+
+```
+src/
+├── main.ts           # bootstrap: CORS, ValidationPipe, Swagger, cookie-parser
+├── app.module.ts     # config, TypeORM, core and feature modules
+├── core/             # infrastructure only, no business logic
+│   ├── cache/        # Redis response cache
+│   ├── config/       # APP_ENV and CORS allowlists
+│   ├── db/           # data source, migrations, seeders
+│   ├── mail/         # Resend + Handlebars email templates
+│   ├── queue/        # BullMQ registration
+│   └── response/     # pagination and list response helpers
+└── modules/
+    ├── catalog/      # shops, categories, tags, attributes, products, images, favorites
+    ├── orders/       # orders, statuses, order emails
+    ├── settings/     # cache admin
+    ├── statistic/    # shop statistics
+    └── user/         # auth, users, admins, profile, shipping, roles and guards
+```
+
+Each request flows **Controller → Service → Repository**, and only repositories touch TypeORM. When a resource has both admin and storefront endpoints, its code is split into `admin/` and `client/` subfolders, with shared logic in `common/`. Every file lives in its own folder next to its `*.spec.ts`.
+
+## Database
+
+Schema changes go **only** through migrations in `src/core/db/migrations`. Never edit a migration that has already been applied; add a new one instead.
+
+```bash
+npm run migration:run      # apply pending migrations
+npm run migration:revert   # roll back the last migration
+```
+
+## Contributing
+
+1. Branch off `main` (kebab-case, optionally prefixed with the issue number, e.g. `20-implement-social-auth`). Never push to `main` directly.
+2. Commit with a conventional prefix: `feat:`, `fix:`, `refactor:`, `test:`, `chore:` or `docs:`.
+3. Before opening a PR, run the same checks as CI:
+
+   ```bash
+   npm run build && npm run format:check && npm run lint:check && npm run test:cov
+   ```
+
+4. Open a PR against `main`. Mention any new migrations or env variables in it.
+
+Detailed conventions for contributors and AI assistants live in [`.claude/`](.claude/CLAUDE.md).
 
 ## Deployment
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+The app deploys to Railway using [`railway.json`](railway.json):
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+- **Build:** `npm ci && npm run build`
+- **Pre-deploy:** `npm run migration:run:prod && npm run seed:prod`
+- **Start:** `npm run start:prod`
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+Set `APP_ENV=production`, the production secrets and `DATABASE_URL` (private network) in the Railway service. Set `MIGRATION_DATABASE_URL` (public proxy) too, because the pre-deploy container runs before the private network resolves.
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+UNLICENSED. Private project.
