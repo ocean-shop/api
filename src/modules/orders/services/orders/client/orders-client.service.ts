@@ -1,4 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { NOTIFICATION_EVENTS } from '../../../../notifications/constants/notification.constants';
+import { OrderCreatedEvent } from '../../../../notifications/models/notification.models';
 import { JwtPayload } from '../../../../user/models/auth-request.models';
 import { CreateOrderDto } from '../../../dto/create-order.dto';
 import { ListOrdersQueryDto } from '../../../dto/list-orders-query.dto';
@@ -23,6 +26,7 @@ export class OrdersClientService {
   constructor(
     private readonly orderClientRepository: OrderClientRepository,
     private readonly orderEmailService: OrderEmailService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async createOrder(dto: CreateOrderDto): Promise<Order> {
@@ -67,7 +71,23 @@ export class OrdersClientService {
         ),
       );
 
+    this.emitOrderCreated(createdOrder);
+
     return createdOrder;
+  }
+
+  /** Listeners run asynchronously and never fail the order. */
+  private emitOrderCreated(order: Order): void {
+    const event: OrderCreatedEvent = {
+      shopId: order.shopId,
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      totalAmount: order.totalAmount,
+      firstName: order.firstName,
+      lastName: order.lastName,
+    };
+
+    this.eventEmitter.emit(NOTIFICATION_EVENTS.ORDER_CREATED, event);
   }
 
   async listOrdersByUser(

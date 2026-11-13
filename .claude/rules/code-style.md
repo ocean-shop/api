@@ -47,6 +47,11 @@ Repository method names: `findAllPaginated`, `findById` (throws), `findBy*` (ret
 - `async/await`, never `.then()` chains.
 - Conditional object spread for optional filters: `...(query.name ? { name: query.name } : {})`.
 - Pure logic → exported functions in `helpers/` (unit-testable without Nest).
+- Standalone functions are **arrow functions** assigned to `const`, never `function` declarations: helpers, module-level factories, local utilities in specs.
+  ```ts
+  export const toSlug = (value: string): string => value.trim().toLowerCase();
+  ```
+  Keep the explicit return type. Class methods stay regular methods. Since a `const` isn't hoisted, define a helper before the code that calls it at module load.
 - Constants in `constants/`: messages (`*-messages.constants.ts`), DB constraint names (`*-constraint.constants.ts`), limits, defaults, tokens.
 - Short `/** ... */` doc comments on constants and non-obvious methods explaining **why**, not what.
 - Logging via `new Logger(ClassName.name)` as a `private readonly logger` field.
@@ -54,6 +59,7 @@ Repository method names: `findAllPaginated`, `findById` (throws), `findBy*` (ret
 ## Avoid
 
 - `interface`, new `enum`, `any`, raw promise chains.
+- `function` declarations for standalone functions (use `const fn = (...) => ...`).
 - Magic strings/numbers inline (messages, limits, constraint names, job names).
 - `process.env` in services (use `ConfigService`).
 - `console.log` (use Nest `Logger`).
