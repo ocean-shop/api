@@ -52,10 +52,17 @@ export class ProductRepository extends ProductQueryRepository {
           });
         }
 
+        // A product matches by its own SKU or by the SKU of any of its
+        // variations; EXISTS keeps one row per product for the paging.
         if (filters.sku) {
-          query.andWhere('product.sku ILIKE :sku', {
-            sku: `%${filters.sku}%`,
-          });
+          query.andWhere(
+            `(product.sku ILIKE :sku OR EXISTS (
+              SELECT 1 FROM product_variations variation
+              WHERE variation.product_id = product.id
+                AND variation.sku ILIKE :sku
+            ))`,
+            { sku: `%${filters.sku}%` },
+          );
         }
 
         if (filters.categoryIds && filters.categoryIds.length > 0) {

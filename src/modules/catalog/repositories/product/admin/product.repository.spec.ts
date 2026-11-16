@@ -154,7 +154,9 @@ describe('ProductRepository', () => {
     );
     expect(queryBuilder.andWhere).toHaveBeenNthCalledWith(
       4,
-      'product.sku ILIKE :sku',
+      expect.stringMatching(
+        /product\.sku ILIKE :sku OR EXISTS[\s\S]*variation\.sku ILIKE :sku/,
+      ),
       { sku: '%SKU%' },
     );
     expect(queryBuilder.innerJoin).toHaveBeenCalledWith(
