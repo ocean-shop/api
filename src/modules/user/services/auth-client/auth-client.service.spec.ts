@@ -1,3 +1,4 @@
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   BadRequestException,
@@ -17,6 +18,7 @@ describe('AuthClientService', () => {
   let authService: any;
   let requestOtpService: any;
   let userSessionService: any;
+  let eventEmitter: any;
 
   beforeEach(async () => {
     authClientRepository = {
@@ -30,8 +32,10 @@ describe('AuthClientService', () => {
           Promise.resolve({ id: 'new-uuid', ...payload }),
         ),
       shopExists: jest.fn().mockResolvedValue(true),
-      bindUserToShop: jest.fn().mockResolvedValue(undefined),
+      bindUserToShop: jest.fn().mockResolvedValue(false),
     };
+
+    eventEmitter = { emit: jest.fn() };
 
     authService = {
       checkActiveOtpRequest: jest.fn(),
@@ -65,6 +69,7 @@ describe('AuthClientService', () => {
         { provide: AuthService, useValue: authService },
         { provide: RequestOtpService, useValue: requestOtpService },
         { provide: UserSessionService, useValue: userSessionService },
+        { provide: EventEmitter2, useValue: eventEmitter },
       ],
     }).compile();
 
@@ -200,6 +205,33 @@ describe('AuthClientService', () => {
     beforeEach(() => {
       authClientRepository.findByEmailOrPhone.mockResolvedValue(client);
       authService.findAndValidateLatestOtp.mockResolvedValue(latestOtp);
+    });
+
+    it('should emit customer registered when the client joins the shop for the first time', async () => {
+      authClientRepository.bindUserToShop.mockResolvedValue(true);
+
+      await service.verifyOtp({
+        login: 'client@example.com',
+        code: '1234',
+        shopId: 'shop-1',
+      });
+
+      expect(eventEmitter.emit).toHaveBeenCalledWith('customer.registered', {
+        shopId: 'shop-1',
+        userId: 'uuid',
+        email: 'client@example.com',
+        mobileNumber: null,
+      });
+    });
+
+    it('should not emit customer registered for a returning client', async () => {
+      await service.verifyOtp({
+        login: 'client@example.com',
+        code: '1234',
+        shopId: 'shop-1',
+      });
+
+      expect(eventEmitter.emit).not.toHaveBeenCalled();
     });
 
     it('should verify OTP, save session and return tokens for a client', async () => {

@@ -1,4 +1,5 @@
 import { ForbiddenException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   OrderPaymentMethod,
@@ -14,8 +15,11 @@ describe('OrdersClientService', () => {
   let service: OrdersClientService;
   let orderClientRepository: OrderClientRepository;
   let orderEmailService: { sendOrderCreatedEmail: jest.Mock };
+  let eventEmitter: { emit: jest.Mock };
 
   beforeEach(async () => {
+    eventEmitter = { emit: jest.fn() };
+
     orderEmailService = {
       sendOrderCreatedEmail: jest.fn().mockResolvedValue(undefined),
     };
@@ -34,6 +38,7 @@ describe('OrdersClientService', () => {
         OrdersClientService,
         { provide: OrderClientRepository, useValue: orderClientRepositoryMock },
         { provide: OrderEmailService, useValue: orderEmailService },
+        { provide: EventEmitter2, useValue: eventEmitter },
       ],
     }).compile();
 
@@ -109,6 +114,47 @@ describe('OrdersClientService', () => {
       fullOrder,
     );
     expect(result).toEqual(fullOrder);
+  });
+
+  it('should emit order created for admin notifications', async () => {
+    const fullOrder = {
+      id: 'order-id',
+      shopId: 'shop-id',
+      orderNumber: '1001',
+      totalAmount: '95.00',
+      firstName: 'Taras',
+      lastName: 'Shevchenko',
+      items: [],
+    } as any;
+    jest
+      .mocked(orderClientRepository.validateProductsForShop)
+      .mockResolvedValue(undefined);
+    jest.mocked(orderClientRepository.create).mockReturnValue({} as any);
+    jest
+      .mocked(orderClientRepository.saveWithNextOrderNumber)
+      .mockResolvedValue({ id: 'order-id' } as any);
+    jest.mocked(orderClientRepository.replaceItems).mockResolvedValue([]);
+    jest.mocked(orderClientRepository.findById).mockResolvedValue(fullOrder);
+
+    await service.createOrder({
+      shopId: 'shop-id',
+      shippingNumber: 'TTN-1001',
+      subtotalAmount: 95,
+      discountAmount: 0,
+      totalAmount: 95,
+      paymentMethod: OrderPaymentMethod.CARD,
+      shippingMethod: OrderShippingMethod.NOVA,
+      items: [],
+    });
+
+    expect(eventEmitter.emit).toHaveBeenCalledWith('order.created', {
+      shopId: 'shop-id',
+      orderId: 'order-id',
+      orderNumber: '1001',
+      totalAmount: '95.00',
+      firstName: 'Taras',
+      lastName: 'Shevchenko',
+    });
   });
 
   it('should still return the order when the email fails to send', async () => {

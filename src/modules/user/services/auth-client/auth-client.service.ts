@@ -3,7 +3,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { isEmail } from 'class-validator';
+import { NOTIFICATION_EVENTS } from '../../../notifications/constants/notification.constants';
+import { CustomerRegisteredEvent } from '../../../notifications/models/notification.models';
 import { MessageResponse } from '../../../../core/response/models/response.models';
 import { AUTH_MESSAGES } from '../../constants/auth-messages.constants';
 import { UKRAINIAN_PHONE_REGEX } from '../../constants/phone.constants';
@@ -28,6 +31,7 @@ export class AuthClientService {
     private readonly authService: AuthService,
     private readonly requestOtpService: RequestOtpService,
     private readonly userSessionService: UserSessionService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async requestOtp(dto: RequestClientOtpDto): Promise<MessageResponse> {
@@ -83,9 +87,31 @@ export class AuthClientService {
     this.assertClient(user);
     await this.assertShopExists(dto.shopId);
     await this.processOtp(user, dto.code, email, phone);
-    await this.authClientRepository.bindUserToShop(user.id, dto.shopId);
+    const isNewCustomer = await this.authClientRepository.bindUserToShop(
+      user.id,
+      dto.shopId,
+    );
+
+    if (isNewCustomer) {
+      this.emitCustomerRegistered(user, dto.shopId);
+    }
 
     return this.userSessionService.startSession(user, { userAgent, ipAddress });
+  }
+
+  /**
+   * "New customer" means new to this shop: a user already registered in
+   * another shop of the platform still shows up for this shop's admins.
+   */
+  private emitCustomerRegistered(user: User, shopId: string): void {
+    const event: CustomerRegisteredEvent = {
+      shopId,
+      userId: user.id,
+      email: user.email,
+      mobileNumber: user.mobileNumber,
+    };
+
+    this.eventEmitter.emit(NOTIFICATION_EVENTS.CUSTOMER_REGISTERED, event);
   }
 
   private async assertShopExists(shopId: string): Promise<void> {

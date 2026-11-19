@@ -39,4 +39,5 @@ export const CATALOG_CACHE_SEGMENTS = {
   PRODUCT_SLUG: 'product-slug',
   SITEMAP: 'sitemap',
   MAIN_BANNER: 'main-banner',
+  RELATED: 'related',
 } as const;

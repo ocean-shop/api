@@ -40,6 +40,12 @@ import { FavoritesClientController } from './controllers/favorites/client/favori
 import { UserFavoriteProduct } from './entities/user-favorite-product.entity';
 import { FavoriteProductRepository } from './repositories/favorite-product/favorite-product.repository';
 import { FavoritesClientService } from './services/favorites/client/favorites-client.service';
+import { ProductRelated } from './entities/product-related.entity';
+import { RelatedProductRepository } from './repositories/related-product/related-product.repository';
+import { RelatedProductsService } from './services/related-products/admin/related-products.service';
+import { RelatedProductsClientService } from './services/related-products/client/related-products-client.service';
+import { RelatedProductsController } from './controllers/related-products/admin/related-products.controller';
+import { RelatedProductsClientController } from './controllers/related-products/client/related-products-client.controller';
 
 @Module({
   imports: [
@@ -54,6 +60,7 @@ import { FavoritesClientService } from './services/favorites/client/favorites-cl
       VariationAttribute,
       VariationImage,
       UserFavoriteProduct,
+      ProductRelated,
     ]),
   ],
   controllers: [
@@ -66,6 +73,8 @@ import { FavoritesClientService } from './services/favorites/client/favorites-cl
     ProductsClientController,
     ImagesController,
     FavoritesClientController,
+    RelatedProductsController,
+    RelatedProductsClientController,
   ],
   providers: [
     ShopsService,
@@ -78,6 +87,8 @@ import { FavoritesClientService } from './services/favorites/client/favorites-cl
     ImagesService,
     ProductImagesCloudinaryService,
     FavoritesClientService,
+    RelatedProductsService,
+    RelatedProductsClientService,
     ShopRepository,
     CategoryRepository,
     CategoryClientRepository,
@@ -87,6 +98,7 @@ import { FavoritesClientService } from './services/favorites/client/favorites-cl
     ProductClientRepository,
     ProductVariationRepository,
     FavoriteProductRepository,
+    RelatedProductRepository,
     JwtAuthGuard,
     RolesGuard,
   ],

@@ -18,7 +18,8 @@ describe('AuthClientRepository', () => {
       into: jest.fn().mockReturnThis(),
       values: jest.fn().mockReturnThis(),
       orIgnore: jest.fn().mockReturnThis(),
-      execute: jest.fn().mockResolvedValue(undefined),
+      returning: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue({ raw: [{ user_id: 'user-1' }] }),
     };
     userRepository = {
       findOne: jest.fn(),
@@ -91,8 +92,8 @@ describe('AuthClientRepository', () => {
     expect(shopRepository.existsBy).toHaveBeenCalledWith({ id: 'shop-1' });
   });
 
-  it('should bind a user to a shop, ignoring an existing binding', async () => {
-    await repository.bindUserToShop('user-1', 'shop-1');
+  it('should bind a user to a shop and report a new binding', async () => {
+    const result = await repository.bindUserToShop('user-1', 'shop-1');
 
     expect(insertQueryBuilder.into).toHaveBeenCalledWith('users_shops', [
       'user_id',
@@ -103,6 +104,16 @@ describe('AuthClientRepository', () => {
       shop_id: 'shop-1',
     });
     expect(insertQueryBuilder.orIgnore).toHaveBeenCalled();
+    expect(insertQueryBuilder.returning).toHaveBeenCalledWith(['user_id']);
     expect(insertQueryBuilder.execute).toHaveBeenCalled();
+    expect(result).toBe(true);
+  });
+
+  it('should report false when the binding already exists', async () => {
+    insertQueryBuilder.execute.mockResolvedValue({ raw: [] });
+
+    const result = await repository.bindUserToShop('user-1', 'shop-1');
+
+    expect(result).toBe(false);
   });
 });

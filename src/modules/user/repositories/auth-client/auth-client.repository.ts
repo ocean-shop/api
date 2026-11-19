@@ -40,13 +40,18 @@ export class AuthClientRepository {
     return this.shopRepository.existsBy({ id: shopId });
   }
 
-  async bindUserToShop(userId: string, shopId: string): Promise<void> {
-    await this.userRepository
+  /** Returns true only when the user joins this shop for the first time. */
+  async bindUserToShop(userId: string, shopId: string): Promise<boolean> {
+    const result = await this.userRepository
       .createQueryBuilder()
       .insert()
       .into(USERS_SHOPS_TABLE, ['user_id', 'shop_id'])
       .values({ user_id: userId, shop_id: shopId })
       .orIgnore()
+      .returning(['user_id'])
       .execute();
+
+    // With ON CONFLICT DO NOTHING, RETURNING yields no row for an existing link.
+    return Array.isArray(result.raw) && result.raw.length > 0;
   }
 }
