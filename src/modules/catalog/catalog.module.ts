@@ -46,6 +46,14 @@ import { RelatedProductsService } from './services/related-products/admin/relate
 import { RelatedProductsClientService } from './services/related-products/client/related-products-client.service';
 import { RelatedProductsController } from './controllers/related-products/admin/related-products.controller';
 import { RelatedProductsClientController } from './controllers/related-products/client/related-products-client.controller';
+import { OrderProduct } from '../orders/entities/order-product.entity';
+import { ProductReview } from './entities/product-review.entity';
+import { ProductReviewRepository } from './repositories/product-review/admin/product-review.repository';
+import { ProductReviewClientRepository } from './repositories/product-review/client/product-review-client.repository';
+import { ProductReviewsService } from './services/product-reviews/admin/product-reviews.service';
+import { ProductReviewsClientService } from './services/product-reviews/client/product-reviews-client.service';
+import { ProductReviewsController } from './controllers/product-reviews/admin/product-reviews.controller';
+import { ProductReviewsClientController } from './controllers/product-reviews/client/product-reviews-client.controller';
 
 @Module({
   imports: [
@@ -61,6 +69,8 @@ import { RelatedProductsClientController } from './controllers/related-products/
       VariationImage,
       UserFavoriteProduct,
       ProductRelated,
+      ProductReview,
+      OrderProduct,
     ]),
   ],
   controllers: [
@@ -75,6 +85,8 @@ import { RelatedProductsClientController } from './controllers/related-products/
     FavoritesClientController,
     RelatedProductsController,
     RelatedProductsClientController,
+    ProductReviewsController,
+    ProductReviewsClientController,
   ],
   providers: [
     ShopsService,
@@ -89,6 +101,8 @@ import { RelatedProductsClientController } from './controllers/related-products/
     FavoritesClientService,
     RelatedProductsService,
     RelatedProductsClientService,
+    ProductReviewsService,
+    ProductReviewsClientService,
     ShopRepository,
     CategoryRepository,
     CategoryClientRepository,
@@ -99,6 +113,8 @@ import { RelatedProductsClientController } from './controllers/related-products/
     ProductVariationRepository,
     FavoriteProductRepository,
     RelatedProductRepository,
+    ProductReviewRepository,
+    ProductReviewClientRepository,
     JwtAuthGuard,
     RolesGuard,
   ],
