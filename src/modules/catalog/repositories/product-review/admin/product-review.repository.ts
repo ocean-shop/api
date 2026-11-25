@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PaginatedResult } from '../../../../../core/response/models/response.models';
+import { PRODUCT_REVIEW_MESSAGES } from '../../../constants/product-review-messages.constants';
 import { PRODUCT_REVIEW_PRODUCT_SELECT } from '../../../constants/product-review.constants';
 import { ProductReview } from '../../../entities/product-review.entity';
 import { ProductReviewFilters } from '../../../models/product-review.models';
@@ -50,5 +51,19 @@ export class ProductReviewRepository {
     const [items, total] = await query.getManyAndCount();
 
     return { items, total };
+  }
+
+  async findById(id: string): Promise<ProductReview> {
+    const review = await this.repository.findOne({ where: { id } });
+
+    if (!review) {
+      throw new NotFoundException(PRODUCT_REVIEW_MESSAGES.NOT_FOUND);
+    }
+
+    return review;
+  }
+
+  async save(review: ProductReview): Promise<ProductReview> {
+    return this.repository.save(review);
   }
 }

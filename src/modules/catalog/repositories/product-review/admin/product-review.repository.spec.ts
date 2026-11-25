@@ -1,5 +1,7 @@
+import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { PRODUCT_REVIEW_MESSAGES } from '../../../constants/product-review-messages.constants';
 import { ProductReviewStatus } from '../../../entities/enums/product-review.enum';
 import { ProductReview } from '../../../entities/product-review.entity';
 import { ProductReviewRepository } from './product-review.repository';
@@ -23,6 +25,8 @@ describe('ProductReviewRepository', () => {
     };
     typeOrmRepository = {
       createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
+      findOne: jest.fn(),
+      save: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -108,6 +112,40 @@ describe('ProductReviewRepository', () => {
         'review.rating = :rating',
         { rating: 4 },
       );
+    });
+  });
+
+  describe('findById', () => {
+    it('should return the review', async () => {
+      const review = { id: 'review-1' } as ProductReview;
+      typeOrmRepository.findOne.mockResolvedValue(review);
+
+      const result = await repository.findById('review-1');
+
+      expect(typeOrmRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 'review-1' },
+      });
+      expect(result).toBe(review);
+    });
+
+    it('should throw NotFoundException when the review is missing', async () => {
+      typeOrmRepository.findOne.mockResolvedValue(null);
+
+      await expect(repository.findById('missing')).rejects.toThrow(
+        new NotFoundException(PRODUCT_REVIEW_MESSAGES.NOT_FOUND),
+      );
+    });
+  });
+
+  describe('save', () => {
+    it('should save the review', async () => {
+      const review = { id: 'review-1' } as ProductReview;
+      typeOrmRepository.save.mockResolvedValue(review);
+
+      const result = await repository.save(review);
+
+      expect(typeOrmRepository.save).toHaveBeenCalledWith(review);
+      expect(result).toBe(review);
     });
   });
 });

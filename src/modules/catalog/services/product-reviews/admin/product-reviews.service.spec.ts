@@ -1,3 +1,4 @@
+import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProductReviewStatus } from '../../../entities/enums/product-review.enum';
 import { ProductReview } from '../../../entities/product-review.entity';
@@ -9,7 +10,11 @@ describe('ProductReviewsService', () => {
   let productReviewRepository: ProductReviewRepository;
 
   beforeEach(async () => {
-    const productReviewRepositoryMock = { findAllPaginated: jest.fn() };
+    const productReviewRepositoryMock = {
+      findAllPaginated: jest.fn(),
+      findById: jest.fn(),
+      save: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -84,6 +89,60 @@ describe('ProductReviewsService', () => {
         10,
         10,
       );
+    });
+  });
+
+  describe('updateProductReviewStatus', () => {
+    it('should change the status and save the review', async () => {
+      const review = {
+        id: 'review-1',
+        status: ProductReviewStatus.PENDING,
+      } as ProductReview;
+      const saved = {
+        ...review,
+        status: ProductReviewStatus.APPROVED,
+      } as ProductReview;
+      jest.mocked(productReviewRepository.findById).mockResolvedValue(review);
+      jest.mocked(productReviewRepository.save).mockResolvedValue(saved);
+
+      const result = await service.updateProductReviewStatus('review-1', {
+        status: ProductReviewStatus.APPROVED,
+      });
+
+      expect(productReviewRepository.findById).toHaveBeenCalledWith('review-1');
+      expect(productReviewRepository.save).toHaveBeenCalledWith({
+        id: 'review-1',
+        status: ProductReviewStatus.APPROVED,
+      });
+      expect(result).toBe(saved);
+    });
+
+    it('should return the review unchanged when the status is the same', async () => {
+      const review = {
+        id: 'review-1',
+        status: ProductReviewStatus.REJECTED,
+      } as ProductReview;
+      jest.mocked(productReviewRepository.findById).mockResolvedValue(review);
+
+      const result = await service.updateProductReviewStatus('review-1', {
+        status: ProductReviewStatus.REJECTED,
+      });
+
+      expect(productReviewRepository.save).not.toHaveBeenCalled();
+      expect(result).toBe(review);
+    });
+
+    it('should propagate NotFoundException from the repository', async () => {
+      jest
+        .mocked(productReviewRepository.findById)
+        .mockRejectedValue(new NotFoundException());
+
+      await expect(
+        service.updateProductReviewStatus('missing', {
+          status: ProductReviewStatus.APPROVED,
+        }),
+      ).rejects.toThrow(NotFoundException);
+      expect(productReviewRepository.save).not.toHaveBeenCalled();
     });
   });
 });

@@ -1,7 +1,18 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
@@ -11,6 +22,7 @@ import { ADMIN_ROLES } from '../../../../user/constants/role.constants';
 import { JwtAuthGuard } from '../../../../user/guards/jwt-auth/jwt-auth.guard';
 import { RolesGuard } from '../../../../user/guards/roles/roles.guard';
 import { ListProductReviewsQueryDto } from '../../../dto/product-reviews/list-product-reviews-query.dto';
+import { UpdateProductReviewStatusDto } from '../../../dto/product-reviews/update-product-review-status.dto';
 import { ProductReviewStatus } from '../../../entities/enums/product-review.enum';
 import { ProductReviewsService } from '../../../services/product-reviews/admin/product-reviews.service';
 
@@ -38,5 +50,17 @@ export class ProductReviewsController {
   @ApiQuery({ name: 'limit', required: false, type: Number })
   async listProductReviews(@Query() query: ListProductReviewsQueryDto) {
     return this.productReviewsService.listProductReviews(query);
+  }
+
+  @Patch(':id/status')
+  @Roles(...ADMIN_ROLES)
+  @ApiOperation({ summary: 'Change product review status (moderation)' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiBody({ type: UpdateProductReviewStatusDto })
+  async updateProductReviewStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateProductReviewStatusDto,
+  ) {
+    return this.productReviewsService.updateProductReviewStatus(id, dto);
   }
 }
