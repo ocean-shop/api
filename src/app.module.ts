@@ -6,6 +6,7 @@ import { CacheModule } from './core/cache/cache.module';
 import { MailModule } from './core/mail/mail.module';
 import { QueueModule } from './core/queue/queue.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
+import { FinanceModule } from './modules/finance/finance.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { SettingsModule } from './modules/settings/settings.module';
@@ -37,6 +38,7 @@ import { UserModule } from './modules/user/user.module';
     MailModule,
     QueueModule.register(),
     CatalogModule,
+    FinanceModule,
     NotificationsModule,
     OrdersModule,
     SettingsModule,
