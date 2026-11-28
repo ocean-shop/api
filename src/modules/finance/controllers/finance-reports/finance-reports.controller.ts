@@ -19,10 +19,12 @@ import { GetRevenueReportQueryDto } from '../../dto/finance-reports/get-revenue-
 import {
   CustomerReport,
   ProductReport,
+  QuickOrderReport,
   RevenueReport,
 } from '../../models/finance-report.models';
 import { CustomerReportsService } from '../../services/customer-reports/customer-reports.service';
 import { ProductReportsService } from '../../services/product-reports/product-reports.service';
+import { QuickOrderReportsService } from '../../services/quick-order-reports/quick-order-reports.service';
 import { RevenueReportsService } from '../../services/revenue-reports/revenue-reports.service';
 
 const PERIOD_QUERY_DOCS = [
@@ -40,6 +42,7 @@ export class FinanceReportsController {
     private readonly revenueReportsService: RevenueReportsService,
     private readonly productReportsService: ProductReportsService,
     private readonly customerReportsService: CustomerReportsService,
+    private readonly quickOrderReportsService: QuickOrderReportsService,
   ) {}
 
   @Get('revenue')
@@ -98,5 +101,22 @@ export class FinanceReportsController {
     @Query() query: FinanceReportQueryDto,
   ): Promise<CustomerReport> {
     return this.customerReportsService.getCustomerReport(query);
+  }
+
+  @Get('quick-orders')
+  @Roles(...ADMIN_ROLES)
+  @ApiOperation({
+    summary:
+      'Quick order ("buy in one click") report: requests by status, estimated value and top products vs the previous period',
+    description:
+      'Quick orders store no price, so every money value is an estimate: one unit at the product current price. Not included in the revenue report.',
+  })
+  @ApiQuery(PERIOD_QUERY_DOCS[0])
+  @ApiQuery(PERIOD_QUERY_DOCS[1])
+  @ApiQuery(PERIOD_QUERY_DOCS[2])
+  async getQuickOrderReport(
+    @Query() query: FinanceReportQueryDto,
+  ): Promise<QuickOrderReport> {
+    return this.quickOrderReportsService.getQuickOrderReport(query);
   }
 }

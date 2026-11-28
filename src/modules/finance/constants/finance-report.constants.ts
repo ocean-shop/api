@@ -28,6 +28,14 @@ export const PRODUCT_REPORT_LIMITS = {
   MAX_DEAD_STOCK_DAYS: 365,
 } as const;
 
+export const QUICK_ORDER_REPORT_LIMITS = {
+  /** Products with the most "buy in one click" requests shown in the report. */
+  TOP_PRODUCTS: 10,
+} as const;
+
+/** Tells the admin UI how the quick order value was estimated (no price is stored on the request). */
+export const QUICK_ORDER_VALUE_SOURCE = 'current_product_price';
+
 /** Classic Pareto split: A = first 80% of revenue, B = next 15%, C = the rest. */
 export const ABC_THRESHOLDS = {
   A: 0.8,

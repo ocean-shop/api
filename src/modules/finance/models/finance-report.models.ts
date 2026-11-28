@@ -1,6 +1,7 @@
 import {
   AbcClass,
   CustomerSegment,
+  QUICK_ORDER_VALUE_SOURCE,
   ReportGranularity,
 } from '../constants/finance-report.constants';
 
@@ -190,6 +191,73 @@ export type ProductReport = {
     items: DeadStockProduct[];
   };
   insights: FinanceInsight[];
+};
+
+// ---------- Quick orders ----------
+
+export type QuickOrderSummaryRow = {
+  totalCount: RawAmount;
+  newCount: RawAmount;
+  processedCount: RawAmount;
+  cancelledCount: RawAmount;
+  estimatedValue: RawAmount;
+  estimatedProcessedValue: RawAmount;
+  estimatedCancelledValue: RawAmount;
+};
+
+export type QuickOrderProductRow = {
+  productId: string;
+  name: string;
+  slug: string;
+  currentPrice: RawAmount;
+  requestsCount: RawAmount;
+  estimatedValue: RawAmount;
+};
+
+/**
+ * Values are estimates: a quick order stores no price, so each request is
+ * valued at the product's **current** price (one unit per request).
+ */
+export type QuickOrderSummary = {
+  /** All requests created in the period, any status. */
+  totalCount: number;
+  newCount: number;
+  processedCount: number;
+  cancelledCount: number;
+  /** Not cancelled requests (new + processed). */
+  estimatedValue: number;
+  estimatedProcessedValue: number;
+  estimatedCancelledValue: number;
+  /** Processed / all requests, 0..1. */
+  processedRate: number;
+  /** Cancelled / all requests, 0..1. */
+  cancellationRate: number;
+};
+
+/** Percent change vs the previous period; `null` when the previous value is 0. */
+export type QuickOrderChanges = {
+  [K in keyof QuickOrderSummary]: number | null;
+};
+
+export type QuickOrderProduct = {
+  productId: string;
+  name: string;
+  slug: string;
+  currentPrice: number;
+  requestsCount: number;
+  estimatedValue: number;
+};
+
+export type QuickOrderReport = {
+  period: ReportPeriod;
+  previousPeriod: ReportPeriod;
+  /** How money values were estimated. */
+  valueSource: typeof QUICK_ORDER_VALUE_SOURCE;
+  summary: QuickOrderSummary;
+  previousSummary: QuickOrderSummary;
+  changes: QuickOrderChanges;
+  /** Not cancelled requests grouped by product, most requested first. */
+  topProducts: QuickOrderProduct[];
 };
 
 // ---------- Customers ----------

@@ -3,6 +3,7 @@ import { JwtAuthGuard } from '../../../user/guards/jwt-auth/jwt-auth.guard';
 import { RolesGuard } from '../../../user/guards/roles/roles.guard';
 import { CustomerReportsService } from '../../services/customer-reports/customer-reports.service';
 import { ProductReportsService } from '../../services/product-reports/product-reports.service';
+import { QuickOrderReportsService } from '../../services/quick-order-reports/quick-order-reports.service';
 import { RevenueReportsService } from '../../services/revenue-reports/revenue-reports.service';
 import { FinanceReportsController } from './finance-reports.controller';
 
@@ -11,6 +12,7 @@ describe('FinanceReportsController', () => {
   let revenueReportsService: RevenueReportsService;
   let productReportsService: ProductReportsService;
   let customerReportsService: CustomerReportsService;
+  let quickOrderReportsService: QuickOrderReportsService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -28,6 +30,10 @@ describe('FinanceReportsController', () => {
           provide: CustomerReportsService,
           useValue: { getCustomerReport: jest.fn() },
         },
+        {
+          provide: QuickOrderReportsService,
+          useValue: { getQuickOrderReport: jest.fn() },
+        },
       ],
     })
       .overrideGuard(JwtAuthGuard)
@@ -40,6 +46,7 @@ describe('FinanceReportsController', () => {
     revenueReportsService = module.get(RevenueReportsService);
     productReportsService = module.get(ProductReportsService);
     customerReportsService = module.get(CustomerReportsService);
+    quickOrderReportsService = module.get(QuickOrderReportsService);
   });
 
   it('should be defined', () => {
@@ -82,6 +89,21 @@ describe('FinanceReportsController', () => {
     const result = await controller.getCustomerReport(query);
 
     expect(customerReportsService.getCustomerReport).toHaveBeenCalledWith(
+      query,
+    );
+    expect(result).toBe(report);
+  });
+
+  it('should return the quick order report', async () => {
+    const report = { topProducts: [] } as any;
+    const query = { shopId: 'shop-id', to: '2026-11-30' };
+    jest
+      .mocked(quickOrderReportsService.getQuickOrderReport)
+      .mockResolvedValue(report);
+
+    const result = await controller.getQuickOrderReport(query);
+
+    expect(quickOrderReportsService.getQuickOrderReport).toHaveBeenCalledWith(
       query,
     );
     expect(result).toBe(report);
